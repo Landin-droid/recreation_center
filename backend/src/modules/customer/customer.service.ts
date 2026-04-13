@@ -27,12 +27,12 @@ export const customerService = {
 
     // Хеширование пароля
     const saltRounds = 12;
-    const password_hash = await bcrypt.hash(data.password, saltRounds);
+    const passwordHash = await bcrypt.hash(data.password, saltRounds);
 
     const prismaData: Prisma.CustomerCreateInput = {
       fullName: data.fullName,
       email: data.email,
-      password_hash, // ✅ Сохраняем хеш
+      passwordHash, // ✅ Сохраняем хеш
       ...(data.phoneNumber && { phoneNumber: data.phoneNumber }),
     };
 
@@ -53,7 +53,7 @@ export const customerService = {
       throw new AppError("Неверный email или пароль", 401);
     }
 
-    const isValid = await bcrypt.compare(password, customer.password_hash);
+    const isValid = await bcrypt.compare(password, customer.passwordHash);
     if (!isValid) {
       throw new AppError("Неверный email или пароль", 401);
     }

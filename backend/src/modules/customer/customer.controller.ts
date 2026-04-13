@@ -3,6 +3,7 @@ import { customerService } from './customer.service';
 import { createCustomerSchema, updateCustomerSchema, loginSchema } from './customer.validation';
 import { CustomerResponse } from './customer.types';
 import jwt from "jsonwebtoken";
+import { jwtSecret } from '../../config/env';
 
 // ✅ Тип для параметров маршрута
 interface CustomerParams {
@@ -34,7 +35,7 @@ export const customerController = {
       // ✅ Генерируем JWT токен после регистрации
       const token = jwt.sign(
         { customerId: customer.customerId, email: customer.email },
-        process.env.JWT_SECRET!,
+        jwtSecret,
         { expiresIn: "7d" },
       );
 
@@ -62,7 +63,7 @@ export const customerController = {
       
       const token = jwt.sign(
         { customerId: customer.customerId, email: customer.email },
-        process.env.JWT_SECRET!,
+        jwtSecret,
         { expiresIn: '7d' }
       );
       
@@ -83,7 +84,7 @@ export const customerController = {
     try {
       // ✅ customerId уже есть в req.user после middleware авторизации
       const customer = await customerService.getCustomerById(
-        (req as any).user.customerId
+        req.user!.customerId
       );
       
       res.json({
