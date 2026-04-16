@@ -8,7 +8,7 @@ export const reservationMenuItemSchema = z.object({
 });
 
 export const reservationSchema = z.object({
-  customerId: positiveIntSchema,
+  userId: positiveIntSchema,
   bookableObjectId: positiveIntSchema,
   reservationDate: dateStringSchema,
   guestsCount: positiveIntSchema,
@@ -18,7 +18,7 @@ export const reservationSchema = z.object({
 });
 
 export const updateReservationSchema = z.object({
-  customerId: positiveIntSchema.optional(),
+  userId: positiveIntSchema.optional(),
   bookableObjectId: positiveIntSchema.optional(),
   reservationDate: dateStringSchema.optional(),
   guestsCount: positiveIntSchema.optional(),
@@ -28,12 +28,14 @@ export const updateReservationSchema = z.object({
 });
 
 export const listReservationsQuerySchema = z.object({
-  customerId: z.coerce.number().int().positive().optional(),
+  userId: z.coerce.number().int().positive().optional(),
   bookableObjectId: z.coerce.number().int().positive().optional(),
   status: z.nativeEnum(ReservationStatus).optional(),
 });
 
-export type ReservationMenuItemInput = z.infer<typeof reservationMenuItemSchema>;
+export type ReservationMenuItemInput = z.infer<
+  typeof reservationMenuItemSchema
+>;
 export type CreateReservationInput = z.infer<typeof reservationSchema>;
 export type UpdateReservationInput = z.infer<typeof updateReservationSchema>;
 export type ListReservationsQuery = z.infer<typeof listReservationsQuerySchema>;

@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "../../lib/prisma";
 
 export const reservationInclude = {
-  customer: true,
+  user: true,
   bookableObject: true,
   reservationMenuItems: {
     include: {
@@ -42,9 +42,9 @@ export const reservationRepository = {
       },
     }),
 
-  findCustomerById: (customerId: number) =>
-    prisma.customer.findUnique({
-      where: { customerId },
+  findUserById: (userId: number) =>
+    prisma.user.findUnique({
+      where: { userId },
     }),
 
   findBookableObjectById: (bookableObjectId: number) =>
@@ -61,7 +61,9 @@ export const reservationRepository = {
       where: {
         bookableObjectId,
         reservationDate,
-        ...(reservationIdToExclude ? { reservationId: { not: reservationIdToExclude } } : {}),
+        ...(reservationIdToExclude
+          ? { reservationId: { not: reservationIdToExclude } }
+          : {}),
       },
     }),
 
@@ -86,8 +88,9 @@ export const reservationRepository = {
       include: reservationInclude,
     }),
 
-  runInTransaction: <T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) =>
-    prisma.$transaction(callback),
+  runInTransaction: <T>(
+    callback: (tx: Prisma.TransactionClient) => Promise<T>,
+  ) => prisma.$transaction(callback),
 
   delete: (reservationId: number) =>
     prisma.reservation.delete({

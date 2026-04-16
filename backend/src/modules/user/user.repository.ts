@@ -1,40 +1,39 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../lib/prisma";
 
-export const customerRepository = {
+export const userRepository = {
   findMany: () =>
-    prisma.customer.findMany({
-      orderBy: [{ registrationDate: "desc" }, { customerId: "desc" }],
+    prisma.user.findMany({
+      orderBy: [{ registrationDate: "desc" }, { userId: "desc" }],
     }),
 
   findById: (id: number) =>
-    prisma.customer.findUnique({
-      where: { customerId: id },
+    prisma.user.findUnique({
+      where: { userId: id },
     }),
 
   findByEmail: (email: string) =>
-    prisma.customer.findUnique({
+    prisma.user.findUnique({
       where: { email },
     }),
 
-  create: (data: Prisma.CustomerCreateInput) =>
-    prisma.customer.create({ data }),
+  create: (data: Prisma.UserCreateInput) => prisma.user.create({ data }),
 
-  update: (id: number, data: Prisma.CustomerUpdateInput) =>
-    prisma.customer.update({
-      where: { customerId: id },
+  update: (id: number, data: Prisma.UserUpdateInput) =>
+    prisma.user.update({
+      where: { userId: id },
       data,
     }),
 
   delete: (id: number) =>
-    prisma.customer.delete({
-      where: { customerId: id },
+    prisma.user.delete({
+      where: { userId: id },
     }),
 
-  storeRefreshToken: (customerId: number, tokenHash: string, expiresAt: Date) =>
+  storeRefreshToken: (userId: number, tokenHash: string, expiresAt: Date) =>
     prisma.refreshToken.create({
       data: {
-        customerId,
+        userId,
         tokenHash,
         expiresAt,
       },
@@ -43,7 +42,7 @@ export const customerRepository = {
   findRefreshTokenByHash: (tokenHash: string) =>
     prisma.refreshToken.findUnique({
       where: { tokenHash },
-      include: { customer: true },
+      include: { user: true },
     }),
 
   revokeRefreshToken: (tokenHash: string) =>
@@ -61,9 +60,9 @@ export const customerRepository = {
       },
     }),
 
-  revokeAllCustomerTokens: (customerId: number) =>
+  revokeAllUserTokens: (userId: number) =>
     prisma.refreshToken.updateMany({
-      where: { customerId },
+      where: { userId },
       data: { revokedAt: new Date() },
     }),
 };

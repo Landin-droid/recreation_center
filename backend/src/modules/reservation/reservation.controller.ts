@@ -10,10 +10,14 @@ import {
 export const reservationController = {
   list: asyncHandler(async (req: Request, res: Response) => {
     const query = listReservationsQuerySchema.parse({
-      customerId: typeof req.query.customerId === "string" ? req.query.customerId : undefined,
+      userId:
+        typeof req.query.userId === "string" ? req.query.userId : undefined,
       bookableObjectId:
-        typeof req.query.bookableObjectId === "string" ? req.query.bookableObjectId : undefined,
-      status: typeof req.query.status === "string" ? req.query.status : undefined,
+        typeof req.query.bookableObjectId === "string"
+          ? req.query.bookableObjectId
+          : undefined,
+      status:
+        typeof req.query.status === "string" ? req.query.status : undefined,
     });
     const reservations = await reservationService.listReservations(query);
     res.json({ success: true, data: reservations });

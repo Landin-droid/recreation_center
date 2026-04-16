@@ -4,19 +4,17 @@ import jwt from "jsonwebtoken";
 import { randomBytes, createHash } from "crypto";
 import { AppError } from "../../middleware/errorHandler";
 import { jwtSecret } from "../../config/env";
-import { customerRepository } from "./customer.repository";
-import {
-  CreateCustomerInput,
-  UpdateCustomerInput,
-} from "./customer.validation";
-import { CustomerInternal, CustomerResponse } from "./customer.types";
+import { userRepository } from "./user.repository";
+import { CreateUserInput, UpdateUserInput } from "./user.validation";
+import { UserInternal, UserResponse } from "./user.types";
 
-const toCustomerResponse = (customer: CustomerInternal): CustomerResponse => ({
-  customerId: customer.customerId,
-  fullName: customer.fullName,
-  email: customer.email,
-  phoneNumber: customer.phoneNumber,
-  registrationDate: customer.registrationDate,
+const toUserResponse = (user: UserInternal): UserResponse => ({
+  userId: user.userId,
+  fullName: user.fullName,
+  email: user.email,
+  phoneNumber: user.phoneNumber,
+  registrationDate: user.registrationDate,
+  role: user.role,
 });
 
 // ✅ Вспомогательные функции для работы с токенами
@@ -29,81 +27,82 @@ const hashRefreshToken = (token: string): string => {
 };
 
 const generateAuthTokens = (
-  customerId: number,
+  userId: number,
   email: string,
 ): { accessToken: string; refreshToken: string } => {
-  const accessToken = jwt.sign({ customerId, email }, jwtSecret, {
+  const accessToken = jwt.sign({ userId, email }, jwtSecret, {
     expiresIn: "15m",
   });
   const refreshToken = generateRefreshTokenString();
   return { accessToken, refreshToken };
 };
 
-export const customerService = {
-  async listCustomers() {
-    const customers = await customerRepository.findMany();
-    return customers.map(toCustomerResponse);
+export const userService = {
+  async listUsers() {
+    const users = await userRepository.findMany();
+    return users.map(toUserResponse);
   },
 
-  async registerCustomer(data: CreateCustomerInput) {
-    const existing = await customerRepository.findByEmail(data.email);
+  async registerUser(data: CreateUserInput) {
+    const existing = await userRepository.findByEmail(data.email);
     if (existing) {
       throw new AppError("Email is already in use", 409);
     }
 
     const passwordHash = await bcrypt.hash(data.password, 12);
 
-    const prismaData: Prisma.CustomerCreateInput = {
+    const prismaData: Prisma.UserCreateInput = {
       fullName: data.fullName,
       email: data.email,
       passwordHash,
+      role: "USER",
       ...(data.phoneNumber ? { phoneNumber: data.phoneNumber } : {}),
     };
 
-    const customer = await customerRepository.create(prismaData);
-    return toCustomerResponse(customer);
+    const user = await userRepository.create(prismaData);
+    return toUserResponse(user);
   },
 
   async verifyPassword(email: string, password: string) {
-    const customer = (await customerRepository.findByEmail(
+    const user = (await userRepository.findByEmail(
       email,
-    )) as CustomerInternal | null;
+    )) as UserInternal | null;
 
-    if (!customer) {
+    if (!user) {
       throw new AppError("Invalid email or password", 401);
     }
 
-    const isValid = await bcrypt.compare(password, customer.passwordHash);
+    const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
       throw new AppError("Invalid email or password", 401);
     }
 
-    return toCustomerResponse(customer);
+    return toUserResponse(user);
   },
 
-  async getCustomerById(id: number) {
-    const customer = await customerRepository.findById(id);
-    if (!customer) {
-      throw new AppError("Customer not found", 404);
+  async getUserById(id: number) {
+    const user = await userRepository.findById(id);
+    if (!user) {
+      throw new AppError("User not found", 404);
     }
 
-    return toCustomerResponse(customer);
+    return toUserResponse(user);
   },
 
-  async updateCustomer(id: number, data: UpdateCustomerInput) {
-    const existing = await customerRepository.findById(id);
+  async updateUser(id: number, data: UpdateUserInput) {
+    const existing = await userRepository.findById(id);
     if (!existing) {
-      throw new AppError("Customer not found", 404);
+      throw new AppError("User not found", 404);
     }
 
     if (data.email && data.email !== existing.email) {
-      const emailExists = await customerRepository.findByEmail(data.email);
+      const emailExists = await userRepository.findByEmail(data.email);
       if (emailExists) {
         throw new AppError("Email is already in use", 409);
       }
     }
 
-    const prismaData: Prisma.CustomerUpdateInput = {
+    const prismaData: Prisma.UserUpdateInput = {
       ...(data.fullName !== undefined ? { fullName: data.fullName } : {}),
       ...(data.email !== undefined ? { email: data.email } : {}),
       ...(data.phoneNumber !== undefined
@@ -111,31 +110,27 @@ export const customerService = {
         : {}),
     };
 
-    const updated = await customerRepository.update(id, prismaData);
-    return toCustomerResponse(updated);
+    const updated = await userRepository.update(id, prismaData);
+    return toUserResponse(updated);
   },
 
-  async deleteCustomer(id: number) {
-    const existing = await customerRepository.findById(id);
+  async deleteUser(id: number) {
+    const existing = await userRepository.findById(id);
     if (!existing) {
-      throw new AppError("Customer not found", 404);
+      throw new AppError("User not found", 404);
     }
 
-    return customerRepository.delete(id);
+    return userRepository.delete(id);
   },
 
-  async createAuthTokens(customerId: number, email: string) {
-    const { accessToken, refreshToken } = generateAuthTokens(customerId, email);
+  async createAuthTokens(userId: number, email: string) {
+    const { accessToken, refreshToken } = generateAuthTokens(userId, email);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
     const refreshTokenHash = hashRefreshToken(refreshToken);
 
-    await customerRepository.storeRefreshToken(
-      customerId,
-      refreshTokenHash,
-      expiresAt,
-    );
+    await userRepository.storeRefreshToken(userId, refreshTokenHash, expiresAt);
 
     return { accessToken, refreshToken };
   },
@@ -143,8 +138,7 @@ export const customerService = {
   async validateRefreshToken(refreshToken: string) {
     const tokenHash = hashRefreshToken(refreshToken);
 
-    const storedToken =
-      await customerRepository.findRefreshTokenByHash(tokenHash);
+    const storedToken = await userRepository.findRefreshTokenByHash(tokenHash);
 
     if (!storedToken) {
       throw new AppError("Refresh token not found", 401);
@@ -160,17 +154,17 @@ export const customerService = {
       throw new AppError("Refresh token has expired", 401);
     }
 
-    return storedToken.customer;
+    return storedToken.user;
   },
 
   async refreshTokens(refreshToken: string) {
-    const customer = await this.validateRefreshToken(refreshToken);
+    const user = await this.validateRefreshToken(refreshToken);
 
     // Отозвать старый токен
     const oldTokenHash = hashRefreshToken(refreshToken);
-    await customerRepository.revokeRefreshToken(oldTokenHash);
+    await userRepository.revokeRefreshToken(oldTokenHash);
 
     // Создать новую пару
-    return this.createAuthTokens(customer.customerId, customer.email);
+    return this.createAuthTokens(user.userId, user.email);
   },
 };

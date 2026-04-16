@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const createCustomerSchema = z.object({
+export const createUserSchema = z.object({
   fullName: z.string().min(2, "FullName must be at least 2 characters long"),
   email: z.string().email("Invalid email address"),
   password: z
@@ -15,8 +15,11 @@ export const createCustomerSchema = z.object({
     .optional(),
 });
 
-export const updateCustomerSchema = z.object({
-  fullName: z.string().min(2, "FullName must be at least 2 characters long").optional(),
+export const updateUserSchema = z.object({
+  fullName: z
+    .string()
+    .min(2, "FullName must be at least 2 characters long")
+    .optional(),
   email: z.string().email("Invalid email address").optional(),
   phoneNumber: z
     .string()
@@ -29,6 +32,6 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
-export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

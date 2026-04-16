@@ -4,7 +4,7 @@ import { jwtSecret } from "../config/env";
 import { AppError } from "./errorHandler";
 
 export interface AuthPayload {
-  customerId: number;
+  userId: number;
   email: string;
 }
 
@@ -12,9 +12,9 @@ function isAuthPayload(payload: unknown): payload is AuthPayload {
   return (
     typeof payload === "object" &&
     payload !== null &&
-    "customerId" in payload &&
+    "userId" in payload &&
     "email" in payload &&
-    typeof (payload as AuthPayload).customerId === "number" &&
+    typeof (payload as AuthPayload).userId === "number" &&
     typeof (payload as AuthPayload).email === "string"
   );
 }

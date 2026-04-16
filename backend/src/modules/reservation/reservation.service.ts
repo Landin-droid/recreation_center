@@ -22,11 +22,11 @@ const formatReservation = (reservation: ReservationWithRelations) => ({
   totalSum: Number(reservation.totalSum),
   notes: reservation.notes,
   status: reservation.status,
-  customer: {
-    customerId: reservation.customer.customerId,
-    fullName: reservation.customer.fullName,
-    email: reservation.customer.email,
-    phoneNumber: reservation.customer.phoneNumber,
+  user: {
+    userId: reservation.user.userId,
+    fullName: reservation.user.fullName,
+    email: reservation.user.email,
+    phoneNumber: reservation.user.phoneNumber,
   },
   bookableObject: {
     bookableObjectId: reservation.bookableObject.bookableObjectId,
@@ -70,20 +70,23 @@ const isReservationWithinSeason = (
   }
 
   const reservationTime = reservationDate.getTime();
-  return reservationTime >= seasonStart.getTime() && reservationTime <= seasonEnd.getTime();
+  return (
+    reservationTime >= seasonStart.getTime() &&
+    reservationTime <= seasonEnd.getTime()
+  );
 };
 
 const buildReservationDerivedData = async (
   input: CreateReservationInput,
   reservationIdToExclude?: number,
 ) => {
-  const [customer, bookableObject] = await Promise.all([
-    reservationRepository.findCustomerById(input.customerId),
+  const [user, bookableObject] = await Promise.all([
+    reservationRepository.findUserById(input.userId),
     reservationRepository.findBookableObjectById(input.bookableObjectId),
   ]);
 
-  if (!customer) {
-    throw new AppError("Customer not found", 404);
+  if (!user) {
+    throw new AppError("User not found", 404);
   }
 
   if (!bookableObject) {
@@ -97,30 +100,44 @@ const buildReservationDerivedData = async (
   const reservationDate = new Date(input.reservationDate);
   if (
     bookableObject.isSeasonal &&
-    !isReservationWithinSeason(reservationDate, bookableObject.seasonStart, bookableObject.seasonEnd)
+    !isReservationWithinSeason(
+      reservationDate,
+      bookableObject.seasonStart,
+      bookableObject.seasonEnd,
+    )
   ) {
     throw new AppError("Reservation is not within the seasonal period", 400);
   }
 
-  const conflictingReservation = await reservationRepository.findConflictingReservation(
-    input.bookableObjectId,
-    reservationDate,
-    reservationIdToExclude,
-  );
+  const conflictingReservation =
+    await reservationRepository.findConflictingReservation(
+      input.bookableObjectId,
+      reservationDate,
+      reservationIdToExclude,
+    );
 
   if (conflictingReservation) {
     throw new AppError("Conflicting reservation found", 409);
   }
 
   const menuItems = input.menuItems ?? [];
-  if (menuItems.length > 0 && !MENU_SUPPORTED_OBJECT_TYPES.includes(bookableObject.type)) {
-    throw new AppError("The selected bookable object does not support menu items", 400);
+  if (
+    menuItems.length > 0 &&
+    !MENU_SUPPORTED_OBJECT_TYPES.includes(bookableObject.type)
+  ) {
+    throw new AppError(
+      "The selected bookable object does not support menu items",
+      400,
+    );
   }
 
   const menuItemIds = [...new Set(menuItems.map((item) => item.menuItemId))];
   const assignments =
     menuItemIds.length > 0
-      ? await reservationRepository.findAvailableAssignments(input.bookableObjectId, menuItemIds)
+      ? await reservationRepository.findAvailableAssignments(
+          input.bookableObjectId,
+          menuItemIds,
+        )
       : [];
 
   if (assignments.length !== menuItemIds.length) {
@@ -130,11 +147,16 @@ const buildReservationDerivedData = async (
     );
   }
 
-  const assignmentMap = new Map(assignments.map((entry) => [entry.menuItemId, entry.menuItem]));
+  const assignmentMap = new Map(
+    assignments.map((entry) => [entry.menuItemId, entry.menuItem]),
+  );
   const reservationMenuItemsCreate = menuItems.map((item) => {
     const menuItem = assignmentMap.get(item.menuItemId);
     if (!menuItem) {
-      throw new AppError("Selected menu item is not available for the selected bookable object", 400);
+      throw new AppError(
+        "Selected menu item is not available for the selected bookable object",
+        400,
+      );
     }
 
     return {
@@ -144,7 +166,10 @@ const buildReservationDerivedData = async (
     };
   });
 
-  const totalMenuCost = reservationMenuItemsCreate.reduce((sum, item) => sum + item.itemCost, 0);
+  const totalMenuCost = reservationMenuItemsCreate.reduce(
+    (sum, item) => sum + item.itemCost,
+    0,
+  );
 
   return {
     reservationDate,
@@ -156,8 +181,10 @@ const buildReservationDerivedData = async (
 export const reservationService = {
   async listReservations(query: ListReservationsQuery) {
     const reservations = await reservationRepository.findMany({
-      ...(query.customerId ? { customerId: query.customerId } : {}),
-      ...(query.bookableObjectId ? { bookableObjectId: query.bookableObjectId } : {}),
+      ...(query.userId ? { userId: query.userId } : {}),
+      ...(query.bookableObjectId
+        ? { bookableObjectId: query.bookableObjectId }
+        : {}),
       ...(query.status ? { status: query.status } : {}),
     });
 
@@ -177,8 +204,8 @@ export const reservationService = {
     const derived = await buildReservationDerivedData(data);
 
     const reservation = await reservationRepository.create({
-      customer: {
-        connect: { customerId: data.customerId },
+      user: {
+        connect: { userId: data.userId },
       },
       bookableObject: {
         connect: { bookableObjectId: data.bookableObjectId },
@@ -203,9 +230,10 @@ export const reservationService = {
     }
 
     const normalizedPayload = reservationSchema.parse({
-      customerId: data.customerId ?? existing.customerId,
+      userId: data.userId ?? existing.userId,
       bookableObjectId: data.bookableObjectId ?? existing.bookableObjectId,
-      reservationDate: data.reservationDate ?? existing.reservationDate.toISOString(),
+      reservationDate:
+        data.reservationDate ?? existing.reservationDate.toISOString(),
       guestsCount: data.guestsCount ?? existing.guestsCount,
       notes: data.notes ?? existing.notes ?? undefined,
       status: data.status ?? existing.status,
@@ -217,37 +245,44 @@ export const reservationService = {
         })),
     });
 
-    const derived = await buildReservationDerivedData(normalizedPayload, reservationId);
+    const derived = await buildReservationDerivedData(
+      normalizedPayload,
+      reservationId,
+    );
 
-    const reservation = await reservationRepository.runInTransaction(async (tx) => {
-      await tx.reservationMenuItem.deleteMany({ where: { reservationId } });
+    const reservation = await reservationRepository.runInTransaction(
+      async (tx) => {
+        await tx.reservationMenuItem.deleteMany({ where: { reservationId } });
 
-      await tx.reservation.update({
-        where: { reservationId },
-        data: {
-          customer: { connect: { customerId: normalizedPayload.customerId } },
-          bookableObject: { connect: { bookableObjectId: normalizedPayload.bookableObjectId } },
-          reservationDate: derived.reservationDate,
-          guestsCount: normalizedPayload.guestsCount,
-          notes: normalizedPayload.notes,
-          status: normalizedPayload.status ?? existing.status,
-          totalSum: derived.totalSum,
-          reservationMenuItems: {
-            create: derived.reservationMenuItemsCreate,
+        await tx.reservation.update({
+          where: { reservationId },
+          data: {
+            user: { connect: { userId: normalizedPayload.userId } },
+            bookableObject: {
+              connect: { bookableObjectId: normalizedPayload.bookableObjectId },
+            },
+            reservationDate: derived.reservationDate,
+            guestsCount: normalizedPayload.guestsCount,
+            notes: normalizedPayload.notes,
+            status: normalizedPayload.status ?? existing.status,
+            totalSum: derived.totalSum,
+            reservationMenuItems: {
+              create: derived.reservationMenuItemsCreate,
+            },
           },
-        },
-      });
+        });
 
-      await tx.invoice.updateMany({
-        where: { reservationId },
-        data: { totalAmount: derived.totalSum },
-      });
+        await tx.invoice.updateMany({
+          where: { reservationId },
+          data: { totalAmount: derived.totalSum },
+        });
 
-      return tx.reservation.findUniqueOrThrow({
-        where: { reservationId },
-        include: reservationInclude,
-      });
-    });
+        return tx.reservation.findUniqueOrThrow({
+          where: { reservationId },
+          include: reservationInclude,
+        });
+      },
+    );
 
     return formatReservation(reservation);
   },
