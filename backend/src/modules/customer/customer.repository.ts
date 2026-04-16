@@ -1,33 +1,70 @@
+import { Prisma } from "@prisma/client";
 import prisma from "../../lib/prisma";
-import { Prisma, Customer } from "@prisma/client";
 
 export const customerRepository = {
-  // ✅ findById: возвращает Promise<Customer | null>
+  findMany: () =>
+    prisma.customer.findMany({
+      orderBy: [{ registrationDate: "desc" }, { customerId: "desc" }],
+    }),
+
   findById: (id: number) =>
     prisma.customer.findUnique({
       where: { customerId: id },
     }),
 
-  // ✅ findByEmail: возвращает Promise<Customer | null>
   findByEmail: (email: string) =>
     prisma.customer.findUnique({
       where: { email },
     }),
 
-  // ✅ create: используем Prisma тип для входных данных
   create: (data: Prisma.CustomerCreateInput) =>
     prisma.customer.create({ data }),
 
-  // ✅ update: используем Prisma тип для входных данных
   update: (id: number, data: Prisma.CustomerUpdateInput) =>
     prisma.customer.update({
       where: { customerId: id },
       data,
     }),
 
-  // ✅ delete: мягкое удаление или полное (по необходимости)
   delete: (id: number) =>
     prisma.customer.delete({
       where: { customerId: id },
+    }),
+
+  // ✅ Refresh Token методы
+  storeRefreshToken: (customerId: number, tokenHash: string, expiresAt: Date) =>
+    prisma.refreshToken.create({
+      data: {
+        customerId,
+        tokenHash,
+        expiresAt,
+      },
+    }),
+
+  findRefreshTokenByHash: (tokenHash: string) =>
+    prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { customer: true },
+    }),
+
+  revokeRefreshToken: (tokenHash: string) =>
+    prisma.refreshToken.update({
+      where: { tokenHash },
+      data: { revokedAt: new Date() },
+    }),
+
+  deleteExpiredTokens: () =>
+    prisma.refreshToken.deleteMany({
+      where: {
+        expiresAt: {
+          lt: new Date(),
+        },
+      },
+    }),
+
+  revokeAllCustomerTokens: (customerId: number) =>
+    prisma.refreshToken.updateMany({
+      where: { customerId },
+      data: { revokedAt: new Date() },
     }),
 };

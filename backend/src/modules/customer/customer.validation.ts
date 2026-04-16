@@ -1,32 +1,32 @@
 import { z } from "zod";
 
 export const createCustomerSchema = z.object({
-  fullName: z.string().min(2, "Имя должно содержать минимум 2 символа"),
-  email: z.string().email("Неверный формат email"),
+  fullName: z.string().min(2, "FullName must be at least 2 characters long"),
+  email: z.string().email("Invalid email address"),
   password: z
     .string()
-    .min(8, "Пароль должен содержать минимум 8 символов")
-    .regex(/[A-Z]/, "Пароль должен содержать хотя бы одну заглавную букву")
-    .regex(/[a-z]/, "Пароль должен содержать хотя бы одну строчную букву")
-    .regex(/[0-9]/, "Пароль должен содержать хотя бы одну цифру"),
+    .min(8, "Password must be at least 8 characters long")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one digit"),
   phoneNumber: z
     .string()
-    .regex(/^\+?[0-9\s\-()]{10,20}$/, "Неверный формат телефона")
+    .regex(/^\+?[0-9\s\-()]{10,20}$/, "Invalid phone number")
     .optional(),
 });
 
 export const updateCustomerSchema = z.object({
-  fullName: z.string().min(2).optional(),
-  email: z.string().email().optional(),
+  fullName: z.string().min(2, "FullName must be at least 2 characters long").optional(),
+  email: z.string().email("Invalid email address").optional(),
   phoneNumber: z
     .string()
-    .regex(/^\+?[0-9\s\-()]{10,20}$/, "Неверный формат телефона")
+    .regex(/^\+?[0-9\s\-()]{10,20}$/, "Invalid phone number")
     .optional(),
 });
 
 export const loginSchema = z.object({
-  email: z.string().email("Неверный формат email"),
-  password: z.string().min(1, "Пароль обязателен"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;

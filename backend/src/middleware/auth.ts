@@ -1,20 +1,21 @@
-// src/middleware/auth.ts
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { AppError } from "./errorHandler";
 import { jwtSecret } from "../config/env";
+import { AppError } from "./errorHandler";
 
 export interface AuthPayload {
   customerId: number;
   email: string;
 }
 
-// ✅ Type Guard для проверки структуры payload
-function isAuthPayload(payload: any): payload is AuthPayload {
+function isAuthPayload(payload: unknown): payload is AuthPayload {
   return (
-    payload &&
-    typeof payload.customerId === "number" &&
-    typeof payload.email === "string"
+    typeof payload === "object" &&
+    payload !== null &&
+    "customerId" in payload &&
+    "email" in payload &&
+    typeof (payload as AuthPayload).customerId === "number" &&
+    typeof (payload as AuthPayload).email === "string"
   );
 }
 
@@ -28,31 +29,34 @@ declare global {
 
 export const authenticate = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) => {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new AppError("Требуется авторизация", 401);
+      throw new AppError("Authorization header is missing or invalid", 401);
     }
 
-    const token = authHeader.split(" ")[1];
-    const payload = jwt.verify(token as string, jwtSecret);
+    const token = authHeader.slice(7).trim();
+    if (!token) {
+      throw new AppError("Token is missing", 401);
+    }
 
-    // ✅ Runtime проверка структуры
+    const payload = jwt.verify(token, jwtSecret);
+
     if (!isAuthPayload(payload)) {
-      throw new AppError("Неверная структура токена", 401);
+      throw new AppError("Invalid token payload", 401);
     }
 
     req.user = payload;
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      next(new AppError("Неверный токен", 401));
+      next(new AppError("Invalid token", 401));
     } else if (error instanceof jwt.TokenExpiredError) {
-      next(new AppError("Срок действия токена истёк", 401));
+      next(new AppError("Token has expired", 401));
     } else {
       next(error);
     }

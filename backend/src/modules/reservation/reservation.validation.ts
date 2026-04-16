@@ -1,0 +1,39 @@
+import { ReservationStatus } from "@prisma/client";
+import { z } from "zod";
+import { dateStringSchema, positiveIntSchema } from "../../common/validation";
+
+export const reservationMenuItemSchema = z.object({
+  menuItemId: positiveIntSchema,
+  quantity: positiveIntSchema,
+});
+
+export const reservationSchema = z.object({
+  customerId: positiveIntSchema,
+  bookableObjectId: positiveIntSchema,
+  reservationDate: dateStringSchema,
+  guestsCount: positiveIntSchema,
+  notes: z.string().trim().optional(),
+  status: z.nativeEnum(ReservationStatus).optional(),
+  menuItems: z.array(reservationMenuItemSchema).optional().default([]),
+});
+
+export const updateReservationSchema = z.object({
+  customerId: positiveIntSchema.optional(),
+  bookableObjectId: positiveIntSchema.optional(),
+  reservationDate: dateStringSchema.optional(),
+  guestsCount: positiveIntSchema.optional(),
+  notes: z.string().trim().optional(),
+  status: z.nativeEnum(ReservationStatus).optional(),
+  menuItems: z.array(reservationMenuItemSchema).optional(),
+});
+
+export const listReservationsQuerySchema = z.object({
+  customerId: z.coerce.number().int().positive().optional(),
+  bookableObjectId: z.coerce.number().int().positive().optional(),
+  status: z.nativeEnum(ReservationStatus).optional(),
+});
+
+export type ReservationMenuItemInput = z.infer<typeof reservationMenuItemSchema>;
+export type CreateReservationInput = z.infer<typeof reservationSchema>;
+export type UpdateReservationInput = z.infer<typeof updateReservationSchema>;
+export type ListReservationsQuery = z.infer<typeof listReservationsQuerySchema>;

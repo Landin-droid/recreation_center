@@ -1,15 +1,14 @@
 import { Router } from "express";
-import { customerController } from "./customer.controller";
 import { authenticate } from "../../middleware/auth";
+import { customerController } from "./customer.controller";
 
 const router = Router();
 
-// ✅ Публичные маршруты
+router.get("/", customerController.list);
 router.post("/register", customerController.register);
 router.post("/login", customerController.login);
+router.post("/refresh", customerController.refresh);
 router.get("/profile", authenticate, customerController.getProfile);
-
-// ✅ Маршруты с параметром ID
 router.get("/:id", customerController.getById);
 router.put("/:id", customerController.update);
 router.delete("/:id", customerController.delete);

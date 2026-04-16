@@ -1,23 +1,21 @@
-import { Request, Response, NextFunction } from 'express';
-import { customerService } from './customer.service';
-import { createCustomerSchema, updateCustomerSchema, loginSchema } from './customer.validation';
-import { CustomerResponse } from './customer.types';
 import jwt from "jsonwebtoken";
-import { jwtSecret } from '../../config/env';
+import { Request, Response } from "express";
+import { asyncHandler, parseIdParam } from "../../common/http";
+import { jwtSecret } from "../../config/env";
+import { customerService } from "./customer.service";
+import {
+  createCustomerSchema,
+  loginSchema,
+  updateCustomerSchema,
+} from "./customer.validation";
 
-// ✅ Тип для параметров маршрута
-interface CustomerParams {
-  id: string;
-}
-
-// ✅ Helper для форматирования ответа
 const formatCustomerResponse = (customer: {
   customerId: number;
   fullName: string;
   email: string;
   phoneNumber: string | null;
   registrationDate: Date;
-}): CustomerResponse => ({
+}) => ({
   customerId: customer.customerId,
   fullName: customer.fullName,
   email: customer.email,
@@ -26,164 +24,100 @@ const formatCustomerResponse = (customer: {
 });
 
 export const customerController = {
-  // ✅ register: создание нового клиента
-  register: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const validated = createCustomerSchema.parse(req.body);
-      const customer = await customerService.registerCustomer(validated);
+  list: asyncHandler(async (_req: Request, res: Response) => {
+    const customers = await customerService.listCustomers();
+    res.json({ success: true, data: customers.map(formatCustomerResponse) });
+  }),
 
-      // ✅ Генерируем JWT токен после регистрации
-      const token = jwt.sign(
-        { customerId: customer.customerId, email: customer.email },
-        jwtSecret,
-        { expiresIn: "7d" },
+  register: asyncHandler(async (req: Request, res: Response) => {
+    const validated = createCustomerSchema.parse(req.body);
+    const customer = await customerService.registerCustomer(validated);
+
+    const { accessToken, refreshToken } =
+      await customerService.createAuthTokens(
+        customer.customerId,
+        customer.email,
       );
 
-      // ✅ Добавлен ключ "data:"
-      res.status(201).json({
-        success: true,
-        data: {
-          ...formatCustomerResponse(customer),
-          token,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
+    res.status(201).json({
+      success: true,
+      data: {
+        ...formatCustomerResponse(customer),
+        accessToken,
+        refreshToken,
+      },
+    });
+  }),
 
-  // ✅ Логин
-  login: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const validated = loginSchema.parse(req.body);
-      const customer = await customerService.verifyPassword(
-        validated.email,
-        validated.password
+  login: asyncHandler(async (req: Request, res: Response) => {
+    const validated = loginSchema.parse(req.body);
+    const customer = await customerService.verifyPassword(
+      validated.email,
+      validated.password,
+    );
+
+    const { accessToken, refreshToken } =
+      await customerService.createAuthTokens(
+        customer.customerId,
+        customer.email,
       );
-      
-      const token = jwt.sign(
-        { customerId: customer.customerId, email: customer.email },
-        jwtSecret,
-        { expiresIn: '7d' }
-      );
-      
-      res.json({
-        success: true,
-        data: {
-          ...formatCustomerResponse(customer),
-          token,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
 
-  // ✅ Получение профиля (требуется авторизация)
-  getProfile: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // ✅ customerId уже есть в req.user после middleware авторизации
-      const customer = await customerService.getCustomerById(
-        req.user!.customerId
-      );
-      
-      res.json({
-        success: true,
-        data: {
-          ...formatCustomerResponse(customer),
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
+    res.json({
+      success: true,
+      data: {
+        ...formatCustomerResponse(customer),
+        accessToken,
+        refreshToken,
+      },
+    });
+  }),
 
-  // ✅ getById: получение клиента по ID
-  getById: async (
-    req: Request<CustomerParams>,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const id = req.params.id;
+  // ✅ Обновить токены используя refresh token
+  refresh: asyncHandler(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
 
-      if (!id || isNaN(parseInt(id))) {
-        return res.status(400).json({
-          success: false,
-          error: 'Некорректный ID клиента',
-        });
-      }
+    if (!refreshToken || typeof refreshToken !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "Refresh token is required",
+      });
+    }
 
-      const customer = await customerService.getCustomerById(parseInt(id));
-      
-      // ✅ Добавлен ключ "data:"
-      res.json({ 
-        success: true, 
-        data: {
-          ...formatCustomerResponse(customer),
-        }
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
-  
-  // ✅ update: обновление клиента
-  update: async (
-    req: Request<CustomerParams>,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const id = req.params.id;
-      
-      if (!id || isNaN(parseInt(id))) {
-        return res.status(400).json({
-          success: false,
-          error: 'Некорректный ID клиента',
-        });
-      }
-      
-      const validated = updateCustomerSchema.parse(req.body);
-      
-      const customer = await customerService.updateCustomer(
-        parseInt(id),
-        validated
-      );
-      
-      // ✅ Добавлен ключ "data:"
-      res.json({
-        success: true,
-        data: {
-          ...formatCustomerResponse(customer),
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
-  
-  // ✅ delete: удаление клиента
-  delete: async (
-    req: Request<CustomerParams>,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const id = req.params.id;
-      
-      if (!id || isNaN(parseInt(id))) {
-        return res.status(400).json({
-          success: false,
-          error: 'Некорректный ID клиента',
-        });
-      }
-      
-      await customerService.deleteCustomer(parseInt(id));
-      
-      res.status(204).send();
-    } catch (error) {
-      next(error);
-    }
-  },
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+      await customerService.refreshTokens(refreshToken);
+
+    res.json({
+      success: true,
+      data: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  }),
+
+  getProfile: asyncHandler(async (req: Request, res: Response) => {
+    const customer = await customerService.getCustomerById(
+      req.user!.customerId,
+    );
+    res.json({ success: true, data: formatCustomerResponse(customer) });
+  }),
+
+  getById: asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(String(req.params.id), "customer");
+    const customer = await customerService.getCustomerById(id);
+    res.json({ success: true, data: formatCustomerResponse(customer) });
+  }),
+
+  update: asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(String(req.params.id), "customer");
+    const validated = updateCustomerSchema.parse(req.body);
+    const customer = await customerService.updateCustomer(id, validated);
+    res.json({ success: true, data: formatCustomerResponse(customer) });
+  }),
+
+  delete: asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(String(req.params.id), "customer");
+    await customerService.deleteCustomer(id);
+    res.status(204).send();
+  }),
 };
