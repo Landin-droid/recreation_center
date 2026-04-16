@@ -20,7 +20,8 @@ Thumbs.db
 /src/generated/prisma
 
 # Prisma
-prisma/
+prisma/.env
+prisma/dev.db
 
 # IDE
 .idea/
