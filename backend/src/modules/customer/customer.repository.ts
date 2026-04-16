@@ -31,7 +31,6 @@ export const customerRepository = {
       where: { customerId: id },
     }),
 
-  // ✅ Refresh Token методы
   storeRefreshToken: (customerId: number, tokenHash: string, expiresAt: Date) =>
     prisma.refreshToken.create({
       data: {

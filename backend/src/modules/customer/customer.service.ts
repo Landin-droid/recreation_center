@@ -124,11 +124,9 @@ export const customerService = {
     return customerRepository.delete(id);
   },
 
-  // ✅ Методы для работы с Refresh Token
   async createAuthTokens(customerId: number, email: string) {
     const { accessToken, refreshToken } = generateAuthTokens(customerId, email);
 
-    // Сохранить хеш refresh token в БД (на 7 дней)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
     const refreshTokenHash = hashRefreshToken(refreshToken);
