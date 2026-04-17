@@ -26,3 +26,5 @@ prisma/dev.db
 # IDE
 .idea/
 .vscode/
+
+# Проверка ветки feature/add_payment_logic_refunds
