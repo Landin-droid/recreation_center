@@ -2,10 +2,12 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import cron from "node-cron";
 import { notFoundHandler } from "./common/http";
 import prisma from "./lib/prisma";
 import { errorHandler } from "./middleware/errorHandler";
 import mainRouter from "./routes";
+import { paymentService } from "./modules/payment/payment.service";
 
 const app = express();
 
@@ -27,6 +29,15 @@ app.get("/health", async (_req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+// Cron job для отмены просрочённых платежей (каждую минуту)
+cron.schedule("* * * * *", async () => {
+  try {
+    await paymentService.cancelExpiredReservations();
+  } catch (error) {
+    console.error("Cron job error (cancelExpiredReservations):", error);
   }
 });
 

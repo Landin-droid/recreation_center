@@ -13,6 +13,8 @@ import {
   reservationRepository,
   ReservationWithRelations,
 } from "./reservation.repository";
+import prisma from "../../lib/prisma";
+import dayjs from "dayjs";
 
 const formatReservation = (reservation: ReservationWithRelations) => ({
   reservationId: reservation.reservationId,
@@ -217,6 +219,16 @@ export const reservationService = {
       totalSum: derived.totalSum,
       reservationMenuItems: {
         create: derived.reservationMenuItemsCreate,
+      },
+    });
+
+    // Автоматически создать счёт при бронировании
+    const dueDate = dayjs().add(1, "day").toDate();
+    await prisma.invoice.create({
+      data: {
+        reservationId: reservation.reservationId,
+        dueDate,
+        totalAmount: new Prisma.Decimal(derived.totalSum),
       },
     });
 

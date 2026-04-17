@@ -21,7 +21,7 @@ const formatInvoice = (invoice: InvoiceWithRelations) => ({
   reservation: {
     reservationId: invoice.reservation.reservationId,
     reservationDate: invoice.reservation.reservationDate,
-    customer: invoice.reservation.customer.fullName,
+    user: invoice.reservation.user?.fullName || "Unknown",
     bookableObject: invoice.reservation.bookableObject.name,
   },
   payment: invoice.payment
@@ -47,7 +47,7 @@ const formatPayment = (payment: PaymentWithRelations) => ({
     invoiceId: payment.invoice.invoiceId,
     totalAmount: Number(payment.invoice.totalAmount),
     reservationId: payment.invoice.reservation.reservationId,
-    customer: payment.invoice.reservation.customer.fullName,
+    user: payment.invoice.reservation.user?.fullName || "Unknown",
   },
 });
 
@@ -67,7 +67,9 @@ export const billingService = {
   },
 
   async createInvoice(data: CreateInvoiceInput) {
-    const reservation = await billingRepository.findReservationById(data.reservationId);
+    const reservation = await billingRepository.findReservationById(
+      data.reservationId,
+    );
     if (!reservation) {
       throw new AppError("Reservation not found", 404);
     }
@@ -90,7 +92,9 @@ export const billingService = {
     }
 
     if (data.reservationId !== undefined) {
-      const reservation = await billingRepository.findReservationById(data.reservationId);
+      const reservation = await billingRepository.findReservationById(
+        data.reservationId,
+      );
       if (!reservation) {
         throw new AppError("Reservation not found", 404);
       }
@@ -100,8 +104,12 @@ export const billingService = {
       ...(data.reservationId !== undefined
         ? { reservation: { connect: { reservationId: data.reservationId } } }
         : {}),
-      ...(data.dueDate !== undefined ? { dueDate: new Date(data.dueDate) } : {}),
-      ...(data.totalAmount !== undefined ? { totalAmount: data.totalAmount } : {}),
+      ...(data.dueDate !== undefined
+        ? { dueDate: new Date(data.dueDate) }
+        : {}),
+      ...(data.totalAmount !== undefined
+        ? { totalAmount: data.totalAmount }
+        : {}),
     });
 
     return formatInvoice(invoice);
@@ -138,18 +146,25 @@ export const billingService = {
 
     const amount = data.amount ?? Number(invoice.totalAmount);
     if (amount !== Number(invoice.totalAmount)) {
-      throw new AppError("Payment amount must match the invoice total amount", 400);
+      throw new AppError(
+        "Payment amount must match the invoice total amount",
+        400,
+      );
     }
 
     const payment = await billingRepository.createPayment({
       invoice: {
         connect: { invoiceId: data.invoiceId },
       },
+      reservation: {
+        connect: { reservationId: invoice.reservationId },
+      },
       amount,
       transactionId: data.transactionId,
       status: data.status ?? PaymentStatus.pending,
       method: data.method ?? null,
       cheque_url: data.chequeUrl,
+      idempotencyKey: `billing-${data.invoiceId}-${Date.now()}`,
     });
 
     return formatPayment(payment);
@@ -169,13 +184,20 @@ export const billingService = {
 
     const nextAmount = data.amount ?? Number(existing.amount);
     if (nextAmount !== Number(invoice.totalAmount)) {
-      throw new AppError("Payment amount must match the related invoice total amount", 400);
+      throw new AppError(
+        "Payment amount must match the related invoice total amount",
+        400,
+      );
     }
 
     const payment = await billingRepository.updatePayment(paymentId, {
-      ...(data.invoiceId !== undefined ? { invoice: { connect: { invoiceId: data.invoiceId } } } : {}),
+      ...(data.invoiceId !== undefined
+        ? { invoice: { connect: { invoiceId: data.invoiceId } } }
+        : {}),
       ...(data.amount !== undefined ? { amount: data.amount } : {}),
-      ...(data.transactionId !== undefined ? { transactionId: data.transactionId } : {}),
+      ...(data.transactionId !== undefined
+        ? { transactionId: data.transactionId }
+        : {}),
       ...(data.status !== undefined ? { status: data.status } : {}),
       ...(data.method !== undefined ? { method: data.method } : {}),
       ...(data.chequeUrl !== undefined ? { cheque_url: data.chequeUrl } : {}),

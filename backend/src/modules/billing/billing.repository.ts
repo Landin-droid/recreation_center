@@ -4,7 +4,7 @@ import prisma from "../../lib/prisma";
 export const invoiceInclude = {
   reservation: {
     include: {
-      customer: true,
+      user: true,
       bookableObject: true,
     },
   },
@@ -16,7 +16,7 @@ export const paymentInclude = {
     include: {
       reservation: {
         include: {
-          customer: true,
+          user: true,
           bookableObject: true,
         },
       },

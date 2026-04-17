@@ -6,6 +6,7 @@ import {
   reservationSchema,
   updateReservationSchema,
 } from "./reservation.validation";
+import { paymentService } from "../payment/payment.service";
 
 export const reservationController = {
   list: asyncHandler(async (req: Request, res: Response) => {
@@ -46,5 +47,18 @@ export const reservationController = {
     const id = parseIdParam(String(req.params.id), "reservation");
     await reservationService.deleteReservation(id);
     res.status(204).send();
+  }),
+
+  initiatePayment: asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(String(req.params.id), "reservation");
+    const result = await paymentService.initiatePayment(id);
+    res.status(201).json({
+      success: true,
+      data: {
+        paymentId: result.paymentId,
+        confirmationUrl: result.confirmationUrl,
+        paymentDeadline: result.paymentDeadline,
+      },
+    });
   }),
 };
