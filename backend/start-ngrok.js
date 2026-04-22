@@ -11,7 +11,7 @@ async function startNgrok() {
     console.log(`🌐 ngrok is forwarding traffic from: ${listener.url()}`);
     console.log(`📍 Local server: http://localhost:5000`);
     console.log(
-      `\n✅ Use this URL for webhooks: ${listener.url()}/api/payment/webhook`,
+      `\n✅ Use this URL for webhooks: ${listener.url()}/api/payments/webhook`,
     );
 
     console.log(
