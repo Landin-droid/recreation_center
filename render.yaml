@@ -14,7 +14,7 @@ services:
     plan: free
     region: frankfurt
     rootDir: backend
-    buildCommand: npm ci --legacy-peer-deps && npx prisma generate
+    buildCommand: npm ci --include=dev --legacy-peer-deps && npx prisma generate
     preDeployCommand: npx prisma migrate deploy
     startCommand: npm run start
     envVars:
