@@ -1,6 +1,6 @@
 services:
   # Настройка базы данных PostgreSQL
-  - type: psql
+  - type: postgres
     name: pobeda-db
     plan: free # Бесплатный тариф (база удалится через 90 дней, если не обновить)
     region: frankfurt # Ближайший к РФ бесплатный регион
