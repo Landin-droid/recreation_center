@@ -1,4 +1,4 @@
-import { ReservationStatus } from "@prisma/client";
+import { ReservationStatus } from "../../generated/prisma/client";
 import { z } from "zod";
 import { dateStringSchema, positiveIntSchema } from "../../common/validation";
 

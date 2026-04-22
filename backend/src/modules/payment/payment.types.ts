@@ -3,7 +3,7 @@ import {
   PaymentMethod,
   RefundStatus,
   CancellationReasonCode,
-} from "@prisma/client";
+} from "../../generated/prisma/client";
 
 /**
  * Типы согласно официальной документации Yookassa

@@ -1,5 +1,9 @@
 import prisma from "../../lib/prisma";
-import { PaymentStatus, RefundStatus, Prisma } from "@prisma/client";
+import {
+  PaymentStatus,
+  RefundStatus,
+  Prisma,
+} from "../../generated/prisma/client";
 import {
   PaymentResponse,
   CancellationExpenseRecord,

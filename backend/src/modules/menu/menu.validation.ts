@@ -1,4 +1,4 @@
-import { MenuCategory } from "@prisma/client";
+import { MenuCategory } from "../../generated/prisma/client";
 import { z } from "zod";
 import { decimalSchema } from "../../common/validation";
 

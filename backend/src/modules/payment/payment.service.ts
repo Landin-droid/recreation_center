@@ -4,7 +4,7 @@ import { env } from "../../config/env";
 import prisma from "../../lib/prisma";
 import dayjs from "dayjs";
 import crypto from "crypto";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import { KassaPaymentResponse, KassaRefundResponse } from "./payment.types";
 
 /**

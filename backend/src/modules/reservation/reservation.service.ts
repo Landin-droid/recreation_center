@@ -1,4 +1,4 @@
-import { Prisma, ReservationStatus } from "@prisma/client";
+import { Prisma, ReservationStatus } from "../../generated/prisma/client";
 import { MENU_SUPPORTED_OBJECT_TYPES } from "../../common/constants";
 import { AppError } from "../../middleware/errorHandler";
 import {

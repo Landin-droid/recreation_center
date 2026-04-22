@@ -1,4 +1,4 @@
-import { RentalCategory } from "@prisma/client";
+import { RentalCategory } from "../../generated/prisma/client";
 import { AppError } from "../../middleware/errorHandler";
 import {
   CreateRentalItemInput,
