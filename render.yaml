@@ -15,7 +15,7 @@ services:
     region: frankfurt
     rootDir: backend
     buildCommand: npm ci --include=dev --legacy-peer-deps && npx prisma generate
-    preDeployCommand: npx prisma migrate deploy
+    preDeployCommand: DATABASE_URL=$DATABASE_URL npx prisma migrate deploy
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
