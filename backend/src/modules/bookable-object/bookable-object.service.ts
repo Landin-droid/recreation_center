@@ -6,7 +6,7 @@ import {
   KaraokeBar,
   OutdoorVenue,
   Prisma,
-} from "@prisma/client";
+} from "../../generated/prisma/client";
 import { AppError } from "../../middleware/errorHandler";
 import {
   bookableObjectRepository,
