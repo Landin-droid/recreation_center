@@ -4,7 +4,6 @@ import { AppError } from "../../middleware/errorHandler";
 import {
   CreateReservationInput,
   ListReservationsQuery,
-  ReservationMenuItemInput,
   reservationSchema,
   UpdateReservationInput,
 } from "./reservation.validation";
@@ -13,8 +12,6 @@ import {
   reservationRepository,
   ReservationWithRelations,
 } from "./reservation.repository";
-import prisma from "../../lib/prisma";
-import dayjs from "dayjs";
 
 const formatReservation = (reservation: ReservationWithRelations) => ({
   reservationId: reservation.reservationId,
@@ -24,6 +21,7 @@ const formatReservation = (reservation: ReservationWithRelations) => ({
   totalSum: Number(reservation.totalSum),
   notes: reservation.notes,
   status: reservation.status,
+  cancellationReason: reservation.cancellationReason,
   user: {
     userId: reservation.user.userId,
     fullName: reservation.user.fullName,
@@ -45,19 +43,12 @@ const formatReservation = (reservation: ReservationWithRelations) => ({
       price: Number(item.menuItem.price),
     },
   })),
-  invoice: reservation.invoice
+  payment: reservation.payment
     ? {
-        invoiceId: reservation.invoice.invoiceId,
-        dueDate: reservation.invoice.dueDate,
-        totalAmount: Number(reservation.invoice.totalAmount),
-        payment: reservation.invoice.payment
-          ? {
-              paymentId: reservation.invoice.payment.paymentId,
-              amount: Number(reservation.invoice.payment.amount),
-              status: reservation.invoice.payment.status,
-              method: reservation.invoice.payment.method,
-            }
-          : null,
+        paymentId: reservation.payment.paymentId,
+        amount: Number(reservation.payment.amount),
+        status: reservation.payment.status,
+        method: reservation.payment.method,
       }
     : null,
 });
@@ -216,19 +207,10 @@ export const reservationService = {
       guestsCount: data.guestsCount,
       notes: data.notes,
       status: data.status ?? ReservationStatus.pending,
+      cancellationReason: data.cancellationReason,
       totalSum: derived.totalSum,
       reservationMenuItems: {
         create: derived.reservationMenuItemsCreate,
-      },
-    });
-
-    // Автоматически создать счёт при бронировании
-    const dueDate = dayjs().add(1, "day").toDate();
-    await prisma.invoice.create({
-      data: {
-        reservationId: reservation.reservationId,
-        dueDate,
-        totalAmount: new Prisma.Decimal(derived.totalSum),
       },
     });
 
@@ -249,6 +231,8 @@ export const reservationService = {
       guestsCount: data.guestsCount ?? existing.guestsCount,
       notes: data.notes ?? existing.notes ?? undefined,
       status: data.status ?? existing.status,
+      cancellationReason:
+        data.cancellationReason ?? existing.cancellationReason ?? undefined,
       menuItems:
         data.menuItems ??
         existing.reservationMenuItems.map((item) => ({
@@ -277,16 +261,12 @@ export const reservationService = {
             guestsCount: normalizedPayload.guestsCount,
             notes: normalizedPayload.notes,
             status: normalizedPayload.status ?? existing.status,
+            cancellationReason: normalizedPayload.cancellationReason,
             totalSum: derived.totalSum,
             reservationMenuItems: {
               create: derived.reservationMenuItemsCreate,
             },
           },
-        });
-
-        await tx.invoice.updateMany({
-          where: { reservationId },
-          data: { totalAmount: derived.totalSum },
         });
 
         return tx.reservation.findUniqueOrThrow({
@@ -306,5 +286,32 @@ export const reservationService = {
     }
 
     return reservationRepository.delete(reservationId);
+  },
+
+  async cancelReservation(reservationId: number, reason?: string) {
+    const existing = await reservationRepository.findBaseById(reservationId);
+    if (!existing) {
+      throw new AppError("Reservation not found", 404);
+    }
+
+    if (existing.status === "cancelled") {
+      throw new AppError("Reservation is already cancelled", 400);
+    }
+
+    if (existing.status === "paid") {
+      throw new AppError("Cannot cancel paid reservation. Use refund instead.", 400);
+    }
+
+    const updated = await reservationRepository.runInTransaction(async (tx) =>
+      tx.reservation.update({
+        where: { reservationId },
+        data: {
+          status: "cancelled",
+          cancellationReason: reason ?? null,
+        },
+        include: reservationInclude,
+      }),
+    );
+    return formatReservation(updated);
   },
 };

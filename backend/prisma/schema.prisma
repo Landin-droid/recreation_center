@@ -115,8 +115,7 @@ model Reservation {
   notes                String?
   status               ReservationStatus      @default(pending)
   paymentDeadline      DateTime?              @map("payment_deadline")
-  paymentStatus        ReservationPaymentStatus @default(PENDING_PAYMENT) @map("payment_status")
-  invoice              Invoice?
+  cancellationReason   String?                @map("cancellation_reason")
   payment              Payment?
   bookableObject       BookableObject         @relation(fields: [bookableObjectId], references: [bookableObjectId])
   user                 User                   @relation(fields: [userId], references: [userId])
@@ -124,36 +123,21 @@ model Reservation {
   cancellationExpenses CancellationExpense[]
   refunds              Refund[]
 
-  @@unique([bookableObjectId, reservationDate])
+  @@index([bookableObjectId, reservationDate])
   @@index([status, paymentDeadline])
   @@map("reservation")
 }
 
-model Invoice {
-  invoiceId        Int         @id @default(autoincrement()) @map("invoice_id")
-  reservationId    Int         @unique @map("reservation_id")
-  issueDate        DateTime    @default(now()) @map("issue_date")
-  dueDate          DateTime    @map("due_date") @db.Date
-  totalAmount      Decimal     @map("total_amount")
-  reservation      Reservation @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
-  payment          Payment?
-
-  @@map("invoice")
-}
-
 model Payment {
   paymentId         Int              @id @default(autoincrement()) @map("payment_id")
-  invoiceId         Int              @unique @map("invoice_id")
   reservationId     Int              @unique @map("reservation_id")
   paymentDate       DateTime         @default(now()) @map("payment_date")
   amount            Decimal
-  transactionId     String?          @unique @map("transaction_id")
   kassaPaymentId    String?          @unique @map("kassa_payment_id")
   idempotencyKey    String           @unique @map("idempotency_key")
   status            PaymentStatus    @default(pending)
   method            PaymentMethod?
   cheque_url        String?
-  invoice           Invoice          @relation(fields: [invoiceId], references: [invoiceId], onDelete: Cascade)
   reservation       Reservation      @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
   refunds           Refund[]
 
@@ -246,13 +230,6 @@ enum ReservationStatus {
   paid
   cancelled
   expired
-}
-
-enum ReservationPaymentStatus {
-  PENDING_PAYMENT
-  PAID
-  FAILED
-  CANCELLED
 }
 
 enum PaymentStatus {

@@ -17,4 +17,18 @@ router.post(
   reservationController.initiatePayment,
 );
 
+// Получить платёж бронирования
+router.get(
+  "/:id/payment",
+  authenticate,
+  reservationController.getPayment,
+);
+
+// Отменить бронирование
+router.post(
+  "/:id/cancel",
+  authenticate,
+  reservationController.cancel,
+);
+
 export default router;

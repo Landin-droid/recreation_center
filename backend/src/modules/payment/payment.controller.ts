@@ -11,7 +11,7 @@ import {
 
 export const paymentController = {
   /**
-   * Инициировать платёж - создать invoice и получить URL редиректа
+   * Инициировать платёж - создать объект Payment и получить URL редиректа
    * POST /payment/initiate
    */
   initiate: asyncHandler(async (req: Request, res: Response) => {
@@ -77,7 +77,13 @@ export const paymentController = {
 
     // 4. Обработать вебхук
     try {
-      await paymentService.handleWebhook(validatedPayload);
+      if (validatedPayload.event.startsWith("payment.")) {
+        await paymentService.handleWebhook(validatedPayload);
+      } else if (validatedPayload.event.startsWith("refund.")) {
+        await paymentService.handleRefundWebhook(validatedPayload);
+      } else {
+        console.log(`Ignored unhandled webhook event: ${validatedPayload.event}`);
+      }
 
       // 5. ЮKassa требует ответа 200 OK
       res.json({ success: true });

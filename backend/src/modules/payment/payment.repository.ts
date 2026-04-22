@@ -14,7 +14,6 @@ class PaymentRepository {
     return prisma.payment.findUnique({
       where: { idempotencyKey: key },
       include: {
-        invoice: true,
         reservation: true,
       },
     });
@@ -27,7 +26,18 @@ class PaymentRepository {
     return prisma.payment.findUnique({
       where: { kassaPaymentId },
       include: {
-        invoice: true,
+        reservation: true,
+      },
+    });
+  }
+
+  /**
+   * Найти платёж по ID бронирования
+   */
+  async findPaymentByReservationId(reservationId: number) {
+    return prisma.payment.findUnique({
+      where: { reservationId },
+      include: {
         reservation: true,
       },
     });
@@ -40,17 +50,12 @@ class PaymentRepository {
     return prisma.payment.findUnique({
       where: { paymentId },
       include: {
-        invoice: {
+        reservation: {
           include: {
-            reservation: {
-              include: {
-                user: true,
-                bookableObject: true,
-              },
-            },
+            user: true,
+            bookableObject: true,
           },
         },
-        reservation: true,
       },
     });
   }
@@ -59,7 +64,6 @@ class PaymentRepository {
    * Создать запись платежа в БД
    */
   async createPayment(data: {
-    invoiceId: number;
     reservationId: number;
     amount: Prisma.Decimal;
     idempotencyKey: string;
@@ -68,7 +72,6 @@ class PaymentRepository {
   }) {
     return prisma.payment.create({
       data: {
-        invoiceId: data.invoiceId,
         reservationId: data.reservationId,
         amount: data.amount,
         idempotencyKey: data.idempotencyKey,
@@ -76,7 +79,6 @@ class PaymentRepository {
         method: (data.method as any) || undefined,
       },
       include: {
-        invoice: true,
         reservation: true,
       },
     });
@@ -90,7 +92,6 @@ class PaymentRepository {
     data: {
       status: PaymentStatus;
       kassaPaymentId?: string;
-      transactionId?: string;
     },
   ) {
     return prisma.payment.update({
@@ -98,10 +99,8 @@ class PaymentRepository {
       data: {
         status: data.status,
         ...(data.kassaPaymentId && { kassaPaymentId: data.kassaPaymentId }),
-        ...(data.transactionId && { transactionId: data.transactionId }),
       },
       include: {
-        invoice: true,
         reservation: true,
       },
     });
@@ -224,6 +223,19 @@ class PaymentRepository {
   }
 
   /**
+   * Найти возврат по ID ЮKassa
+   */
+  async findRefundByKassaId(kassaRefundId: string) {
+    return prisma.refund.findUnique({
+      where: { kassaRefundId },
+      include: {
+        payment: true,
+        reservation: true,
+      },
+    });
+  }
+
+  /**
    * Логировать вебхук (для отладки и idempotence)
    */
   async logWebhook(data: {
@@ -273,10 +285,9 @@ class PaymentRepository {
         paymentDeadline: {
           lt: new Date(),
         },
-        paymentStatus: "PENDING_PAYMENT",
+        status: "pending",
       },
       include: {
-        invoice: true,
         payment: true,
         user: true,
       },
@@ -284,13 +295,18 @@ class PaymentRepository {
   }
 
   /**
-   * Обновить статус платежа в бронировании
+   * Обновить статус бронирования
    */
-  async updateReservationPaymentStatus(reservationId: number, status: string) {
+  async updateReservationStatus(
+    reservationId: number,
+    status: string,
+    cancellationReason?: string,
+  ) {
     return prisma.reservation.update({
       where: { reservationId },
       data: {
-        paymentStatus: status as any,
+        status: status as any,
+        ...(cancellationReason && { cancellationReason }),
       },
     });
   }

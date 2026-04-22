@@ -61,4 +61,23 @@ export const reservationController = {
       },
     });
   }),
+
+  cancel: asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(String(req.params.id), "reservation");
+    const { reason } = req.body;
+    const reservation = await reservationService.cancelReservation(id, reason);
+    res.json({ success: true, data: reservation });
+  }),
+
+  getPayment: asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(String(req.params.id), "reservation");
+    const reservation = await reservationService.getReservationById(id);
+    if (!reservation.payment) {
+      return res.json({
+        success: true,
+        data: { message: "No payment found for this reservation", payment: null },
+      });
+    }
+    res.json({ success: true, data: { payment: reservation.payment } });
+  }),
 };
