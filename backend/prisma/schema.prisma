@@ -1,6 +1,6 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["partialIndexes"]
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -124,7 +124,7 @@ model Reservation {
   refunds              Refund[]
 
   @@index([bookableObjectId, reservationDate])
-  @@index([status, paymentDeadline])
+  @@index([paymentDeadline])
   @@map("reservation")
 }
 
@@ -157,7 +157,6 @@ model MenuItem {
   objectMenuItems      ObjectMenuItem[]
   reservationMenuItems ReservationMenuItem[]
 
-  @@index([isAvailable])
   @@map("menu_item")
 }
 
@@ -356,6 +355,6 @@ model WebhookLog {
   createdAt     DateTime         @default(now()) @map("created_at")
 
   @@index([source, createdAt])
-  @@index([processed])
+  @@index([createdAt])
   @@map("webhook_log")
 }
