@@ -1,13 +1,19 @@
-specVersion: "1"
+# Настройка базы данных PostgreSQL
+databases:
+  - name: pobeda-db
+    databaseName: pobeda_db
+    user: pobeda_user
+    plan: free
+    region: frankfurt
 
 services:
   # Настройка бэкенда на Node.js
   - type: web
     name: pobeda-backend
     env: node
-    plan: free # Бесплатный тариф (засыпает при неактивности)
+    plan: free
     region: frankfurt
-    rootDir: backend # Указываем папку, где лежит package.json
+    rootDir: backend
     buildCommand: npm ci && npx prisma generate && npm run build
     startCommand: npx prisma migrate deploy && npm run start
     envVars:
@@ -18,9 +24,9 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: pobeda-db
-          property: connectionString # Автоматически подтягиваем URL от базы данных
+          property: connectionString
       - key: JWT_SECRET
-        generateValue: true # Render сам сгенерирует безопасный ключ
+        generateValue: true
       - key: ACCESS_TOKEN_EXPIRES_IN
         value: 15m
       - key: REFRESH_TOKEN_EXPIRES_IN_DAYS
@@ -35,11 +41,3 @@ services:
         sync: false # Нужно будет заполнить вручную в панели Render
       - key: PAYMENT_TIMEOUT_MINUTES
         value: 15
-
-# Настройка базы данных PostgreSQL
-databases:
-  - name: pobeda-db
-    databaseName: pobeda_db
-    user: pobeda_user
-    plan: free # Бесплатный тариф (база удалится через 90 дней, если не обновить)
-    region: frankfurt # Ближайший к РФ бесплатный регион
