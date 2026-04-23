@@ -1,4 +1,8 @@
-import { PassengerType, RentalCategory, RentalSeasonType } from "@prisma/client";
+import {
+  PassengerType,
+  RentalCategory,
+  RentalSeasonType,
+} from "../../generated/prisma/client";
 import { z } from "zod";
 import {
   decimalSchema,

@@ -1,4 +1,4 @@
-import { BookableObjectType } from "@prisma/client";
+import { BookableObjectType } from "../../generated/prisma/client";
 import { z } from "zod";
 import {
   decimalSchema,

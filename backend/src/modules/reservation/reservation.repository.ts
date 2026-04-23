@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import prisma from "../../lib/prisma";
 
 export const reservationInclude = {
@@ -9,11 +9,7 @@ export const reservationInclude = {
       menuItem: true,
     },
   },
-  invoice: {
-    include: {
-      payment: true,
-    },
-  },
+  payment: true,
 } satisfies Prisma.ReservationInclude;
 
 export type ReservationWithRelations = Prisma.ReservationGetPayload<{
@@ -61,6 +57,9 @@ export const reservationRepository = {
       where: {
         bookableObjectId,
         reservationDate,
+        status: {
+          notIn: ["cancelled", "expired"],
+        },
         ...(reservationIdToExclude
           ? { reservationId: { not: reservationIdToExclude } }
           : {}),

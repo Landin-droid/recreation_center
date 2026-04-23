@@ -1,6 +1,6 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["partialIndexes"]
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -18,7 +18,7 @@ model User {
   fullName         String        @map("full_name")
   email            String        @unique
   phoneNumber      String?       @map("phone_number")
-  registrationDate DateTime      @default(now()) @map("registration_date") @db.Date
+  registrationDate DateTime      @default(now()) @map("registration_date")
   passwordHash     String        @map("password_hash")
   role             UserRole      @default(USER)
   refreshTokens    RefreshToken[]
@@ -105,49 +105,45 @@ model KaraokeBar {
 }
 
 model Reservation {
-  reservationId        Int                   @id @default(autoincrement()) @map("reservation_id")
-  userId               Int                   @map("user_id")
-  bookableObjectId     Int                   @map("bookable_object_id")
-  reservationDate      DateTime              @map("reservation_date") @db.Date
-  creationDate         DateTime              @default(now()) @map("creation_date")
-  guestsCount          Int                   @map("guests_count")
-  totalSum             Decimal               @map("total_sum")
+  reservationId        Int                    @id @default(autoincrement()) @map("reservation_id")
+  userId               Int                    @map("user_id")
+  bookableObjectId     Int                    @map("bookable_object_id")
+  reservationDate      DateTime               @map("reservation_date") @db.Date
+  creationDate         DateTime               @default(now()) @map("creation_date")
+  guestsCount          Int                    @map("guests_count")
+  totalSum             Decimal                @map("total_sum")
   notes                String?
-  status               ReservationStatus     @default(pending)
-  invoice              Invoice?
-  bookableObject       BookableObject        @relation(fields: [bookableObjectId], references: [bookableObjectId])
-  user                 User                  @relation(fields: [userId], references: [userId])
+  status               ReservationStatus      @default(pending)
+  paymentDeadline      DateTime?              @map("payment_deadline")
+  cancellationReason   String?                @map("cancellation_reason")
+  payment              Payment?
+  bookableObject       BookableObject         @relation(fields: [bookableObjectId], references: [bookableObjectId])
+  user                 User                   @relation(fields: [userId], references: [userId])
   reservationMenuItems ReservationMenuItem[]
+  cancellationExpenses CancellationExpense[]
+  refunds              Refund[]
 
-  @@unique([bookableObjectId, reservationDate])
+  @@index([bookableObjectId, reservationDate])
+  @@index([paymentDeadline])
   @@map("reservation")
 }
 
-model Invoice {
-  invoiceId        Int         @id @default(autoincrement()) @map("invoice_id")
-  reservationId    Int         @unique @map("reservation_id")
-  issueDate        DateTime    @default(now()) @map("issue_date")
-  dueDate          DateTime    @map("due_date") @db.Date
-  totalAmount      Decimal     @map("total_amount")
-  reservation      Reservation @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
-  payment          Payment?
-
-  @@map("invoice")
-}
-
 model Payment {
-  paymentId     Int            @id @default(autoincrement()) @map("payment_id")
-  invoiceId     Int            @unique @map("invoice_id")
-  paymentDate   DateTime       @default(now()) @map("payment_date")
-  amount        Decimal
-  transactionId String?        @unique @map("transaction_id")
-  status        PaymentStatus  @default(pending)
-  method        PaymentMethod?
-  cheque_url    String?
-  invoice       Invoice        @relation(fields: [invoiceId], references: [invoiceId], onDelete: Cascade)
+  paymentId         Int              @id @default(autoincrement()) @map("payment_id")
+  reservationId     Int              @unique @map("reservation_id")
+  paymentDate       DateTime         @default(now()) @map("payment_date")
+  amount            Decimal
+  kassaPaymentId    String?          @unique @map("kassa_payment_id")
+  idempotencyKey    String           @unique @map("idempotency_key")
+  status            PaymentStatus    @default(pending)
+  method            PaymentMethod?
+  cheque_url        String?
+  reservation       Reservation      @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
+  refunds           Refund[]
 
   @@index([status])
-  @@index([transactionId], map: "idx_payment_transaction", where: raw("(transaction_id IS NOT NULL)"))
+  @@index([kassaPaymentId])
+  @@index([idempotencyKey])
   @@map("payment")
 }
 
@@ -161,7 +157,6 @@ model MenuItem {
   objectMenuItems      ObjectMenuItem[]
   reservationMenuItems ReservationMenuItem[]
 
-  @@index([isAvailable])
   @@map("menu_item")
 }
 
@@ -273,4 +268,93 @@ enum RentalSeasonType {
 enum PassengerType {
   adult
   child
+}
+
+enum CancellationExpenseType {
+  FOOD_PURCHASE
+  SERVICE_THIRD_PARTY
+  EMPLOYEE_HOURS
+  DELIVERY
+  OTHER
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum CancellationReasonCode {
+  EARLY_CANCELLATION
+  FORCE_MAJEURE
+  CUSTOMER_REQUEST
+  PAYMENT_FAILED
+  PAYMENT_TIMEOUT
+  ADMIN_CANCELLATION
+  SYSTEM_CANCELLATION
+}
+
+enum WebhookEventType {
+  payment_succeeded
+  payment_failed
+  payment_cancelled
+  refund_completed
+  refund_failed
+}
+
+model CancellationExpense {
+  expenseId       Int                      @id @default(autoincrement()) @map("expense_id")
+  reservationId   Int                      @map("reservation_id")
+  expenseType     CancellationExpenseType  @map("expense_type")
+  amount          Decimal
+  description     String?
+  receiptUrl      String?                  @map("receipt_url")
+  supplierName    String?                  @map("supplier_name")
+  isRefundable    Boolean                  @default(false) @map("is_refundable")
+  refundStatus    RefundStatus             @default(PENDING) @map("refund_status")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  reservation     Reservation              @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
+
+  @@index([reservationId, refundStatus])
+  @@map("cancellation_expense")
+}
+
+model Refund {
+  refundId                 Int                    @id @default(autoincrement()) @map("refund_id")
+  paymentId                Int                    @map("payment_id")
+  reservationId            Int                    @map("reservation_id")
+  originalAmount           Decimal                @map("original_amount")
+  totalExpenses            Decimal                @default(0) @map("total_expenses")
+  refundAmount             Decimal                @map("refund_amount")
+  reason                   String?
+  cancellationInitiatedBy  CancellationReasonCode @map("cancellation_initiated_by")
+  cancellationReasonCode   CancellationReasonCode @map("cancellation_reason_code")
+  expenseDocumentation    String?                 @map("expense_documentation") @db.Text
+  kassaRefundId           String?                 @unique @map("kassa_refund_id")
+  status                  RefundStatus            @default(PENDING) @map("status")
+  createdAt               DateTime                @default(now()) @map("created_at")
+  completedAt             DateTime?               @map("completed_at")
+  payment                 Payment                 @relation(fields: [paymentId], references: [paymentId], onDelete: Cascade)
+  reservation             Reservation             @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([paymentId])
+  @@map("refund")
+}
+
+model WebhookLog {
+  webhookLogId  Int              @id @default(autoincrement()) @map("webhook_log_id")
+  source        String           @map("source")
+  eventType     WebhookEventType @map("event_type")
+  payload       String           @map("payload") @db.Text
+  processed     Boolean          @default(false)
+  error         String?          @map("error")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  @@index([source, createdAt])
+  @@index([createdAt])
+  @@map("webhook_log")
 }

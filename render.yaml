@@ -1,0 +1,44 @@
+# Настройка базы данных PostgreSQL
+databases:
+  - name: pobeda-db
+    databaseName: pobeda_db
+    user: pobeda_user
+    plan: free
+    region: frankfurt
+
+services:
+  # Настройка бэкенда на Node.js
+  - type: web
+    name: pobeda-backend
+    env: node
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: npm ci --include=dev --legacy-peer-deps && npx prisma generate
+    preDeployCommand: DATABASE_URL=$DATABASE_URL npx prisma migrate deploy
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pobeda-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_TOKEN_EXPIRES_IN_DAYS
+        value: 7
+      - key: YOOKASSA_SHOP_ID
+        sync: false # Нужно будет заполнить вручную в панели Render
+      - key: YOOKASSA_API_KEY
+        sync: false # Нужно будет заполнить вручную в панели Render
+      - key: PAYMENT_SUCCESS_REDIRECT
+        sync: false # Нужно будет заполнить вручную в панели Render
+      - key: PAYMENT_FAILURE_REDIRECT
+        sync: false # Нужно будет заполнить вручную в панели Render
+      - key: PAYMENT_TIMEOUT_MINUTES
+        value: 15

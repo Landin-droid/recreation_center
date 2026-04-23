@@ -1,4 +1,4 @@
-import { ReservationStatus } from "@prisma/client";
+import { ReservationStatus } from "../../generated/prisma/client";
 import { z } from "zod";
 import { dateStringSchema, positiveIntSchema } from "../../common/validation";
 
@@ -14,6 +14,7 @@ export const reservationSchema = z.object({
   guestsCount: positiveIntSchema,
   notes: z.string().trim().optional(),
   status: z.nativeEnum(ReservationStatus).optional(),
+  cancellationReason: z.string().trim().optional(),
   menuItems: z.array(reservationMenuItemSchema).optional().default([]),
 });
 
@@ -24,6 +25,7 @@ export const updateReservationSchema = z.object({
   guestsCount: positiveIntSchema.optional(),
   notes: z.string().trim().optional(),
   status: z.nativeEnum(ReservationStatus).optional(),
+  cancellationReason: z.string().trim().optional(),
   menuItems: z.array(reservationMenuItemSchema).optional(),
 });
 
