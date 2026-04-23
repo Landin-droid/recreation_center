@@ -167,4 +167,8 @@ export const userService = {
     // Создать новую пару
     return this.createAuthTokens(user.userId, user.email);
   },
+
+  async logout(userId: number) {
+    await userRepository.revokeAllUserTokens(userId);
+  },
 };

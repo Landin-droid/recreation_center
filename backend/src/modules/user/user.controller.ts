@@ -118,4 +118,13 @@ export const userController = {
     await userService.deleteUser(id);
     res.status(204).send();
   }),
+
+  logout: asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    await userService.logout(userId);
+    res.json({
+      success: true,
+      message: "Successfully logged out",
+    });
+  }),
 };

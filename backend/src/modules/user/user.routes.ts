@@ -159,6 +159,8 @@ router.post("/login", userController.login);
  */
 router.post("/refresh", userController.refresh);
 
+router.post("/logout", authenticate, userController.logout);
+
 /**
  * @swagger
  * /api/users/profile:
