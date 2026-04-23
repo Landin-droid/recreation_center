@@ -159,6 +159,32 @@ router.post("/login", userController.login);
  */
 router.post("/refresh", userController.refresh);
 
+/**
+ * @swagger
+ * /api/users/logout:
+ *   post:
+ *     summary: Выход пользователя
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     description: Отзывает refresh token текущего пользователя, делая его недействительным
+ *     responses:
+ *       200:
+ *         description: Пользователь успешно вышел из системы
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                   example: "Logged out successfully"
+ *       401:
+ *         description: Не авторизован
+ */
 router.post("/logout", authenticate, userController.logout);
 
 /**
