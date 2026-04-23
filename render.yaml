@@ -10,12 +10,12 @@ services:
   # Настройка бэкенда на Node.js
   - type: web
     name: pobeda-backend
-    env: node
+    runtime: node
     plan: free
     region: frankfurt
     rootDir: backend
-    buildCommand: npm ci --include=dev --legacy-peer-deps && npx prisma generate
-    preDeployCommand: DATABASE_URL=$DATABASE_URL npx prisma migrate deploy
+    buildCommand: npm ci --include=dev --legacy-peer-deps && npx prisma generate && npm run build
+    preDeployCommand: npx prisma migrate deploy
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
