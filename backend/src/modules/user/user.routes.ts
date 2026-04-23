@@ -48,6 +48,7 @@ router.get("/", userController.list);
  *             properties:
  *               fullName:
  *                 type: string
+ *                 minLength: 2
  *                 example: "Иван Петров"
  *               email:
  *                 type: string
@@ -55,8 +56,14 @@ router.get("/", userController.list);
  *                 example: "ivan@example.com"
  *               password:
  *                 type: string
- *                 format: password
- *                 example: "SecurePass123!"
+ *                 minLength: 8
+ *                 description: "Минимум 8 символов, должна содержать хотя бы одну заглавную букву, строчную букву и цифру"
+ *                 example: "SecurePass123"
+ *               phoneNumber:
+ *                 type: string
+ *                 nullable: true
+ *                 pattern: '^\+?[0-9\s\-()]{10,20}$'
+ *                 example: "+79991234567"
  *     responses:
  *       201:
  *         description: Пользователь успешно зарегистрирован
@@ -232,9 +239,14 @@ router.get("/:id", userController.getById);
  *             properties:
  *               fullName:
  *                 type: string
+ *                 minLength: 2
+ *               email:
+ *                 type: string
+ *                 format: email
  *               phoneNumber:
  *                 type: string
  *                 nullable: true
+ *                 pattern: '^\+?[0-9\s\-()]{10,20}$'
  *     responses:
  *       200:
  *         description: Пользователь успешно обновлен

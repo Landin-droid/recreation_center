@@ -81,21 +81,55 @@ router.get("/:id", authenticate, reservationController.getById);
  *           schema:
  *             type: object
  *             required:
+ *               - userId
  *               - bookableObjectId
- *               - rentalDateStart
- *               - rentalDateEnd
+ *               - reservationDate
+ *               - guestsCount
  *             properties:
+ *               userId:
+ *                 type: integer
  *               bookableObjectId:
  *                 type: integer
- *               rentalDateStart:
+ *               reservationDate:
  *                 type: string
- *                 format: date-time
- *               rentalDateEnd:
+ *                 format: date
+ *                 description: "Дата в формате YYYY-MM-DD"
+ *                 example: "2026-05-15"
+ *               guestsCount:
+ *                 type: integer
+ *                 minimum: 1
+ *               notes:
  *                 type: string
- *                 format: date-time
+ *                 nullable: true
+ *               status:
+ *                 type: string
+ *                 enum: ["pending", "confirmed", "cancelled"]
+ *                 nullable: true
+ *               menuItems:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - menuItemId
+ *                     - quantity
+ *                   properties:
+ *                     menuItemId:
+ *                       type: integer
+ *                     quantity:
+ *                       type: integer
+ *                       minimum: 1
  *     responses:
  *       201:
  *         description: Бронирование успешно создано
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Reservation'
  *       400:
  *         description: Ошибка валидации данных
  */
@@ -123,15 +157,44 @@ router.post("/", authenticate, reservationController.create);
  *           schema:
  *             type: object
  *             properties:
- *               rentalDateStart:
+ *               userId:
+ *                 type: integer
+ *               bookableObjectId:
+ *                 type: integer
+ *               reservationDate:
  *                 type: string
- *                 format: date-time
- *               rentalDateEnd:
+ *                 format: date
+ *                 example: "2026-05-15"
+ *               guestsCount:
+ *                 type: integer
+ *                 minimum: 1
+ *               notes:
  *                 type: string
- *                 format: date-time
+ *                 nullable: true
+ *               status:
+ *                 type: string
+ *                 enum: ["pending", "confirmed", "cancelled"]
+ *               menuItems:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     menuItemId:
+ *                       type: integer
+ *                     quantity:
+ *                       type: integer
  *     responses:
  *       200:
  *         description: Бронирование успешно обновлено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Reservation'
  */
 router.put("/:id", authenticate, reservationController.update);
 
@@ -172,8 +235,17 @@ router.delete("/:id", authenticate, reservationController.delete);
  *         schema:
  *           type: integer
  *     responses:
- *       200:
+ *       201:
  *         description: Платеж успешно инициирован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/PaymentInitiateResponse'
  */
 router.post(
   "/:id/payment/initiate",
@@ -199,6 +271,19 @@ router.post(
  *     responses:
  *       200:
  *         description: Информация о платеже получена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     payment:
+ *                       $ref: '#/components/schemas/Payment'
+ *                       nullable: true
  */
 router.get("/:id/payment", authenticate, reservationController.getPayment);
 
@@ -217,9 +302,27 @@ router.get("/:id/payment", authenticate, reservationController.getPayment);
  *         required: true
  *         schema:
  *           type: integer
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: "Причина отмены (опционально)"
  *     responses:
  *       200:
  *         description: Бронирование успешно отменено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Reservation'
  */
 router.post("/:id/cancel", authenticate, reservationController.cancel);
 

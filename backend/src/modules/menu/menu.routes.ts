@@ -56,13 +56,33 @@ router.get("/items/:id", menuController.getItemById);
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 2
+ *                 example: "Плов"
  *               price:
  *                 type: number
+ *                 example: 450.50
  *               description:
  *                 type: string
+ *                 nullable: true
+ *               isAvailable:
+ *                 type: boolean
+ *                 default: true
+ *               category:
+ *                 type: string
+ *                 enum: ["FOOD", "BEVERAGE", "DESSERT", "OTHER"]
+ *                 nullable: true
  *     responses:
  *       201:
  *         description: Пункт меню успешно создан
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/MenuItem'
  */
 router.post("/items", menuController.createItem);
 
@@ -79,9 +99,39 @@ router.post("/items", menuController.createItem);
  *         required: true
  *         schema:
  *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *               price:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *               isAvailable:
+ *                 type: boolean
+ *               category:
+ *                 type: string
+ *                 enum: ["FOOD", "BEVERAGE", "DESSERT", "OTHER"]
+ *                 nullable: true
  *     responses:
  *       200:
  *         description: Пункт меню успешно обновлен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/MenuItem'
  */
 router.put("/items/:id", menuController.updateItem);
 
@@ -111,9 +161,26 @@ router.delete("/items/:id", menuController.deleteItem);
  *     summary: Получить список назначений меню объектам
  *     tags:
  *       - Menu
+ *     parameters:
+ *       - in: query
+ *         name: bookableObjectId
+ *         schema:
+ *           type: integer
+ *         description: "Фильтровать по ID объекта (опционально)"
  *     responses:
  *       200:
  *         description: Список назначений успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/MenuAssignment'
  */
 router.get("/assignments", menuController.listAssignments);
 
@@ -138,9 +205,21 @@ router.get("/assignments", menuController.listAssignments);
  *                 type: integer
  *               menuItemId:
  *                 type: integer
+ *               isAvailable:
+ *                 type: boolean
+ *                 default: true
  *     responses:
  *       200:
  *         description: Назначение успешно создано/обновлено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/MenuAssignment'
  */
 router.post("/assignments", menuController.upsertAssignment);
 

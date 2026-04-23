@@ -52,17 +52,50 @@ router.get("/items/:id", rentalController.getItemById);
  *             type: object
  *             required:
  *               - name
- *               - basePrice
+ *               - category
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 2
+ *                 example: "Автомобиль Toyota"
  *               description:
  *                 type: string
- *               basePrice:
+ *                 nullable: true
+ *               category:
+ *                 type: string
+ *                 enum: ["VEHICLE", "EQUIPMENT", "FURNITURE", "OTHER"]
+ *               pricePerHour:
  *                 type: number
+ *                 nullable: true
+ *               maxCapacity:
+ *                 type: integer
+ *                 nullable: true
+ *               imageUrl:
+ *                 type: string
+ *                 format: uri
+ *                 nullable: true
+ *               isActive:
+ *                 type: boolean
+ *                 default: true
+ *               isSeasonal:
+ *                 type: boolean
+ *                 default: false
+ *               seasonType:
+ *                 type: string
+ *                 enum: ["SUMMER", "WINTER", "YEAR_ROUND"]
+ *                 nullable: true
  *     responses:
  *       201:
  *         description: Предмет для аренды успешно создан
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/RentalItem'
  */
 router.post("/items", rentalController.createItem);
 
@@ -88,13 +121,43 @@ router.post("/items", rentalController.createItem);
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 2
  *               description:
  *                 type: string
- *               basePrice:
+ *                 nullable: true
+ *               category:
+ *                 type: string
+ *                 enum: ["VEHICLE", "EQUIPMENT", "FURNITURE", "OTHER"]
+ *               pricePerHour:
  *                 type: number
+ *                 nullable: true
+ *               maxCapacity:
+ *                 type: integer
+ *                 nullable: true
+ *               imageUrl:
+ *                 type: string
+ *                 format: uri
+ *                 nullable: true
+ *               isActive:
+ *                 type: boolean
+ *               isSeasonal:
+ *                 type: boolean
+ *               seasonType:
+ *                 type: string
+ *                 enum: ["SUMMER", "WINTER", "YEAR_ROUND"]
+ *                 nullable: true
  *     responses:
  *       200:
  *         description: Предмет для аренды успешно обновлен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/RentalItem'
  */
 router.put("/items/:id", rentalController.updateItem);
 
@@ -124,9 +187,26 @@ router.delete("/items/:id", rentalController.deleteItem);
  *     summary: Получить список правил определения цены
  *     tags:
  *       - Rentals
+ *     parameters:
+ *       - in: query
+ *         name: rentalItemId
+ *         schema:
+ *           type: integer
+ *         description: "Фильтровать по ID предмета аренды (опционально)"
  *     responses:
  *       200:
  *         description: Список правил успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/RentalPriceRule'
  */
 router.get("/price-rules", rentalController.listPriceRules);
 
@@ -144,19 +224,36 @@ router.get("/price-rules", rentalController.listPriceRules);
  *           schema:
  *             type: object
  *             required:
- *               - minDays
- *               - maxDays
- *               - discountPercent
+ *               - rentalItemId
+ *               - pricePerKm
+ *               - passengerType
  *             properties:
- *               minDays:
+ *               rentalItemId:
  *                 type: integer
- *               maxDays:
- *                 type: integer
- *               discountPercent:
+ *               pricePerKm:
  *                 type: number
+ *                 example: 15.50
+ *               minKm:
+ *                 type: integer
+ *                 nullable: true
+ *               maxKm:
+ *                 type: integer
+ *                 nullable: true
+ *               passengerType:
+ *                 type: string
+ *                 enum: ["ADULT", "CHILD", "SENIOR"]
  *     responses:
  *       201:
  *         description: Правило успешно создано
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/RentalPriceRule'
  */
 router.post("/price-rules", rentalController.createPriceRule);
 
@@ -180,15 +277,31 @@ router.post("/price-rules", rentalController.createPriceRule);
  *           schema:
  *             type: object
  *             properties:
- *               minDays:
+ *               rentalItemId:
  *                 type: integer
- *               maxDays:
- *                 type: integer
- *               discountPercent:
+ *               pricePerKm:
  *                 type: number
+ *               minKm:
+ *                 type: integer
+ *                 nullable: true
+ *               maxKm:
+ *                 type: integer
+ *                 nullable: true
+ *               passengerType:
+ *                 type: string
+ *                 enum: ["ADULT", "CHILD", "SENIOR"]
  *     responses:
  *       200:
  *         description: Правило успешно обновлено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/RentalPriceRule'
  */
 router.put("/price-rules/:id", rentalController.updatePriceRule);
 

@@ -111,19 +111,155 @@ const options = {
         BookableObject: {
           type: "object",
           properties: {
-            id: {
+            bookableObjectId: {
               type: "integer",
             },
             name: {
               type: "string",
-              example: "Домик у реки",
+            },
+            capacity: {
+              type: "integer",
+            },
+            basePrice: {
+              type: "number",
+            },
+            isSeasonal: {
+              type: "boolean",
+            },
+            seasonStart: {
+              type: "string",
+              format: "date",
+              nullable: true,
+            },
+            seasonEnd: {
+              type: "string",
+              format: "date",
+              nullable: true,
             },
             description: {
               type: "string",
+              nullable: true,
+            },
+            isActive: {
+              type: "boolean",
+            },
+            type: {
+              type: "string",
+              enum: [
+                "COTTAGE",
+                "BANQUET_HALL",
+                "GAZEBO",
+                "KARAOKE_BAR",
+                "OUTDOOR_VENUE",
+              ],
+            },
+          },
+        },
+        MenuItem: {
+          type: "object",
+          properties: {
+            menuItemId: {
+              type: "integer",
+            },
+            name: {
+              type: "string",
+            },
+            price: {
+              type: "number",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+            },
+            isAvailable: {
+              type: "boolean",
+            },
+            category: {
+              type: "string",
+              enum: ["FOOD", "BEVERAGE", "DESSERT", "OTHER"],
+              nullable: true,
+            },
+          },
+        },
+        MenuAssignment: {
+          type: "object",
+          properties: {
+            bookableObjectId: {
+              type: "integer",
+            },
+            menuItemId: {
+              type: "integer",
+            },
+            isAvailable: {
+              type: "boolean",
+            },
+          },
+        },
+        RentalItem: {
+          type: "object",
+          properties: {
+            rentalItemId: {
+              type: "integer",
+            },
+            name: {
+              type: "string",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+            },
+            pricePerHour: {
+              type: "number",
+              nullable: true,
+            },
+            maxCapacity: {
+              type: "integer",
+              nullable: true,
             },
             imageUrl: {
               type: "string",
               nullable: true,
+            },
+            isActive: {
+              type: "boolean",
+            },
+            category: {
+              type: "string",
+              enum: ["VEHICLE", "EQUIPMENT", "FURNITURE", "OTHER"],
+            },
+            seasonType: {
+              type: "string",
+              enum: ["SUMMER", "WINTER", "YEAR_ROUND"],
+              nullable: true,
+            },
+            isSeasonal: {
+              type: "boolean",
+            },
+          },
+        },
+        RentalPriceRule: {
+          type: "object",
+          properties: {
+            rentalPriceRuleId: {
+              type: "integer",
+            },
+            rentalItemId: {
+              type: "integer",
+            },
+            pricePerKm: {
+              type: "number",
+            },
+            minKm: {
+              type: "integer",
+              nullable: true,
+            },
+            maxKm: {
+              type: "integer",
+              nullable: true,
+            },
+            passengerType: {
+              type: "string",
+              enum: ["ADULT", "CHILD", "SENIOR"],
             },
           },
         },
@@ -139,21 +275,44 @@ const options = {
             bookableObjectId: {
               type: "integer",
             },
-            rentalDateStart: {
+            reservationDate: {
               type: "string",
-              format: "date-time",
+              format: "date",
             },
-            rentalDateEnd: {
+            guestsCount: {
+              type: "integer",
+            },
+            notes: {
               type: "string",
-              format: "date-time",
+              nullable: true,
             },
             status: {
               type: "string",
               enum: ["pending", "confirmed", "cancelled"],
             },
-            createdAt: {
+            creationDate: {
               type: "string",
               format: "date-time",
+            },
+            paymentDeadline: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+            },
+            cancellationReason: {
+              type: "string",
+              nullable: true,
+            },
+          },
+        },
+        ReservationMenuItem: {
+          type: "object",
+          properties: {
+            menuItemId: {
+              type: "integer",
+            },
+            quantity: {
+              type: "integer",
             },
           },
         },
@@ -161,7 +320,7 @@ const options = {
           type: "object",
           properties: {
             paymentId: {
-              type: "string",
+              type: "integer",
             },
             reservationId: {
               type: "integer",
@@ -173,7 +332,30 @@ const options = {
               type: "string",
               enum: ["pending", "succeeded", "failed", "cancelled"],
             },
-            createdAt: {
+            kassaPaymentId: {
+              type: "string",
+              nullable: true,
+            },
+            cheque_url: {
+              type: "string",
+              nullable: true,
+            },
+            paymentDate: {
+              type: "string",
+              format: "date-time",
+            },
+          },
+        },
+        PaymentInitiateResponse: {
+          type: "object",
+          properties: {
+            paymentId: {
+              type: "integer",
+            },
+            confirmationUrl: {
+              type: "string",
+            },
+            paymentDeadline: {
               type: "string",
               format: "date-time",
             },

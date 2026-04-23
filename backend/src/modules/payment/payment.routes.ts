@@ -45,19 +45,13 @@ paymentRouter.post("/webhook", paymentController.webhook);
  *           schema:
  *             type: object
  *             required:
- *               - amount
- *               - description
+ *               - reservationId
  *             properties:
- *               amount:
- *                 type: number
- *                 example: 5000
- *               description:
- *                 type: string
- *                 example: "Оплата бронирования"
  *               reservationId:
  *                 type: integer
+ *                 description: "ID бронирования для которого создается платеж"
  *     responses:
- *       200:
+ *       201:
  *         description: Платеж инициирован
  *         content:
  *           application/json:
@@ -67,7 +61,7 @@ paymentRouter.post("/webhook", paymentController.webhook);
  *                 success:
  *                   type: boolean
  *                 data:
- *                   type: object
+ *                   $ref: '#/components/schemas/PaymentInitiateResponse'
  *       400:
  *         description: Ошибка валидации
  */
@@ -87,7 +81,7 @@ paymentRouter.post("/initiate", authenticate, paymentController.initiate);
  *         name: paymentId
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *         description: ID платежа
  *     responses:
  *       200:
@@ -100,7 +94,7 @@ paymentRouter.post("/initiate", authenticate, paymentController.initiate);
  *                 success:
  *                   type: boolean
  *                 data:
- *                   type: object
+ *                   $ref: '#/components/schemas/Payment'
  */
 paymentRouter.get(
   "/:paymentId/status",
@@ -122,7 +116,8 @@ paymentRouter.get(
  *         name: paymentId
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
+ *         description: ID платежа
  *     requestBody:
  *       content:
  *         application/json:
@@ -131,11 +126,23 @@ paymentRouter.get(
  *             properties:
  *               amount:
  *                 type: number
+ *                 description: "Сумма возврата (опционально, если не указана - полный возврат)"
  *               reason:
  *                 type: string
+ *                 minLength: 3
+ *                 description: "Причина возврата (опционально)"
  *     responses:
  *       200:
  *         description: Возврат инициирован
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
  */
 paymentRouter.post(
   "/:paymentId/refund",
