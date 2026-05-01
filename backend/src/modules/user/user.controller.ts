@@ -5,7 +5,9 @@ import { env, jwtSecret } from "../../config/env";
 import { userService } from "./user.service";
 import {
   createUserSchema,
+  forgotPasswordSchema,
   loginSchema,
+  resetPasswordSchema,
   updateUserSchema,
 } from "./user.validation";
 
@@ -153,6 +155,24 @@ export const userController = {
     res.json({
       success: true,
       message: "Successfully logged out",
+    });
+  }),
+
+  forgotPassword: asyncHandler(async (req: Request, res: Response) => {
+    const validated = forgotPasswordSchema.parse(req.body);
+    await userService.forgotPassword(validated.email);
+    res.json({
+      success: true,
+      message: "If an account with that email exists, a password reset link has been sent.",
+    });
+  }),
+
+  resetPassword: asyncHandler(async (req: Request, res: Response) => {
+    const validated = resetPasswordSchema.parse(req.body);
+    await userService.resetPassword(validated.token, validated.password);
+    res.json({
+      success: true,
+      message: "Password has been reset successfully. Please log in with your new password.",
     });
   }),
 };

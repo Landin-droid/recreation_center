@@ -5,6 +5,7 @@ import crypto, { randomBytes, createHash } from "crypto";
 import { AppError } from "../../middleware/errorHandler";
 import { env, jwtSecret } from "../../config/env";
 import { userRepository } from "./user.repository";
+import { emailService } from "../../lib/email";
 import { CreateUserInput, UpdateUserInput } from "./user.validation";
 import { UserInternal, UserResponse } from "./user.types";
 
@@ -182,5 +183,33 @@ export const userService = {
 
   async logout(userId: number) {
     await userRepository.revokeAllUserTokens(userId);
+  },
+
+  async forgotPassword(email: string) {
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      // Для безопасности не говорим, что email не найден
+      return;
+    }
+
+    const resetToken = randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // 1 час
+
+    await userRepository.updateResetToken(email, resetToken, expiresAt);
+    await emailService.sendPasswordResetEmail(email, resetToken);
+  },
+
+  async resetPassword(token: string, newPassword: string) {
+    const user = await userRepository.findByResetToken(token);
+    if (!user) {
+      throw new AppError("Invalid or expired reset token", 400);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    
+    await userRepository.update(user.userId, { passwordHash });
+    await userRepository.clearResetToken(user.userId);
+    await userRepository.revokeAllUserTokens(user.userId); // Логаут со всех устройств
   },
 };

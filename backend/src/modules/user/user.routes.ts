@@ -314,4 +314,62 @@ router.put("/:id", userController.update);
  */
 router.delete("/:id", userController.delete);
 
+/**
+ * @swagger
+ * /api/users/forgot-password:
+ *   post:
+ *     summary: Запросить сброс пароля
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "ivan@example.com"
+ *     responses:
+ *       200:
+ *         description: Письмо со ссылкой для сброса пароля отправлено
+ */
+router.post("/forgot-password", userController.forgotPassword);
+
+/**
+ * @swagger
+ * /api/users/reset-password:
+ *   post:
+ *     summary: Сбросить пароль
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Токен из письма
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: "NewSecurePass123"
+ *     responses:
+ *       200:
+ *         description: Пароль успешно изменен
+ *       400:
+ *         description: Невалидный или просроченный токен
+ */
+router.post("/reset-password", userController.resetPassword);
+
 export default router;

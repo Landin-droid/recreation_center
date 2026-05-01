@@ -4,6 +4,7 @@ import { env } from "../../config/env";
 import prisma from "../../lib/prisma";
 import dayjs from "dayjs";
 import crypto from "crypto";
+import { emailService } from "../../lib/email";
 import { Prisma } from "../../generated/prisma/client";
 import { KassaPaymentResponse, KassaRefundResponse } from "./payment.types";
 
@@ -239,6 +240,28 @@ class PaymentService {
           "paid",
         );
 
+        // Отправить подтверждение на почту
+        const fullReservation = await prisma.reservation.findUnique({
+          where: { reservationId: payment.reservationId },
+          include: {
+            user: true,
+            bookableObject: true,
+          },
+        });
+
+        if (fullReservation && fullReservation.user.email) {
+          await emailService.sendReservationConfirmation(
+            fullReservation.user.email,
+            {
+              reservationId: fullReservation.reservationId,
+              bookableObject: fullReservation.bookableObject,
+              reservationDate: fullReservation.reservationDate,
+              totalSum: fullReservation.totalSum.toString(),
+              guestsCount: fullReservation.guestsCount,
+            },
+          );
+        }
+
         // TODO: Отправить уведомление пользователю
       } else if (paymentStatus === "waiting_for_capture") {
         // Двухэтапный платёж - авторизован, требует захвата
@@ -371,6 +394,28 @@ class PaymentService {
             payment.reservationId,
             "paid",
           );
+
+          // Отправить подтверждение на почту
+          const fullReservation = await prisma.reservation.findUnique({
+            where: { reservationId: payment.reservationId },
+            include: {
+              user: true,
+              bookableObject: true,
+            },
+          });
+
+          if (fullReservation && fullReservation.user.email) {
+            await emailService.sendReservationConfirmation(
+              fullReservation.user.email,
+              {
+                reservationId: fullReservation.reservationId,
+                bookableObject: fullReservation.bookableObject,
+                reservationDate: fullReservation.reservationDate,
+                totalSum: fullReservation.totalSum.toString(),
+                guestsCount: fullReservation.guestsCount,
+              },
+            );
+          }
         }
       }
 

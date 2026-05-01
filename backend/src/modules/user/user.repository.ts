@@ -65,4 +65,32 @@ export const userRepository = {
       where: { userId },
       data: { revokedAt: new Date() },
     }),
+
+  updateResetToken: (email: string, token: string, expiresAt: Date) =>
+    prisma.user.update({
+      where: { email },
+      data: {
+        resetPasswordToken: token,
+        resetPasswordExpires: expiresAt,
+      },
+    }),
+
+  findByResetToken: (token: string) =>
+    prisma.user.findFirst({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: {
+          gt: new Date(),
+        },
+      },
+    }),
+
+  clearResetToken: (userId: number) =>
+    prisma.user.update({
+      where: { userId },
+      data: {
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    }),
 };

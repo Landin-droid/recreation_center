@@ -28,6 +28,16 @@ const envSchema = z.object({
     .string()
     .default("http://localhost:3000/payment/failure"),
   PAYMENT_TIMEOUT_MINUTES: z.coerce.number().int().positive().default(15),
+
+  // Email configuration
+  SMTP_HOST: z.string().default("smtp.gmail.com"),
+  SMTP_PORT: z.coerce.number().int().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default("no-reply@pobeda-center.ru"),
+  
+  // App configuration
+  FRONTEND_URL: z.string().default("http://localhost:3000"),
 });
 
 export const env = envSchema.parse(process.env);
