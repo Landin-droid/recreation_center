@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 import { asyncHandler, parseIdParam } from "../../common/http";
-import { jwtSecret } from "../../config/env";
+import { env, jwtSecret } from "../../config/env";
 import { userService } from "./user.service";
 import {
   createUserSchema,
@@ -25,6 +25,26 @@ const formatUserResponse = (user: {
   role: user.role,
 });
 
+const setTokenCookies = (
+  res: Response,
+  accessToken: string,
+  refreshToken: string,
+) => {
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000, // 15 минут
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+  });
+};
+
 export const userController = {
   list: asyncHandler(async (_req: Request, res: Response) => {
     const users = await userService.listUsers();
@@ -40,13 +60,11 @@ export const userController = {
       user.email,
     );
 
+    setTokenCookies(res, accessToken, refreshToken);
+
     res.status(201).json({
       success: true,
-      data: {
-        ...formatUserResponse(user),
-        accessToken,
-        refreshToken,
-      },
+      data: formatUserResponse(user),
     });
   }),
 
@@ -62,37 +80,43 @@ export const userController = {
       user.email,
     );
 
+    setTokenCookies(res, accessToken, refreshToken);
+
     res.json({
       success: true,
-      data: {
-        ...formatUserResponse(user),
-        accessToken,
-        refreshToken,
-      },
+      data: formatUserResponse(user),
     });
   }),
 
   // ✅ Обновить токены используя refresh token
   refresh: asyncHandler(async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
     if (!refreshToken || typeof refreshToken !== "string") {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
         error: "Refresh token is required",
       });
     }
 
-    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-      await userService.refreshTokens(refreshToken);
+    try {
+      const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+        await userService.refreshTokens(refreshToken);
 
-    res.json({
-      success: true,
-      data: {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      },
-    });
+      setTokenCookies(res, newAccessToken, newRefreshToken);
+
+      res.json({
+        success: true,
+        data: {
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+        },
+      });
+    } catch (error) {
+      res.clearCookie("accessToken");
+      res.clearCookie("refreshToken");
+      throw error;
+    }
   }),
 
   getProfile: asyncHandler(async (req: Request, res: Response) => {
@@ -122,6 +146,10 @@ export const userController = {
   logout: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     await userService.logout(userId);
+
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
     res.json({
       success: true,
       message: "Successfully logged out",

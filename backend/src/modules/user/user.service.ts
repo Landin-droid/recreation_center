@@ -1,9 +1,9 @@
 import { Prisma } from "../../generated/prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomBytes, createHash } from "crypto";
+import crypto, { randomBytes, createHash } from "crypto";
 import { AppError } from "../../middleware/errorHandler";
-import { jwtSecret } from "../../config/env";
+import { env, jwtSecret } from "../../config/env";
 import { userRepository } from "./user.repository";
 import { CreateUserInput, UpdateUserInput } from "./user.validation";
 import { UserInternal, UserResponse } from "./user.types";
@@ -22,8 +22,16 @@ const generateRefreshTokenString = (): string => {
   return randomBytes(32).toString("hex");
 };
 
-const hashRefreshToken = (token: string): string => {
-  return createHash("sha256").update(token).digest("hex");
+/**
+ * Используем HMAC для "шифрования" токена в БД.
+ * Это обеспечивает защиту от утечки БД (нельзя получить токены без ключа)
+ * и позволяет искать по значению.
+ */
+const encryptRefreshToken = (token: string): string => {
+  return crypto
+    .createHmac("sha256", env.REFRESH_TOKEN_ENCRYPTION_KEY)
+    .update(token)
+    .digest("hex");
 };
 
 const generateAuthTokens = (
@@ -128,15 +136,19 @@ export const userService = {
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-    const refreshTokenHash = hashRefreshToken(refreshToken);
+    const encryptedRefreshToken = encryptRefreshToken(refreshToken);
 
-    await userRepository.storeRefreshToken(userId, refreshTokenHash, expiresAt);
+    await userRepository.storeRefreshToken(
+      userId,
+      encryptedRefreshToken,
+      expiresAt,
+    );
 
     return { accessToken, refreshToken };
   },
 
   async validateRefreshToken(refreshToken: string) {
-    const tokenHash = hashRefreshToken(refreshToken);
+    const tokenHash = encryptRefreshToken(refreshToken);
 
     const storedToken = await userRepository.findRefreshTokenByHash(tokenHash);
 
@@ -161,7 +173,7 @@ export const userService = {
     const user = await this.validateRefreshToken(refreshToken);
 
     // Отозвать старый токен
-    const oldTokenHash = hashRefreshToken(refreshToken);
+    const oldTokenHash = encryptRefreshToken(refreshToken);
     await userRepository.revokeRefreshToken(oldTokenHash);
 
     // Создать новую пару

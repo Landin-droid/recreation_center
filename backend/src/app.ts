@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import cron from "node-cron";
 import swaggerUi from "swagger-ui-express";
 import { notFoundHandler } from "./common/http";
@@ -14,8 +15,14 @@ import { specs } from "./config/swagger";
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: true, // В продакшене лучше указать конкретный домен
+    credentials: true,
+  }),
+);
 app.use(morgan("dev"));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

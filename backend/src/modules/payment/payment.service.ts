@@ -215,9 +215,22 @@ class PaymentService {
         // Платёж успешно завершён - финальный статус
         console.log(`✓ Payment ${payment.paymentId} succeeded`);
 
+        // Извлечь метод оплаты из ответа ЮKassa
+        const kassaMethodType = webhookPayload.object?.payment_method?.type;
+        let method: string | undefined;
+
+        if (kassaMethodType === "bank_card") {
+          method = "card";
+        } else if (kassaMethodType === "sbp") {
+          method = "SBP";
+        } else if (kassaMethodType) {
+          method = "yookassa"; // Fallback for other methods
+        }
+
         await paymentRepository.updatePaymentStatus(payment.paymentId, {
           status: "succeeded",
           kassaPaymentId,
+          method,
         });
 
         // Обновить статус бронирования
@@ -336,9 +349,22 @@ class PaymentService {
           kassaPayment.status === "succeeded" &&
           payment.status !== "succeeded"
         ) {
+          // Извлечь метод оплаты
+          const kassaMethodType = kassaPayment.payment_method?.type;
+          let method: string | undefined;
+
+          if (kassaMethodType === "bank_card") {
+            method = "card";
+          } else if (kassaMethodType === "sbp") {
+            method = "SBP";
+          } else if (kassaMethodType) {
+            method = "yookassa";
+          }
+
           await paymentRepository.updatePaymentStatus(payment.paymentId, {
             status: "succeeded",
             kassaPaymentId: payment.kassaPaymentId,
+            method,
           });
 
           await paymentRepository.updateReservationStatus(

@@ -96,6 +96,7 @@ class PaymentRepository {
     data: {
       status: PaymentStatus;
       kassaPaymentId?: string;
+      method?: string;
     },
   ) {
     return prisma.payment.update({
@@ -103,6 +104,7 @@ class PaymentRepository {
       data: {
         status: data.status,
         ...(data.kassaPaymentId && { kassaPaymentId: data.kassaPaymentId }),
+        ...(data.method && { method: data.method as any }),
       },
       include: {
         reservation: true,
