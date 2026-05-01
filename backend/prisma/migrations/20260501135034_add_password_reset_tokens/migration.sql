@@ -12,3 +12,7 @@ CREATE INDEX "reservation_payment_deadline_idx" ON "reservation"("payment_deadli
 
 -- CreateIndex
 CREATE INDEX "webhook_log_created_at_idx" ON "webhook_log"("created_at");
+
+-- AlterTable
+ALTER TABLE "user" ADD COLUMN "reset_password_token" TEXT;
+ALTER TABLE "user" ADD COLUMN "reset_password_expires" TIMESTAMP(3);
