@@ -21,6 +21,8 @@ model User {
   registrationDate DateTime      @default(now()) @map("registration_date")
   passwordHash     String        @map("password_hash")
   role             UserRole      @default(USER)
+  resetPasswordToken String?     @map("reset_password_token")
+  resetPasswordExpires DateTime? @map("reset_password_expires")
   refreshTokens    RefreshToken[]
   reservations     Reservation[]
 
