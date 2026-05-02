@@ -706,6 +706,8 @@ class PaymentService {
    */
   async getPaymentStatus(paymentId: number) {
     try {
+      await this.checkPaymentStatus(paymentId);
+
       const payment = await paymentRepository.findPaymentById(paymentId);
       if (!payment) {
         throw new Error(`Payment ${paymentId} not found`);

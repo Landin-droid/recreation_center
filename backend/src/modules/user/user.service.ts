@@ -35,6 +35,10 @@ const encryptRefreshToken = (token: string): string => {
     .digest("hex");
 };
 
+const hashPasswordResetToken = (token: string): string => {
+  return createHash("sha256").update(token).digest("hex");
+};
+
 const generateAuthTokens = (
   userId: number,
   email: string,
@@ -196,12 +200,18 @@ export const userService = {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1); // 1 час
 
-    await userRepository.updateResetToken(email, resetToken, expiresAt);
+    await userRepository.updateResetToken(
+      email,
+      hashPasswordResetToken(resetToken),
+      expiresAt,
+    );
     await emailService.sendPasswordResetEmail(email, resetToken);
   },
 
   async resetPassword(token: string, newPassword: string) {
-    const user = await userRepository.findByResetToken(token);
+    const user = await userRepository.findByResetToken(
+      hashPasswordResetToken(token),
+    );
     if (!user) {
       throw new AppError("Invalid or expired reset token", 400);
     }
