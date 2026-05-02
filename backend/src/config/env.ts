@@ -29,13 +29,6 @@ const envSchema = z.object({
     .default("http://localhost:3000/payment/failure"),
   PAYMENT_TIMEOUT_MINUTES: z.coerce.number().int().positive().default(15),
 
-  // EmailJS Configuration
-  EMAILJS_SERVICE_ID: z.string().optional(),
-  EMAILJS_TEMPLATE_ID_RESERVATION: z.string().optional(),
-  EMAILJS_TEMPLATE_ID_RESET_PASSWORD: z.string().optional(),
-  EMAILJS_PUBLIC_KEY: z.string().optional(),
-  EMAILJS_PRIVATE_KEY: z.string().optional(),
-  
   // App configuration
   FRONTEND_URL: z.string().default("http://localhost:3000"),
 });

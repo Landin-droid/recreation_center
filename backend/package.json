@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@emailjs/nodejs": "^5.0.2",
     "@ngrok/ngrok": "^1.7.0",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.7.0",
@@ -15,7 +14,6 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "node-cron": "^3.0.2",
-    "nodemailer": "^8.0.7",
     "pg": "^8.20.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
