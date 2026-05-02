@@ -14,7 +14,22 @@ class EmailService {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       } : undefined,
+      connectionTimeout: 10000, // 10 секунд на подключение
     });
+  }
+
+  /**
+   * Проверить подключение к SMTP серверу
+   */
+  async verifyConnection() {
+    try {
+      await this.transporter.verify();
+      console.log("✅ SMTP Connection verified successfully");
+      return true;
+    } catch (error) {
+      console.error("❌ SMTP Connection failed:", error);
+      return false;
+    }
   }
 
   /**
