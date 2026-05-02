@@ -1,3 +1,5 @@
+import dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import dayjs from "dayjs";
