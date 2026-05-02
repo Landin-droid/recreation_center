@@ -14,7 +14,10 @@ class EmailService {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       } : undefined,
-      connectionTimeout: 10000, // 10 секунд на подключение
+      connectionTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false // Помогает при проблемах с сертификатами на хостинге
+      }
     });
   }
 
