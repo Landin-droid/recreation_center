@@ -19,4 +19,10 @@ export const authApi = {
   logout() {
     return unwrap<{ message?: string }>(http.post("/users/logout"));
   },
+  forgotPassword(email: string) {
+    return unwrap<{ resetToken?: string }>(http.post("/users/forgot-password", { email }));
+  },
+  resetPassword(payload: { token: string; password?: string }) {
+    return unwrap<{ message: string }>(http.post("/users/reset-password", payload));
+  },
 };

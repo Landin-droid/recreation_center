@@ -1,26 +1,49 @@
 import { Link, NavLink } from "react-router-dom";
 import clsx from "clsx";
 import type { PropsWithChildren, ReactNode } from "react";
+import { useAuthStore } from "@features/auth/model/auth-store";
 
 export function AppShell({
   children,
   actions,
 }: PropsWithChildren<{ actions?: ReactNode }>) {
+  const { accessToken, clearSession } = useAuthStore();
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#fffaf2]">
       <header className="sticky top-0 z-20 border-b border-[color:var(--border)] bg-[rgba(255,250,242,0.85)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link to="/" className="text-lg font-extrabold tracking-tight">
-            Победа
+          <Link to="/" className="text-xl font-black tracking-tighter text-[#c96f2b]">
+            ПОБЕДА
           </Link>
-          <nav className="flex items-center gap-2 text-sm font-semibold text-[color:var(--ink-soft)]">
+          <nav className="flex items-center gap-1 text-sm font-bold text-[color:var(--ink-soft)]">
             <NavItem to="/">Главная</NavItem>
-            <NavItem to="/dashboard">Кабинет</NavItem>
+            <NavItem to="/rentals">Прокат</NavItem>
+            <NavItem to="/booking">Бронирование</NavItem>
+            {accessToken ? (
+              <>
+                <NavItem to="/profile">Кабинет</NavItem>
+                <Button
+                  variant="ghost"
+                  className="ml-2 text-xs opacity-70 hover:opacity-100"
+                  onClick={clearSession}
+                >
+                  Выйти
+                </Button>
+              </>
+            ) : (
+              <NavItem to="/login">Войти</NavItem>
+            )}
             {actions}
           </nav>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+      <footer className="border-t border-[color:var(--border)] py-12 text-center text-sm text-[color:var(--ink-soft)]">
+        <div className="mx-auto max-w-7xl px-6">
+          <p>© {new Date().getFullYear()} База отдыха «Победа». Все права защищены.</p>
+        </div>
+      </footer>
     </div>
   );
 }

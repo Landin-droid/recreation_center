@@ -42,4 +42,7 @@ export const dashboardApi = {
   getPaymentStatus(paymentId: number) {
     return unwrap<PaymentStatus>(http.get(`/payments/${paymentId}/status`));
   },
+  updateProfile(userId: number, data: { fullName?: string; email?: string; phoneNumber?: string }) {
+    return unwrap<User>(http.put(`/users/${userId}`, data));
+  },
 };

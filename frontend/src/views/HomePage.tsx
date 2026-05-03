@@ -1,180 +1,107 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { dashboardApi } from "@features/dashboard/api";
-import { useAuthStore } from "@features/auth/model/auth-store";
-import { formatCurrency, prettifyEnum } from "@shared/lib/format";
-import {
-  AppShell,
-  Badge,
-  Button,
-  EmptyState,
-  Loader,
-  Panel,
-  StatCard,
-  Title,
-} from "@shared/ui/kit";
+import { AppShell, Title, Panel, Button } from "@shared/ui/kit";
+import { useNavigate } from "react-router-dom";
 
 export function HomePage() {
-  const user = useAuthStore((state) => state.user);
-
-  const objectsQuery = useQuery({
-    queryKey: ["public", "objects"],
-    queryFn: dashboardApi.listObjects,
-  });
-  const menuQuery = useQuery({
-    queryKey: ["public", "menu"],
-    queryFn: dashboardApi.listMenuItems,
-  });
-  const rentalsQuery = useQuery({
-    queryKey: ["public", "rentals"],
-    queryFn: dashboardApi.listRentalItems,
-  });
-
-  const isLoading =
-    objectsQuery.isLoading || menuQuery.isLoading || rentalsQuery.isLoading;
-
-  if (isLoading) {
-    return <Loader label="Подгружаем витрину клиентской части..." />;
-  }
-
-  const objects = objectsQuery.data ?? [];
-  const menuItems = menuQuery.data ?? [];
-  const rentals = rentalsQuery.data ?? [];
-
+  const navigate = useNavigate();
   return (
-    <AppShell
-      actions={
-        user ? (
-          <Link to="/dashboard">
-            <Button>Личный кабинет</Button>
-          </Link>
-        ) : (
-          <>
-            <Link to="/login">
-              <Button variant="ghost">Войти</Button>
-            </Link>
-            <Link to="/register">
-              <Button>Регистрация</Button>
-            </Link>
-          </>
-        )
-      }
-    >
-      <div className="space-y-8">
-        <Panel className="overflow-hidden">
-          <div className="grid gap-10 lg:grid-cols-[1.35fr,0.85fr]">
-            <div className="space-y-6">
-              <Title
-                eyebrow="React + backend integration"
-                heading="Клиентская часть для демонстрации готового API базы отдыха"
-                description="Фронтенд собран поверх реальных модулей из backend: авторизация, объекты бронирования, меню, аренда, мои бронирования и запуск оплаты. Никаких вымышленных эндпоинтов."
-              />
-              <div className="flex flex-wrap gap-3">
-                <Link to={user ? "/dashboard" : "/register"}>
-                  <Button>{user ? "Открыть кабинет" : "Начать бронирование"}</Button>
-                </Link>
-                <a href="#catalog">
-                  <Button variant="secondary">Посмотреть каталог</Button>
-                </a>
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-              <StatCard label="Объектов бронирования" value={String(objects.length)} />
-              <StatCard label="Пунктов меню" value={String(menuItems.length)} />
-              <StatCard label="Позиций аренды" value={String(rentals.length)} />
+    <AppShell>
+      <div className="space-y-16 py-8">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden rounded-[40px] bg-[#24170f] px-8 py-24 text-white">
+          <div className="relative z-10 max-w-2xl space-y-8">
+            <h1 className="text-5xl font-black leading-tight tracking-tighter md:text-7xl">
+              Отдых, который вы заслужили
+            </h1>
+            <p className="text-lg opacity-80 md:text-xl">
+              База отдыха «Победа» — это идеальное место для семейного отдыха, корпоративных мероприятий и праздников на свежем воздухе.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Button className="px-8 py-4 text-lg" onClick={() => navigate("/booking")}>
+                Забронировать сейчас
+              </Button>
+              <Button variant="secondary" className="px-8 py-4 text-lg bg-white/10 text-white border-white/20 hover:bg-white/20" onClick={() => navigate("/rentals")}>
+                Наш прокат
+              </Button>
             </div>
           </div>
-        </Panel>
+          {/* Decorative elements could go here */}
+          <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-[#c96f2b]/20 to-transparent" />
+        </section>
 
-        <section id="catalog" className="grid gap-6 xl:grid-cols-3">
-          <Panel className="xl:col-span-2">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-2xl font-extrabold">Объекты</h2>
-              <Badge tone="success">Публичный API</Badge>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {objects.length > 0 ? (
-                objects.map((item) => (
-                  <div
-                    key={item.bookableObjectId}
-                    className="rounded-[24px] border border-[color:var(--border)] bg-white/80 p-5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-bold">{item.name}</h3>
-                        <p className="mt-1 text-sm text-[color:var(--ink-soft)]">
-                          {item.description || "Описание пока не заполнено в базе."}
-                        </p>
-                      </div>
-                      <Badge>{prettifyEnum(item.type)}</Badge>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-3 text-sm text-[color:var(--ink-soft)]">
-                      <span>Вместимость: {item.capacity}</span>
-                      <span>Цена: {formatCurrency(item.basePrice)}</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <EmptyState
-                  title="Объекты пока не добавлены"
-                  description="Как только данные появятся в backend, они автоматически появятся и здесь."
-                />
-              )}
-            </div>
-          </Panel>
-
-          <div className="grid gap-6">
-            <Panel>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-extrabold">Меню</h2>
-                <Badge tone="warning">/menu/items</Badge>
+        {/* Services Section */}
+        <section className="space-y-8">
+          <Title
+            eyebrow="Наши услуги"
+            heading="Все для вашего комфорта"
+            description="Мы предлагаем широкий спектр услуг для полноценного отдыха в любое время года."
+          />
+          <div className="grid gap-6 md:grid-cols-3">
+            <Panel className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-[#fef3e7] p-3 text-[#c96f2b]">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
               </div>
-              <div className="space-y-3">
-                {menuItems.slice(0, 5).map((item) => (
-                  <div
-                    key={item.menuItemId}
-                    className="rounded-[22px] border border-[color:var(--border)] bg-white/75 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-bold">{item.name}</p>
-                        <p className="text-sm text-[color:var(--ink-soft)]">
-                          {item.description || "Без описания"}
-                        </p>
-                      </div>
-                      <span className="text-sm font-extrabold">
-                        {formatCurrency(item.price)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <h3 className="text-xl font-bold">Уютные коттеджи</h3>
+              <p className="text-sm text-[color:var(--ink-soft)]">Комфортабельные дома со всеми удобствами для компаний любого размера.</p>
             </Panel>
-
-            <Panel>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-extrabold">Аренда</h2>
-                <Badge tone="warning">/rentals/items</Badge>
+            <Panel className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-[#fef3e7] p-3 text-[#c96f2b]">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15.546c.533-1.295.827-2.722.827-4.213 0-2.105-.582-4.074-1.594-5.749m-4.577 12.444c-1.296.533-2.721.827-4.212.827-2.105 0-4.074-.582-5.749-1.594m12.444-4.577c.533-1.295.827-2.722.827-4.213 0-2.105-.582-4.074-1.594-5.749m-4.577 12.444c-1.296.533-2.721.827-4.212.827-2.105 0-4.074-.582-5.749-1.594" /></svg>
               </div>
-              <div className="space-y-3">
-                {rentals.slice(0, 5).map((item) => (
-                  <div
-                    key={item.rentalItemId}
-                    className="rounded-[22px] border border-[color:var(--border)] bg-white/75 p-4"
-                  >
-                    <p className="font-bold">{item.name}</p>
-                    <p className="text-sm text-[color:var(--ink-soft)]">
-                      {item.description || prettifyEnum(item.category)}
-                    </p>
-                    <p className="mt-2 text-sm font-semibold">
-                      {item.pricePerHour ? formatCurrency(item.pricePerHour) : "Цена по запросу"}
-                    </p>
-                  </div>
-                ))}
+              <h3 className="text-xl font-bold">Банкетные залы</h3>
+              <p className="text-sm text-[color:var(--ink-soft)]">Просторные залы для свадеб, юбилеев и корпоративных мероприятий.</p>
+            </Panel>
+            <Panel className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-[#fef3e7] p-3 text-[#c96f2b]">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </div>
+              <h3 className="text-xl font-bold">Активный отдых</h3>
+              <p className="text-sm text-[color:var(--ink-soft)]">Прокат спортивного инвентаря, караоке-бар и открытые площадки.</p>
             </Panel>
           </div>
         </section>
+
+        {/* Info Grid */}
+        <div className="grid gap-8 md:grid-cols-2">
+          {/* Working Hours */}
+          <Panel className="space-y-6">
+            <h3 className="text-2xl font-bold">Часы работы</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between border-b border-dashed border-[color:var(--border)] pb-2">
+                <span className="font-medium text-[color:var(--ink-soft)]">Администрация</span>
+                <span className="font-bold">09:00 — 21:00</span>
+              </div>
+              <div className="flex justify-between border-b border-dashed border-[color:var(--border)] pb-2">
+                <span className="font-medium text-[color:var(--ink-soft)]">Прокат</span>
+                <span className="font-bold">10:00 — 20:00</span>
+              </div>
+              <div className="flex justify-between border-b border-dashed border-[color:var(--border)] pb-2">
+                <span className="font-medium text-[color:var(--ink-soft)]">Караоке-бар</span>
+                <span className="font-bold">18:00 — 02:00</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-[color:var(--ink-soft)]">Территория</span>
+                <span className="font-bold text-[#c96f2b]">Круглосуточно</span>
+              </div>
+            </div>
+          </Panel>
+
+          {/* Important News */}
+          <Panel className="space-y-6">
+            <h3 className="text-2xl font-bold">Важные новости</h3>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-[#c96f2b]">15 МАЯ 2026</span>
+                <h4 className="font-bold">Открытие летнего сезона</h4>
+                <p className="text-sm text-[color:var(--ink-soft)]">Мы подготовили пляжную зону и новые водные аттракционы для наших гостей.</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-[#c96f2b]">1 МАЯ 2026</span>
+                <h4 className="font-bold">Обновление меню в караоке-баре</h4>
+                <p className="text-sm text-[color:var(--ink-soft)]">Попробуйте наши новые авторские коктейли и закуски от шеф-повара.</p>
+              </div>
+            </div>
+          </Panel>
+        </div>
       </div>
     </AppShell>
   );

@@ -160,10 +160,11 @@ export const userController = {
 
   forgotPassword: asyncHandler(async (req: Request, res: Response) => {
     const validated = forgotPasswordSchema.parse(req.body);
-    await userService.forgotPassword(validated.email);
+    const resetToken = await userService.forgotPassword(validated.email);
     res.json({
       success: true,
       message: "If an account with that email exists, a password reset link has been sent.",
+      data: { resetToken }, // Возвращаем токен для EmailJS на фронтенде
     });
   }),
 

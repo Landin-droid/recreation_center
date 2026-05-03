@@ -192,8 +192,8 @@ export const userService = {
   async forgotPassword(email: string) {
     const user = await userRepository.findByEmail(email);
     if (!user) {
-      // Для безопасности не говорим, что email не найден
-      return;
+      // Для безопасности не говорим, что email не найден, но возвращаем null
+      return null;
     }
 
     const resetToken = randomBytes(32).toString("hex");
@@ -205,7 +205,12 @@ export const userService = {
       hashPasswordResetToken(resetToken),
       expiresAt,
     );
+    
+    // Мы всё еще вызываем emailService (заглушку), но теперь возвращаем токен
+    // чтобы фронтенд мог отправить его через EmailJS
     await emailService.sendPasswordResetEmail(email, resetToken);
+    
+    return resetToken;
   },
 
   async resetPassword(token: string, newPassword: string) {
