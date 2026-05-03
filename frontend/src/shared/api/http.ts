@@ -26,12 +26,8 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = useAuthStore.getState().accessToken;
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
+  // При использовании HttpOnly кук, нам не нужно вручную добавлять заголовок Authorization.
+  // Браузер сам прикрепит куки к запросу благодаря withCredentials: true.
   return config;
 });
 
@@ -50,25 +46,20 @@ http.interceptors.response.use(
       throw error;
     }
 
-    const { refreshToken, clearSession, setTokens } = useAuthStore.getState();
-
-    if (!refreshToken) {
-      clearSession();
-      throw error;
-    }
+    const { clearSession } = useAuthStore.getState();
 
     originalRequest._retry = true;
 
     if (!refreshRequest) {
+      // Запрос на обновление токенов. Сервер обновит куки в ответе.
       refreshRequest = axios
-        .post<ApiEnvelope<{ accessToken: string; refreshToken: string }>>(
+        .post<ApiEnvelope<unknown>>(
           `${env.apiBaseUrl}/users/refresh`,
-          { refreshToken },
+          {}, // Тело пустое, так как refresh-токен в куках
+          { withCredentials: true }
         )
-        .then((response) => {
-          const tokens = response.data.data;
-          setTokens(tokens.accessToken, tokens.refreshToken);
-          return tokens.accessToken;
+        .then(() => {
+          return "ok";
         })
         .catch(() => {
           clearSession();
@@ -79,13 +70,13 @@ http.interceptors.response.use(
         });
     }
 
-    const newAccessToken = await refreshRequest;
+    const refreshStatus = await refreshRequest;
 
-    if (!newAccessToken) {
+    if (!refreshStatus) {
       throw error;
     }
 
-    originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+    // Повторяем оригинальный запрос, куки прикрепятся автоматически
     return http(originalRequest);
   },
 );

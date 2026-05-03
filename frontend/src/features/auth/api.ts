@@ -8,10 +8,10 @@ import type {
 
 export const authApi = {
   login(payload: LoginPayload) {
-    return unwrap<AuthSession>(http.post("/users/login", payload));
+    return unwrap<User>(http.post("/users/login", payload));
   },
   register(payload: RegisterPayload) {
-    return unwrap<AuthSession>(http.post("/users/register", payload));
+    return unwrap<User>(http.post("/users/register", payload));
   },
   profile() {
     return unwrap<User>(http.get("/users/profile"));

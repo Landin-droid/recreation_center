@@ -15,13 +15,13 @@ export function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (session) => {
+    onSuccess: (user) => {
       setSession({
-        user: session,
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
+        user,
+        accessToken: "cookie-based",
+        refreshToken: "cookie-based",
       });
-      navigate("/dashboard");
+      navigate("/profile");
     },
     onError: (error) => {
       setErrorMessage(extractErrorMessage(error));
@@ -29,7 +29,7 @@ export function LoginPage() {
   });
 
   if (accessToken) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/profile" replace />;
   }
 
   return (

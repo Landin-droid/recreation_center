@@ -19,13 +19,13 @@ export function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (session) => {
+    onSuccess: (user) => {
       setSession({
-        user: session,
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
+        user,
+        accessToken: "cookie-based",
+        refreshToken: "cookie-based",
       });
-      navigate("/dashboard");
+      navigate("/profile");
     },
     onError: (error) => {
       setErrorMessage(extractErrorMessage(error));
@@ -33,7 +33,7 @@ export function RegisterPage() {
   });
 
   if (accessToken) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/profile" replace />;
   }
 
   return (
