@@ -33,15 +33,21 @@ export const authenticate = (
   next: NextFunction,
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    let token: string | undefined;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new AppError("Authorization header is missing or invalid", 401);
+    // 1. Попробовать получить из заголовка Authorization
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.slice(7).trim();
     }
 
-    const token = authHeader.slice(7).trim();
+    // 2. Если нет в заголовке, попробовать получить из куки
+    if (!token && req.cookies) {
+      token = req.cookies.accessToken;
+    }
+
     if (!token) {
-      throw new AppError("Token is missing", 401);
+      throw new AppError("Authentication required", 401);
     }
 
     const payload = jwt.verify(token, jwtSecret);

@@ -1,10 +1,11 @@
 import { Prisma } from "../../generated/prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomBytes, createHash } from "crypto";
+import crypto, { randomBytes, createHash } from "crypto";
 import { AppError } from "../../middleware/errorHandler";
-import { jwtSecret } from "../../config/env";
+import { env, jwtSecret } from "../../config/env";
 import { userRepository } from "./user.repository";
+import { emailService } from "../../lib/email";
 import { CreateUserInput, UpdateUserInput } from "./user.validation";
 import { UserInternal, UserResponse } from "./user.types";
 
@@ -22,7 +23,19 @@ const generateRefreshTokenString = (): string => {
   return randomBytes(32).toString("hex");
 };
 
-const hashRefreshToken = (token: string): string => {
+/**
+ * Используем HMAC для "шифрования" токена в БД.
+ * Это обеспечивает защиту от утечки БД (нельзя получить токены без ключа)
+ * и позволяет искать по значению.
+ */
+const encryptRefreshToken = (token: string): string => {
+  return crypto
+    .createHmac("sha256", env.REFRESH_TOKEN_ENCRYPTION_KEY)
+    .update(token)
+    .digest("hex");
+};
+
+const hashPasswordResetToken = (token: string): string => {
   return createHash("sha256").update(token).digest("hex");
 };
 
@@ -128,15 +141,19 @@ export const userService = {
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-    const refreshTokenHash = hashRefreshToken(refreshToken);
+    const encryptedRefreshToken = encryptRefreshToken(refreshToken);
 
-    await userRepository.storeRefreshToken(userId, refreshTokenHash, expiresAt);
+    await userRepository.storeRefreshToken(
+      userId,
+      encryptedRefreshToken,
+      expiresAt,
+    );
 
     return { accessToken, refreshToken };
   },
 
   async validateRefreshToken(refreshToken: string) {
-    const tokenHash = hashRefreshToken(refreshToken);
+    const tokenHash = encryptRefreshToken(refreshToken);
 
     const storedToken = await userRepository.findRefreshTokenByHash(tokenHash);
 
@@ -161,7 +178,7 @@ export const userService = {
     const user = await this.validateRefreshToken(refreshToken);
 
     // Отозвать старый токен
-    const oldTokenHash = hashRefreshToken(refreshToken);
+    const oldTokenHash = encryptRefreshToken(refreshToken);
     await userRepository.revokeRefreshToken(oldTokenHash);
 
     // Создать новую пару
@@ -170,5 +187,39 @@ export const userService = {
 
   async logout(userId: number) {
     await userRepository.revokeAllUserTokens(userId);
+  },
+
+  async forgotPassword(email: string) {
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      // Для безопасности не говорим, что email не найден
+      return;
+    }
+
+    const resetToken = randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // 1 час
+
+    await userRepository.updateResetToken(
+      email,
+      hashPasswordResetToken(resetToken),
+      expiresAt,
+    );
+    await emailService.sendPasswordResetEmail(email, resetToken);
+  },
+
+  async resetPassword(token: string, newPassword: string) {
+    const user = await userRepository.findByResetToken(
+      hashPasswordResetToken(token),
+    );
+    if (!user) {
+      throw new AppError("Invalid or expired reset token", 400);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    
+    await userRepository.update(user.userId, { passwordHash });
+    await userRepository.clearResetToken(user.userId);
+    await userRepository.revokeAllUserTokens(user.userId); // Логаут со всех устройств
   },
 };

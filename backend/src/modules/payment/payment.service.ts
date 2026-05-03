@@ -4,6 +4,7 @@ import { env } from "../../config/env";
 import prisma from "../../lib/prisma";
 import dayjs from "dayjs";
 import crypto from "crypto";
+import { emailService } from "../../lib/email";
 import { Prisma } from "../../generated/prisma/client";
 import { KassaPaymentResponse, KassaRefundResponse } from "./payment.types";
 
@@ -215,9 +216,22 @@ class PaymentService {
         // Платёж успешно завершён - финальный статус
         console.log(`✓ Payment ${payment.paymentId} succeeded`);
 
+        // Извлечь метод оплаты из ответа ЮKassa
+        const kassaMethodType = webhookPayload.object?.payment_method?.type;
+        let method: string | undefined;
+
+        if (kassaMethodType === "bank_card") {
+          method = "card";
+        } else if (kassaMethodType === "sbp") {
+          method = "SBP";
+        } else if (kassaMethodType) {
+          method = "yookassa"; // Fallback for other methods
+        }
+
         await paymentRepository.updatePaymentStatus(payment.paymentId, {
           status: "succeeded",
           kassaPaymentId,
+          method,
         });
 
         // Обновить статус бронирования
@@ -225,6 +239,28 @@ class PaymentService {
           payment.reservationId,
           "paid",
         );
+
+        // Отправить подтверждение на почту
+        const fullReservation = await prisma.reservation.findUnique({
+          where: { reservationId: payment.reservationId },
+          include: {
+            user: true,
+            bookableObject: true,
+          },
+        });
+
+        if (fullReservation && fullReservation.user.email) {
+          await emailService.sendReservationConfirmation(
+            fullReservation.user.email,
+            {
+              reservationId: fullReservation.reservationId,
+              bookableObject: fullReservation.bookableObject,
+              reservationDate: fullReservation.reservationDate,
+              totalSum: fullReservation.totalSum.toString(),
+              guestsCount: fullReservation.guestsCount,
+            },
+          );
+        }
 
         // TODO: Отправить уведомление пользователю
       } else if (paymentStatus === "waiting_for_capture") {
@@ -336,15 +372,50 @@ class PaymentService {
           kassaPayment.status === "succeeded" &&
           payment.status !== "succeeded"
         ) {
+          // Извлечь метод оплаты
+          const kassaMethodType = kassaPayment.payment_method?.type;
+          let method: string | undefined;
+
+          if (kassaMethodType === "bank_card") {
+            method = "card";
+          } else if (kassaMethodType === "sbp") {
+            method = "SBP";
+          } else if (kassaMethodType) {
+            method = "yookassa";
+          }
+
           await paymentRepository.updatePaymentStatus(payment.paymentId, {
             status: "succeeded",
             kassaPaymentId: payment.kassaPaymentId,
+            method,
           });
 
           await paymentRepository.updateReservationStatus(
             payment.reservationId,
             "paid",
           );
+
+          // Отправить подтверждение на почту
+          const fullReservation = await prisma.reservation.findUnique({
+            where: { reservationId: payment.reservationId },
+            include: {
+              user: true,
+              bookableObject: true,
+            },
+          });
+
+          if (fullReservation && fullReservation.user.email) {
+            await emailService.sendReservationConfirmation(
+              fullReservation.user.email,
+              {
+                reservationId: fullReservation.reservationId,
+                bookableObject: fullReservation.bookableObject,
+                reservationDate: fullReservation.reservationDate,
+                totalSum: fullReservation.totalSum.toString(),
+                guestsCount: fullReservation.guestsCount,
+              },
+            );
+          }
         }
       }
 
@@ -635,6 +706,8 @@ class PaymentService {
    */
   async getPaymentStatus(paymentId: number) {
     try {
+      await this.checkPaymentStatus(paymentId);
+
       const payment = await paymentRepository.findPaymentById(paymentId);
       if (!payment) {
         throw new Error(`Payment ${paymentId} not found`);
