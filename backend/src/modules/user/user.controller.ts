@@ -34,15 +34,15 @@ const setTokenCookies = (
 ) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: true, // Всегда true для HTTPS на Render
+    sameSite: "none", // Нужно для кросс-доменных кук
     maxAge: 15 * 60 * 1000, // 15 минут
   });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: true,
+    sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
   });
 };

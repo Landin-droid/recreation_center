@@ -19,6 +19,7 @@ let refreshRequest: Promise<string | null> | null = null;
 
 export const http = axios.create({
   baseURL: env.apiBaseUrl,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },

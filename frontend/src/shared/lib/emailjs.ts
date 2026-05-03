@@ -25,11 +25,12 @@ export const emailjsService = {
     }
   },
 
-  sendPasswordResetEmail: async (toEmail: string, resetLink: string) => {
+  sendPasswordResetEmail: async (toEmail: string, resetLink: string, siteLink: string) => {
     try {
       const templateParams = {
         to_email: toEmail,
         reset_link: resetLink,
+        site_link: siteLink,
       };
 
       await emailjs.send(SERVICE_ID, TEMPLATE_RESET, templateParams, PUBLIC_KEY);
