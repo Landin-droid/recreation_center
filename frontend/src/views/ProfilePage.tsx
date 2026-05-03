@@ -289,7 +289,7 @@ export function ProfilePage() {
                               {res.menuItems.map((item, idx) => (
                                 <div key={idx} className="flex justify-between text-xs font-bold">
                                   <span className="text-[#3b2a1d]">{item.menuItem.name} x {item.quantity}</span>
-                                  <span className="text-[#c96f2b]">{formatCurrency(Number(item.itemCost) * item.quantity)}</span>
+                                  <span className="text-[#c96f2b]">{formatCurrency(Number(item.itemCost))}</span>
                                 </div>
                               ))}
                             </div>
