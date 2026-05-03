@@ -17,6 +17,19 @@ export function RentalPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const getSeasonLabel = (item: RentalItem) => {
+    if (!item.isSeasonal) return "Весь год";
+    const type = item.seasonType?.toLowerCase();
+    if (type === "winter") return "Зимний";
+    if (type === "summer") return "Летний";
+    return "Сезонный";
+  };
+
+  const getPersonString = (count: number) => {
+    if (count % 10 === 1 && count % 100 !== 11) return "человека";
+    return "человек";
+  };
+
   return (
     <AppShell>
       <div className="space-y-12">
@@ -41,6 +54,7 @@ export function RentalPage() {
                 <li>Оплата производится за каждый полный или неполный час использования.</li>
                 <li>В случае повреждения инвентаря взимается штраф согласно прейскуранту.</li>
                 <li>Возврат инвентаря осуществляется не позднее времени закрытия пункта проката.</li>
+                <li className="font-bold text-[#c96f2b]">Со своими плюшками, коньками и лыжами проход бесплатный!</li>
               </ul>
             </div>
           </div>
@@ -55,7 +69,7 @@ export function RentalPage() {
         ) : (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
-              <Panel key={item.rentalItemId} className="flex flex-col overflow-hidden p-0">
+              <Panel key={item.rentalItemId} className="flex flex-col overflow-hidden p-0 h-full">
                 <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
                   {item.imageUrl ? (
                     <img
@@ -74,7 +88,7 @@ export function RentalPage() {
                 <div className="flex flex-1 flex-col p-6">
                   <div className="mb-2 flex items-center justify-between">
                     <Badge tone={item.isSeasonal ? "warning" : "neutral"}>
-                      {item.isSeasonal ? "Сезонный" : "Весь год"}
+                      {getSeasonLabel(item)}
                     </Badge>
                     <span className="text-sm font-bold text-[#c96f2b]">
                       {item.pricePerHour ? `${formatCurrency(item.pricePerHour)} / час` : "Цена по запросу"}
@@ -84,12 +98,36 @@ export function RentalPage() {
                   <p className="mb-4 text-sm text-[color:var(--ink-soft)] line-clamp-2">
                     {item.description || "Описание отсутствует."}
                   </p>
+                  
+                  {item.priceRules && item.priceRules.length > 0 && (
+                    <div className="mb-4 overflow-hidden border rounded-xl">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-gray-50 uppercase font-bold text-[color:var(--ink-soft)]">
+                          <tr>
+                            <th className="px-3 py-2">Тип</th>
+                            <th className="px-3 py-2">Цена/км</th>
+                            <th className="px-3 py-2">Мин/Макс км</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {item.priceRules.map(rule => (
+                            <tr key={rule.ruleId}>
+                              <td className="px-3 py-2">{rule.passengerType === "CHILD" ? "Детский" : "Взрослый"}</td>
+                              <td className="px-3 py-2 font-bold">{formatCurrency(rule.pricePerKm)}</td>
+                              <td className="px-3 py-2">{rule.minKm}{rule.maxKm ? ` - ${rule.maxKm}` : "+"} км</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
                   {item.maxCapacity && (
                     <div className="mt-auto flex items-center gap-2 text-xs font-medium text-[color:var(--ink-soft)]">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
-                      До {item.maxCapacity} человек
+                      До {item.maxCapacity} {getPersonString(item.maxCapacity)}
                     </div>
                   )}
                 </div>
