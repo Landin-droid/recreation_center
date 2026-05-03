@@ -24,8 +24,8 @@ export function RegisterPage() {
     // ФИО validation
     if (!formState.fullName.trim()) {
       newErrors.fullName = "ФИО обязательно";
-    } else if (formState.fullName.trim().split(" ").length < 3) {
-      newErrors.fullName = "Введите Фамилию Имя Отчество";
+    } else if (formState.fullName.trim().split(" ").length < 2) {
+      newErrors.fullName = "Введите Фамилию Имя Отчество (при наличии)";
     }
 
     // Email validation
@@ -97,7 +97,7 @@ export function RegisterPage() {
             <div className="space-y-1">
               <Field
                 label="ФИО"
-                placeholder="Фамилия Имя Отчество"
+                placeholder="Фамилия Имя Отчество (при наличии)"
                 value={formState.fullName}
                 onChange={(event) =>
                   setFormState((current) => ({

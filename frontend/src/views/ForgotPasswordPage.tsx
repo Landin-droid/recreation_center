@@ -48,7 +48,7 @@ export function ForgotPasswordPage() {
                 Если аккаунт с таким email существует, мы отправили на него письмо с ссылкой для восстановления пароля.
               </div>
               <Button className="w-full" variant="secondary" onClick={() => navigate("/login")}>
-                Вернуться к входу
+                Вернуться ко входу
               </Button>
             </div>
           ) : (

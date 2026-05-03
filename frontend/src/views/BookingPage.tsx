@@ -231,11 +231,11 @@ export function BookingPage() {
             className="w-full md:w-64"
           >
             <option value="ALL">Все типы</option>
-            <option value="COTTAGE">Коттеджи</option>
+            <option value="COTTAGE">Домики</option>
             <option value="BANQUET_HALL">Банкетные залы</option>
             <option value="GAZEBO">Беседки</option>
             <option value="KARAOKE_BAR">Караоке-бар</option>
-            <option value="OUTDOOR_VENUE">Площадки</option>
+            <option value="OUTDOOR_VENUE">Открытые площадки</option>
           </Select>
 
           <Select 

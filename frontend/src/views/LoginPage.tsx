@@ -105,7 +105,7 @@ export function LoginPage() {
               </p>
             ) : null}
             <Button className="w-full" disabled={loginMutation.isPending}>
-              {loginMutation.isPending ? "Входим..." : "Войти"}
+              {loginMutation.isPending ? "Вход..." : "Войти"}
             </Button>
           </form>
           <p className="text-sm text-[color:var(--ink-soft)]">

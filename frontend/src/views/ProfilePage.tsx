@@ -37,8 +37,8 @@ export function ProfilePage() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.fullName.trim() || formData.fullName.trim().split(" ").length < 3) {
-      newErrors.fullName = "Введите Фамилию Имя Отчество";
+    if (!formData.fullName.trim() || formData.fullName.trim().split(" ").length < 2) {
+      newErrors.fullName = "Введите Фамилию Имя Отчество (при наличии)";
     }
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
       newErrors.email = "Неверный формат почты";
@@ -89,8 +89,10 @@ export function ProfilePage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "confirmed": return <Badge tone="success">Подтверждено</Badge>;
+      case "paid": return <Badge tone="success">Оплачено</Badge>;
       case "pending": return <Badge tone="warning">Ожидает оплаты</Badge>;
       case "cancelled": return <Badge tone="danger">Отменено</Badge>;
+      case "expired": return <Badge tone="danger">Истекло время действия</Badge>;
       default: return <Badge>{status}</Badge>;
     }
   };
@@ -273,7 +275,7 @@ export function ProfilePage() {
                               {res.menuItems.map((item, idx) => (
                                 <div key={idx} className="flex justify-between text-xs">
                                   <span>{item.menuItem.name} x {item.quantity}</span>
-                                  <span>{formatCurrency(Number(item.itemCost) * item.quantity)}</span>
+                                  <span>{formatCurrency(Number(item.itemCost))}</span>
                                 </div>
                               ))}
                             </div>

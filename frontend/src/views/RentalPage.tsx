@@ -91,7 +91,7 @@ export function RentalPage() {
                       {getSeasonLabel(item)}
                     </Badge>
                     <span className="text-sm font-bold text-[#c96f2b]">
-                      {item.pricePerHour ? `${formatCurrency(item.pricePerHour)} / час` : "Цена по запросу"}
+                      {item.pricePerHour ? `${formatCurrency(item.pricePerHour)} / час` : "Вариативная цена"}
                     </span>
                   </div>
                   <h3 className="mb-2 text-xl font-bold">{item.name}</h3>
@@ -112,7 +112,7 @@ export function RentalPage() {
                         <tbody className="divide-y">
                           {item.priceRules.map(rule => (
                             <tr key={rule.ruleId}>
-                              <td className="px-3 py-2">{rule.passengerType === "CHILD" ? "Детский" : "Взрослый"}</td>
+                              <td className="px-3 py-2">{rule.passengerType.toUpperCase() === "CHILD" ? "Детский" : "Взрослый"}</td>
                               <td className="px-3 py-2 font-bold">{formatCurrency(rule.pricePerKm)}</td>
                               <td className="px-3 py-2">{rule.minKm}{rule.maxKm ? ` - ${rule.maxKm}` : "+"} км</td>
                             </tr>

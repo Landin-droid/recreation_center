@@ -16,7 +16,7 @@ export function PaymentFailurePage() {
         />
         <Panel className="bg-red-50/50 border-red-100">
           <p className="text-sm text-red-800">
-            Если деньги были списаны, но статус не изменился, обратитесь в нашу службу поддержки по телефону: +7 (999) 000-00-00.
+            Если деньги были списаны, но статус не изменился, обратитесь в нашу службу поддержки по телефону: +7 (900) 123-45-67.
           </p>
         </Panel>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
