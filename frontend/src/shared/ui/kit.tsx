@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import clsx from "clsx";
+import { useEffect } from "react";
 import type { PropsWithChildren, ReactNode } from "react";
 import { useAuthStore } from "@features/auth/model/auth-store";
 
@@ -224,9 +225,72 @@ export function EmptyState({
   description: string;
 }) {
   return (
-    <div className="rounded-3xl border border-dashed border-[color:var(--border)] bg-white/50 p-8 text-center">
-      <h3 className="text-lg font-bold">{title}</h3>
-      <p className="mt-2 text-sm text-[color:var(--ink-soft)]">{description}</p>
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
+      <p className="mt-2 text-[color:var(--ink-soft)]">{description}</p>
+    </div>
+  );
+}
+
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footer,
+}: PropsWithChildren<{
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  footer?: ReactNode;
+}>) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <Panel className="w-full max-w-md space-y-6 animate-in zoom-in duration-300">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
+          <button onClick={onClose} className="text-[color:var(--ink-soft)] hover:text-black transition">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="text-[#3b2a1d] leading-relaxed">
+          {children}
+        </div>
+        {footer && <div className="pt-4 flex justify-end gap-3 border-t border-[color:var(--border)]">{footer}</div>}
+      </Panel>
+    </div>
+  );
+}
+
+export function Toast({
+  message,
+  type = "info",
+  onClose,
+}: {
+  message: string;
+  type?: "info" | "success" | "error";
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={clsx(
+      "fixed bottom-6 right-6 z-[60] flex items-center gap-3 rounded-2xl px-6 py-4 shadow-2xl animate-in slide-in-from-right duration-300",
+      type === "success" && "bg-green-600 text-white",
+      type === "error" && "bg-red-600 text-white",
+      type === "info" && "bg-[#24170f] text-white",
+    )}>
+      <span className="text-sm font-bold">{message}</span>
+      <button onClick={onClose} className="opacity-70 hover:opacity-100">
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
     </div>
   );
 }

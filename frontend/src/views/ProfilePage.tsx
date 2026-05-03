@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { AppShell, Title, Panel, Badge, Loader, EmptyState, Button, Field } from "@shared/ui/kit";
+import { AppShell, Title, Panel, Badge, Loader, EmptyState, Button, Field, Modal, Toast } from "@shared/ui/kit";
 import { dashboardApi } from "@features/dashboard/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import type { Reservation, User } from "@shared/api/types";
@@ -24,6 +24,11 @@ export function ProfilePage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Notification state
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [cancelModalId, setCancelModalId] = useState<number | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -60,21 +65,27 @@ export function ProfilePage() {
       });
       updateUser(updatedUser);
       setIsEditing(false);
+      setToast({ message: "Профиль успешно обновлен", type: "success" });
     } catch (err: any) {
-      alert(err.message || "Ошибка при сохранении профиля");
+      setToast({ message: err.message || "Ошибка при сохранении профиля", type: "error" });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleCancelReservation = async (id: number) => {
-    if (!window.confirm("Вы уверены, что хотите отменить бронирование?")) return;
+  const handleCancelReservation = async () => {
+    if (!cancelModalId) return;
+    setIsCancelling(true);
     try {
-      await dashboardApi.cancelReservation(id, "Отменено пользователем");
+      await dashboardApi.cancelReservation(cancelModalId, "Отменено пользователем");
       const updated = await dashboardApi.listReservations(user?.userId);
       setReservations(updated);
+      setToast({ message: "Бронирование успешно отменено", type: "success" });
+      setCancelModalId(null);
     } catch (err: any) {
-      alert(err.message || "Ошибка при отмене");
+      setToast({ message: err.message || "Ошибка при отмене", type: "error" });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -82,7 +93,6 @@ export function ProfilePage() {
     if (res.status === "cancelled") return false;
     const resDate = parseISO(res.reservationDate);
     const deadline = addHours(startOfToday(), 10);
-    // Нельзя отменить, если дата бронирования равна сегодня + 10 часов
     return !isAfter(deadline, resDate);
   };
 
@@ -112,10 +122,10 @@ export function ProfilePage() {
           {/* User Info */}
           <Panel className="lg:col-span-1 h-fit space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold">Ваши данные</h3>
+              <h3 className="text-xl font-bold text-[#24170f]">Ваши данные</h3>
               <Button 
                 variant="ghost" 
-                className="text-xs" 
+                className="text-xs font-bold" 
                 onClick={() => {
                   setIsEditing(!isEditing);
                   setFormErrors({});
@@ -135,7 +145,7 @@ export function ProfilePage() {
                       value={formData.fullName} 
                       onChange={(e) => setFormData({...formData, fullName: e.target.value})} 
                     />
-                    {formErrors.fullName && <p className="text-xs text-red-500">{formErrors.fullName}</p>}
+                    {formErrors.fullName && <p className="text-xs font-bold text-red-600">{formErrors.fullName}</p>}
                   </div>
                   <div className="space-y-1">
                     <Field 
@@ -145,7 +155,7 @@ export function ProfilePage() {
                       value={formData.email} 
                       onChange={(e) => setFormData({...formData, email: e.target.value})} 
                     />
-                    {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
+                    {formErrors.email && <p className="text-xs font-bold text-red-600">{formErrors.email}</p>}
                   </div>
                   <div className="space-y-1">
                     <Field 
@@ -159,7 +169,7 @@ export function ProfilePage() {
                         setFormData({...formData, phoneNumber: val});
                       }} 
                     />
-                    {formErrors.phoneNumber && <p className="text-xs text-red-500">{formErrors.phoneNumber}</p>}
+                    {formErrors.phoneNumber && <p className="text-xs font-bold text-red-600">{formErrors.phoneNumber}</p>}
                   </div>
                   <Button 
                     className="w-full" 
@@ -172,20 +182,20 @@ export function ProfilePage() {
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--ink-soft)]">ФИО</p>
-                    <p className="font-medium">{user.fullName}</p>
+                    <p className="text-xs font-black uppercase tracking-wider text-[#72543d]">ФИО</p>
+                    <p className="font-bold text-[#24170f]">{user.fullName}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--ink-soft)]">Электронная почта</p>
-                    <p className="font-medium">{user.email}</p>
+                    <p className="text-xs font-black uppercase tracking-wider text-[#72543d]">Электронная почта</p>
+                    <p className="font-bold text-[#24170f]">{user.email}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--ink-soft)]">Телефон</p>
-                    <p className="font-medium">{user.phoneNumber || "Не указан"}</p>
+                    <p className="text-xs font-black uppercase tracking-wider text-[#72543d]">Телефон</p>
+                    <p className="font-bold text-[#24170f]">{user.phoneNumber || "Не указан"}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--ink-soft)]">Дата регистрации</p>
-                    <p className="font-medium">{format(parseISO(user.registrationDate), "d MMMM yyyy", { locale: ru })}</p>
+                    <p className="text-xs font-black uppercase tracking-wider text-[#72543d]">Дата регистрации</p>
+                    <p className="font-bold text-[#24170f]">{format(parseISO(user.registrationDate), "d MMMM yyyy", { locale: ru })}</p>
                   </div>
                 </div>
               )}
@@ -194,7 +204,7 @@ export function ProfilePage() {
 
           {/* Booking History */}
           <div className="lg:col-span-2 space-y-6">
-            <h3 className="text-2xl font-bold">История бронирований</h3>
+            <h3 className="text-2xl font-black text-[#24170f]">История бронирований</h3>
             
             {loading ? (
               <Loader label="Загружаем историю..." />
@@ -208,31 +218,31 @@ export function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 {reservations.map((res) => (
-                  <Panel key={res.reservationId} className="flex flex-col gap-4 overflow-hidden">
+                  <Panel key={res.reservationId} className="flex flex-col gap-4 overflow-hidden border-2 border-transparent hover:border-[#efe4d6] transition-colors">
                     <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold text-[color:var(--ink-soft)]">#{res.reservationId}</span>
+                          <span className="text-xs font-black text-[#72543d]">#{res.reservationId}</span>
                           {getStatusBadge(res.status)}
                         </div>
-                        <h4 className="text-lg font-bold">{res.bookableObject.name}</h4>
-                        <p className="text-sm text-[color:var(--ink-soft)]">
-                          Дата: <span className="text-black font-medium">{format(parseISO(res.reservationDate), "d MMMM yyyy", { locale: ru })}</span>
+                        <h4 className="text-xl font-black text-[#24170f]">{res.bookableObject.name}</h4>
+                        <p className="text-sm font-bold text-[#72543d]">
+                          Дата: <span className="text-[#24170f]">{format(parseISO(res.reservationDate), "d MMMM yyyy", { locale: ru })}</span>
                         </p>
                       </div>
                       <div className="sm:text-right space-y-2 w-full sm:w-auto">
-                        <p className="text-xl font-bold text-[#c96f2b]">{formatCurrency(res.totalSum)}</p>
+                        <p className="text-2xl font-black text-[#c96f2b]">{formatCurrency(res.totalSum)}</p>
                         <div className="flex flex-wrap gap-2 justify-end">
                           <Button 
                             variant="secondary" 
-                            className="text-xs py-1" 
+                            className="text-xs font-bold py-1.5" 
                             onClick={() => setExpandedId(expandedId === res.reservationId ? null : res.reservationId)}
                           >
                             {expandedId === res.reservationId ? "Скрыть" : "Детали"}
                           </Button>
                           {res.status === "pending" && (
                             <Button 
-                              className="text-xs py-1" 
+                              className="text-xs font-bold py-1.5" 
                               onClick={() => {
                                 dashboardApi.initiatePayment(res.reservationId).then(data => {
                                   window.location.href = data.confirmationUrl;
@@ -245,8 +255,8 @@ export function ProfilePage() {
                           {canCancel(res) && (
                             <Button 
                               variant="danger" 
-                              className="text-xs py-1" 
-                              onClick={() => handleCancelReservation(res.reservationId)}
+                              className="text-xs font-bold py-1.5" 
+                              onClick={() => setCancelModalId(res.reservationId)}
                             >
                               Отменить
                             </Button>
@@ -256,26 +266,30 @@ export function ProfilePage() {
                     </div>
                     
                     {expandedId === res.reservationId && (
-                      <div className="mt-4 pt-4 border-t space-y-3 animate-in slide-in-from-top duration-300">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-500">Объект:</p>
-                            <p className="font-medium">{res.bookableObject.name}</p>
+                      <div className="mt-4 pt-4 border-t border-[#efe4d6] space-y-4 animate-in slide-in-from-top duration-300">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                          <div className="space-y-1">
+                            <p className="text-xs font-black uppercase text-[#72543d]">Объект:</p>
+                            <p className="font-bold text-[#24170f]">{res.bookableObject.name}</p>
                           </div>
-                          <div>
-                            <p className="text-gray-500">Дата создания:</p>
-                            <p className="font-medium">{format(parseISO(res.creationDate), "d.MM.yyyy HH:mm")}</p>
+                          <div className="space-y-1">
+                            <p className="text-xs font-black uppercase text-[#72543d]">Цена аренды:</p>
+                            <p className="font-bold text-[#c96f2b]">{formatCurrency(res.bookableObject.basePrice)}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-black uppercase text-[#72543d]">Дата создания:</p>
+                            <p className="font-bold text-[#24170f]">{format(parseISO(res.creationDate), "d.MM.yyyy HH:mm")}</p>
                           </div>
                         </div>
                         
                         {res.menuItems && res.menuItems.length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-sm text-gray-500">Меню:</p>
-                            <div className="bg-gray-50 rounded-xl p-3 space-y-1">
+                            <p className="text-xs font-black uppercase text-[#72543d]">Заказанное меню:</p>
+                            <div className="bg-[#fffaf2] rounded-2xl p-4 space-y-2 border border-[#efe4d6]">
                               {res.menuItems.map((item, idx) => (
-                                <div key={idx} className="flex justify-between text-xs">
-                                  <span>{item.menuItem.name} x {item.quantity}</span>
-                                  <span>{formatCurrency(Number(item.itemCost))}</span>
+                                <div key={idx} className="flex justify-between text-xs font-bold">
+                                  <span className="text-[#3b2a1d]">{item.menuItem.name} x {item.quantity}</span>
+                                  <span className="text-[#c96f2b]">{formatCurrency(Number(item.itemCost) * item.quantity)}</span>
                                 </div>
                               ))}
                             </div>
@@ -290,6 +304,34 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        isOpen={cancelModalId !== null}
+        onClose={() => setCancelModalId(null)}
+        title="Отмена бронирования"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setCancelModalId(null)} disabled={isCancelling}>
+              Назад
+            </Button>
+            <Button variant="danger" onClick={handleCancelReservation} disabled={isCancelling}>
+              {isCancelling ? "Отменяем..." : "Подтвердить отмену"}
+            </Button>
+          </>
+        }
+      >
+        <p className="font-medium">Вы уверены, что хотите отменить бронирование №{cancelModalId}? Это действие нельзя будет отменить.</p>
+      </Modal>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </AppShell>
   );
 }
