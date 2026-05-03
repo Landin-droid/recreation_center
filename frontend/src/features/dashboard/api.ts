@@ -7,6 +7,7 @@ import type {
   RentalItem,
   Reservation,
   ReservationFormData,
+  User,
 } from "@shared/api/types";
 
 export const dashboardApi = {

@@ -20,8 +20,8 @@ export function PaymentSuccessPage() {
           </p>
         </Panel>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button as={Link} to="/profile" className="px-8">Перейти в кабинет</Button>
-          <Button as={Link} to="/" variant="secondary">На главную</Button>
+          <Link to="/profile" className="px-8 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition">Перейти в кабинет</Link>
+          <Link to="/" className="px-8 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition">На главную</Link>
         </div>
       </div>
     </AppShell>
