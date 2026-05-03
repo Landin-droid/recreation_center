@@ -5,7 +5,7 @@ import { dashboardApi } from "@features/dashboard/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import type { Reservation, User } from "@shared/api/types";
 import { formatCurrency } from "@shared/lib/format";
-import { format, parseISO, isAfter, addHours, startOfToday } from "date-fns";
+import { format, parseISO, isBefore, addHours } from "date-fns";
 import { ru } from "date-fns/locale";
 
 export function ProfilePage() {
@@ -92,8 +92,8 @@ export function ProfilePage() {
   const canCancel = (res: Reservation) => {
     if (res.status === "cancelled") return false;
     const resDate = parseISO(res.reservationDate);
-    const deadline = addHours(startOfToday(), 10);
-    return !isAfter(deadline, resDate);
+    const deadline = addHours(resDate, 10);
+    return isBefore(new Date(), deadline);
   };
 
   const getStatusBadge = (status: string) => {
