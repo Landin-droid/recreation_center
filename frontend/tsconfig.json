@@ -17,13 +17,11 @@
     "outDir": "./dist",
     "noEmit": true,
     "jsx": "react-jsx",
-    "ignoreDeprecations": "6.0",
-    "baseUrl": "./",
     "paths": {
-      "@app/*": ["src/app/*"],
-      "@features/*": ["src/features/*"],
-      "@shared/*": ["src/shared/*"],
-      "@views/*": ["src/views/*"]
+      "@app/*": ["./src/app/*"],
+      "@features/*": ["./src/features/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@views/*": ["./src/views/*"]
     }
   },
   "include": [

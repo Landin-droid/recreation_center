@@ -1,26 +1,50 @@
 import { Link, NavLink } from "react-router-dom";
 import clsx from "clsx";
+import { useEffect } from "react";
 import type { PropsWithChildren, ReactNode } from "react";
+import { useAuthStore } from "@features/auth/model/auth-store";
 
 export function AppShell({
   children,
   actions,
 }: PropsWithChildren<{ actions?: ReactNode }>) {
+  const { accessToken, clearSession } = useAuthStore();
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#fffaf2]">
       <header className="sticky top-0 z-20 border-b border-[color:var(--border)] bg-[rgba(255,250,242,0.85)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link to="/" className="text-lg font-extrabold tracking-tight">
-            Победа
+          <Link to="/" className="text-xl font-black tracking-tighter text-[#c96f2b]">
+            ПОБЕДА
           </Link>
-          <nav className="flex items-center gap-2 text-sm font-semibold text-[color:var(--ink-soft)]">
+          <nav className="flex items-center gap-1 text-sm font-bold text-[color:var(--ink-soft)]">
             <NavItem to="/">Главная</NavItem>
-            <NavItem to="/dashboard">Кабинет</NavItem>
+            <NavItem to="/rentals">Прокат</NavItem>
+            <NavItem to="/booking">Бронирование</NavItem>
+            {accessToken ? (
+              <>
+                <NavItem to="/profile">Кабинет</NavItem>
+                <Button
+                  variant="ghost"
+                  className="ml-2 text-xs opacity-70 hover:opacity-100"
+                  onClick={clearSession}
+                >
+                  Выйти
+                </Button>
+              </>
+            ) : (
+              <NavItem to="/login">Войти</NavItem>
+            )}
             {actions}
           </nav>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+      <footer className="border-t border-[color:var(--border)] py-12 text-center text-sm text-[color:var(--ink-soft)]">
+        <div className="mx-auto max-w-7xl px-6">
+          <p>© {new Date().getFullYear()} База отдыха «Победа». Все права защищены.</p>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -201,9 +225,72 @@ export function EmptyState({
   description: string;
 }) {
   return (
-    <div className="rounded-3xl border border-dashed border-[color:var(--border)] bg-white/50 p-8 text-center">
-      <h3 className="text-lg font-bold">{title}</h3>
-      <p className="mt-2 text-sm text-[color:var(--ink-soft)]">{description}</p>
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
+      <p className="mt-2 text-[color:var(--ink-soft)]">{description}</p>
+    </div>
+  );
+}
+
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footer,
+}: PropsWithChildren<{
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  footer?: ReactNode;
+}>) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <Panel className="w-full max-w-md space-y-6 animate-in zoom-in duration-300">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
+          <button onClick={onClose} className="text-[color:var(--ink-soft)] hover:text-black transition">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="text-[#3b2a1d] leading-relaxed">
+          {children}
+        </div>
+        {footer && <div className="pt-4 flex justify-end gap-3 border-t border-[color:var(--border)]">{footer}</div>}
+      </Panel>
+    </div>
+  );
+}
+
+export function Toast({
+  message,
+  type = "info",
+  onClose,
+}: {
+  message: string;
+  type?: "info" | "success" | "error";
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={clsx(
+      "fixed bottom-6 right-6 z-[60] flex items-center gap-3 rounded-2xl px-6 py-4 shadow-2xl animate-in slide-in-from-right duration-300",
+      type === "success" && "bg-green-600 text-white",
+      type === "error" && "bg-red-600 text-white",
+      type === "info" && "bg-[#24170f] text-white",
+    )}>
+      <span className="text-sm font-bold">{message}</span>
+      <button onClick={onClose} className="opacity-70 hover:opacity-100">
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
     </div>
   );
 }

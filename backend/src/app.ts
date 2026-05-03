@@ -17,7 +17,7 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: true, // В продакшене лучше указать конкретный домен
+    origin: "https://recreation-center.onrender.com",
     credentials: true,
   }),
 );

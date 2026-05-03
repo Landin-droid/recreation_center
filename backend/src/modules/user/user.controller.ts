@@ -34,15 +34,15 @@ const setTokenCookies = (
 ) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: true, // Всегда true для HTTPS на Render
+    sameSite: "none", // Нужно для кросс-доменных кук
     maxAge: 15 * 60 * 1000, // 15 минут
   });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: true,
+    sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
   });
 };
@@ -160,10 +160,11 @@ export const userController = {
 
   forgotPassword: asyncHandler(async (req: Request, res: Response) => {
     const validated = forgotPasswordSchema.parse(req.body);
-    await userService.forgotPassword(validated.email);
+    const resetToken = await userService.forgotPassword(validated.email);
     res.json({
       success: true,
       message: "If an account with that email exists, a password reset link has been sent.",
+      data: { resetToken }, // Возвращаем токен для EmailJS на фронтенде
     });
   }),
 
