@@ -16,6 +16,7 @@ export const emailjsService = {
         object_name: bookingDetails.bookableObject.name,
         date: bookingDetails.reservationDate,
         total_sum: bookingDetails.totalSum,
+        guests: bookingDetails.guestsCount,
       };
 
       await emailjs.send(SERVICE_ID, TEMPLATE_BOOKING, templateParams, PUBLIC_KEY);
