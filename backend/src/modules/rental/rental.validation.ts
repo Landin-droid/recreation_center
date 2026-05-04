@@ -39,17 +39,19 @@ const validateKmRange = (
   }
 };
 
-export const rentalPriceRuleSchema = z
-  .object({
-    rentalItemId: positiveIntSchema,
-    pricePerKm: positiveDecimalSchema,
-    minKm: positiveIntSchema.default(1),
-    maxKm: decimalSchema.optional().nullable(),
-    passengerType: z.nativeEnum(PassengerType),
-  })
-  .superRefine(validateKmRange);
+const rentalPriceRuleBaseSchema = z.object({
+  rentalItemId: positiveIntSchema,
+  pricePerKm: positiveDecimalSchema,
+  minKm: positiveIntSchema.default(1),
+  maxKm: decimalSchema.optional().nullable(),
+  passengerType: z.nativeEnum(PassengerType),
+});
 
-export const updateRentalPriceRuleSchema = rentalPriceRuleSchema.partial().superRefine(validateKmRange);
+export const rentalPriceRuleSchema = rentalPriceRuleBaseSchema.superRefine(validateKmRange);
+
+export const updateRentalPriceRuleSchema = rentalPriceRuleBaseSchema
+  .partial()
+  .superRefine(validateKmRange);
 
 export const listRentalPriceRulesQuerySchema = z.object({
   rentalItemId: z.coerce.number().int().positive().optional(),
