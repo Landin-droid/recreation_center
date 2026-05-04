@@ -35,7 +35,7 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
   };
 
   return (
-    <div className="relative h-full w-full group overflow-hidden">
+    <div className="relative h-full w-full group overflow-hidden bg-gray-100">
       <img
         src={images[currentIndex]}
         alt={`${name} - ${currentIndex + 1}`}
@@ -45,30 +45,40 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
       {images.length > 1 && (
         <>
           <button
+            type="button"
             onClick={prev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/50"
+            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60"
+            aria-label="Previous image"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <button
+            type="button"
             onClick={next}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/50"
+            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60"
+            aria-label="Next image"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
           
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 flex gap-1.5">
             {images.map((_, i) => (
-              <div
+              <button
                 key={i}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(i);
+                }}
                 className={clsx(
-                  "h-1.5 w-1.5 rounded-full transition-all",
-                  i === currentIndex ? "bg-white w-3" : "bg-white/50"
+                  "h-1.5 rounded-full transition-all",
+                  i === currentIndex ? "bg-white w-4" : "bg-white/50 w-1.5"
                 )}
+                aria-label={`Go to image ${i + 1}`}
               />
             ))}
           </div>
@@ -236,15 +246,15 @@ export function BookingPage() {
       ];
 
       return (
-        <div className="grid grid-cols-2 gap-2 mt-4">
+        <div className="grid grid-cols-2 gap-4 mt-4">
           {cottageAmenities.map(am => (
-            <div key={am.key} className="flex items-center gap-2 text-sm">
+            <div key={am.key} className="flex items-center gap-2 text-base">
               <span>{am.icon}</span>
               <span className="flex-1">{am.name}</span>
               <span>{amenitiesStr.toLowerCase().includes(am.key) ? "✅" : "❌"}</span>
             </div>
           ))}
-          <div className="col-span-2 text-sm mt-2 font-medium">
+          <div className="col-span-2 text-base mt-2 font-medium">
             Площадь: {(obj as any).details?.squareMeters || 0} м²
           </div>
         </div>
@@ -258,9 +268,9 @@ export function BookingPage() {
       ];
 
       return (
-        <div className="grid grid-cols-1 gap-2 mt-4">
+        <div className="grid grid-cols-2 gap-4 mt-4">
           {gazeboAmenities.map(am => (
-            <div key={am.key} className="flex items-center gap-2 text-sm">
+            <div key={am.key} className="flex items-center gap-2 text-base">
               <span>{am.icon}</span>
               <span className="flex-1">{am.name}</span>
               <span>{amenitiesStr.toLowerCase().includes(am.key) ? "✅" : "❌"}</span>
@@ -272,7 +282,7 @@ export function BookingPage() {
 
     if (type === "BANQUET_HALL" || type === "KARAOKE_BAR") {
       return (
-        <div className="mt-4 text-sm font-medium">
+        <div className="mt-4 text-base font-medium">
           Количество столов: {(obj as any).details?.maxTables || (obj as any).details?.tablesAmount || 0}
         </div>
       );
@@ -324,28 +334,28 @@ export function BookingPage() {
         ) : filteredAndSortedObjects.length === 0 ? (
           <EmptyState title="Ничего не найдено" description="Попробуйте изменить параметры фильтрации." />
         ) : (
-          <div className="grid gap-8 lg:grid-cols-2">
+          <div className="grid gap-8 grid-cols-1">
             {filteredAndSortedObjects.map((obj) => (
               <Panel key={obj.bookableObjectId} className="flex flex-col md:flex-row overflow-hidden p-0 h-full">
                 <div className="md:w-2/5 relative bg-gray-200 aspect-video md:aspect-auto">
                   <ImageCarousel images={obj.imageUrls} name={obj.name} />
                 </div>
 
-                <div className="p-6 flex-1 flex flex-col">
-                  <div className="mb-2 flex items-center justify-between">
+                <div className="p-8 flex-1 flex flex-col">
+                  <div className="mb-4 flex items-center justify-between">
                     <Badge tone="neutral">{getObjectTypeName(obj.type)}</Badge>
-                    <span className="text-lg font-bold text-[#c96f2b]">
+                    <span className="text-xl font-bold text-[#c96f2b]">
                       {formatCurrency(obj.basePrice)}
                     </span>
                   </div>
-                  <h3 className="mb-2 text-2xl font-bold">{obj.name}</h3>
-                  <p className="mb-4 text-sm text-[color:var(--ink-soft)] line-clamp-3">
+                  <h3 className="mb-4 text-3xl font-black text-[#24170f]">{obj.name}</h3>
+                  <p className="mb-6 text-base text-[color:var(--ink-soft)] leading-relaxed">
                     {obj.description || "Прекрасное место для вашего отдыха."}
                   </p>
                   
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <svg className="h-5 w-5 text-[#c96f2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center gap-3 text-base font-medium">
+                      <svg className="h-6 w-6 text-[#c96f2b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                       <span>Вместимость: до {obj.capacity} {getPersonString(obj.capacity)}</span>
@@ -354,7 +364,7 @@ export function BookingPage() {
                   </div>
 
                   <Button 
-                    className="mt-6 w-full" 
+                    className="mt-8 w-full text-base py-4" 
                     onClick={() => handleOpenBooking(obj)}
                   >
                     Забронировать
