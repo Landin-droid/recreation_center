@@ -24,15 +24,32 @@ export const rentalItemSchema = z.object({
 
 export const updateRentalItemSchema = rentalItemSchema.partial();
 
-export const rentalPriceRuleSchema = z.object({
-  rentalItemId: positiveIntSchema,
-  pricePerKm: positiveDecimalSchema,
-  minKm: positiveIntSchema.optional(),
-  maxKm: decimalSchema.optional().nullable(),
-  passengerType: z.nativeEnum(PassengerType),
-});
+const validateKmRange = (
+  data: { minKm?: number; maxKm?: number | null },
+  ctx: z.RefinementCtx,
+) => {
+  if (data.maxKm !== null && data.maxKm !== undefined && data.minKm !== undefined) {
+    if (data.maxKm < data.minKm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["maxKm"],
+        message: "maxKm must be greater than or equal to minKm",
+      });
+    }
+  }
+};
 
-export const updateRentalPriceRuleSchema = rentalPriceRuleSchema.partial();
+export const rentalPriceRuleSchema = z
+  .object({
+    rentalItemId: positiveIntSchema,
+    pricePerKm: positiveDecimalSchema,
+    minKm: positiveIntSchema.default(1),
+    maxKm: decimalSchema.optional().nullable(),
+    passengerType: z.nativeEnum(PassengerType),
+  })
+  .superRefine(validateKmRange);
+
+export const updateRentalPriceRuleSchema = rentalPriceRuleSchema.partial().superRefine(validateKmRange);
 
 export const listRentalPriceRulesQuerySchema = z.object({
   rentalItemId: z.coerce.number().int().positive().optional(),
