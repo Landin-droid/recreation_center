@@ -6,18 +6,6 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useEffect } from "react";
-import { useAuthStore } from "@store/authStore";
-import api from "@services/api";
-import { ProtectedRoute } from "@components/ProtectedRoute";
-import { HomePage } from "@pages/HomePage";
-import { LoginPage } from "@pages/LoginPage";
-import { RegisterPage } from "@pages/RegisterPage";
-import { ObjectsPage } from "@pages/ObjectsPage";
-import { ObjectDetailPage } from "@pages/ObjectDetailPage";
-import { ReservationsPage } from "@pages/ReservationsPage";
-import { ReservationDetailPage } from "@pages/ReservationDetailPage";
-import { ProfilePage } from "@pages/ProfilePage";
-import { MenuPage } from "@pages/MenuPage";
 import "./styles/globals.css";
 
 const queryClient = new QueryClient({
