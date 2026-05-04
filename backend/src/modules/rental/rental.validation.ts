@@ -28,7 +28,7 @@ export const rentalPriceRuleSchema = z.object({
   rentalItemId: positiveIntSchema,
   pricePerKm: positiveDecimalSchema,
   minKm: positiveIntSchema.optional(),
-  maxKm: positiveIntSchema.optional().nullable(),
+  maxKm: decimalSchema.optional().nullable(),
   passengerType: z.nativeEnum(PassengerType),
 });
 

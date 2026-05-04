@@ -1,4 +1,4 @@
-import { RentalCategory } from "../../generated/prisma/client";
+import { RentalCategory, Decimal } from "../../generated/prisma/client";
 import { AppError } from "../../middleware/errorHandler";
 import {
   CreateRentalItemInput,
@@ -24,7 +24,7 @@ const formatRentalItem = (item: RentalItemWithRelations) => ({
     ruleId: rule.ruleId,
     pricePerKm: Number(rule.pricePerKm),
     minKm: rule.minKm,
-    maxKm: rule.maxKm,
+    maxKm: rule.maxKm === null ? null : Number(rule.maxKm),
     passengerType: rule.passengerType,
   })),
 });
@@ -42,9 +42,12 @@ const ensureSnowmobileRental = async (rentalItemId: number) => {
   return rentalItem;
 };
 
-const validateKmRange = (minKm: number, maxKm: number | null | undefined) => {
-  if (maxKm !== null && maxKm !== undefined && maxKm < minKm) {
-    throw new AppError("maxKm must be greater than or equal to minKm", 400);
+const validateKmRange = (minKm: number, maxKm: number | Decimal | null | undefined) => {
+  if (maxKm !== null && maxKm !== undefined) {
+    const max = typeof maxKm === "number" ? maxKm : Number(maxKm);
+    if (max < minKm) {
+      throw new AppError("maxKm must be greater than or equal to minKm", 400);
+    }
   }
 };
 
@@ -119,7 +122,7 @@ export const rentalService = {
       rentalItemId: rule.rentalItemId,
       pricePerKm: Number(rule.pricePerKm),
       minKm: rule.minKm,
-      maxKm: rule.maxKm,
+      maxKm: rule.maxKm === null ? null : Number(rule.maxKm),
       passengerType: rule.passengerType,
       rentalItem: {
         name: rule.rentalItem.name,
@@ -147,7 +150,7 @@ export const rentalService = {
       rentalItemId: rule.rentalItemId,
       pricePerKm: Number(rule.pricePerKm),
       minKm: rule.minKm,
-      maxKm: rule.maxKm,
+      maxKm: rule.maxKm === null ? null : Number(rule.maxKm),
       passengerType: rule.passengerType,
     };
   },
@@ -161,7 +164,7 @@ export const rentalService = {
     await ensureSnowmobileRental(data.rentalItemId ?? existing.rentalItemId);
 
     const nextMinKm = data.minKm ?? existing.minKm;
-    const nextMaxKm = data.maxKm ?? existing.maxKm;
+    const nextMaxKm = data.maxKm !== undefined ? data.maxKm : existing.maxKm;
     validateKmRange(nextMinKm, nextMaxKm);
 
     const rule = await rentalRepository.updatePriceRule(ruleId, {
@@ -179,7 +182,7 @@ export const rentalService = {
       rentalItemId: rule.rentalItemId,
       pricePerKm: Number(rule.pricePerKm),
       minKm: rule.minKm,
-      maxKm: rule.maxKm,
+      maxKm: rule.maxKm === null ? null : Number(rule.maxKm),
       passengerType: rule.passengerType,
     };
   },
