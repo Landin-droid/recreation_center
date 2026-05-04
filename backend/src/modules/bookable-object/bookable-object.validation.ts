@@ -26,6 +26,7 @@ const bookableObjectBaseSchema = z.object({
   seasonEnd: optionalDateStringSchema,
   description: z.string().trim().optional(),
   isActive: z.boolean().optional(),
+  imageUrls: z.array(z.string().url()).default([]),
   type: z.nativeEnum(BookableObjectType),
   details: subtypeDetailsSchema,
 });

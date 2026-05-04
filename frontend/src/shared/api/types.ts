@@ -49,6 +49,7 @@ export interface BookableObject {
   seasonEnd: string | null;
   description: string | null;
   isActive: boolean;
+  imageUrls: string[];
   type: string;
   details: Record<string, unknown> | null;
   menuItems: BookableObjectMenuItem[];

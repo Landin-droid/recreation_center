@@ -30,7 +30,6 @@ const buildSubtypeCreateData = (
         cottage: {
           create: {
             amenities: details?.amenities,
-            bedrooms: details?.bedrooms,
             squareMeters: details?.squareMeters,
           },
         },
@@ -83,12 +82,10 @@ const buildSubtypeUpdateOperations = (
           upsert: {
             create: {
               amenities: details.amenities,
-              bedrooms: details.bedrooms,
               squareMeters: details.squareMeters,
             },
             update: {
               amenities: details.amenities,
-              bedrooms: details.bedrooms,
               squareMeters: details.squareMeters,
             },
           },
@@ -186,6 +183,7 @@ const formatBookableObject = (object: BookableObjectWithRelations) => ({
   seasonEnd: object.seasonEnd,
   description: object.description,
   isActive: object.isActive,
+  imageUrls: object.imageUrls,
   type: object.type,
   details: mapSubtypeDetails(object),
   menuItems: object.objectMenuItems.map((item) => ({
@@ -231,6 +229,7 @@ export const bookableObjectService = {
       seasonEnd: data.seasonEnd ? new Date(data.seasonEnd) : null,
       description: data.description,
       isActive: data.isActive ?? true,
+      imageUrls: data.imageUrls,
       type: data.type,
       ...buildSubtypeCreateData(data.type, data.details),
     });
@@ -275,6 +274,7 @@ export const bookableObjectService = {
             : {}),
           ...(data.description !== undefined ? { description: data.description } : {}),
           ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+          ...(data.imageUrls !== undefined ? { imageUrls: data.imageUrls } : {}),
           ...(data.type !== undefined ? { type: data.type } : {}),
           ...buildSubtypeUpdateOperations(nextType, data.details),
         },
