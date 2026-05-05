@@ -24,7 +24,7 @@ const formatRentalItem = (item: RentalItemWithRelations) => ({
     ruleId: rule.ruleId,
     pricePerKm: Number(rule.pricePerKm),
     minKm: rule.minKm,
-    maxKm: rule.maxKm,
+    maxKm: rule.maxKm === null ? null : Number(rule.maxKm),
     passengerType: rule.passengerType,
   })),
 });
@@ -40,12 +40,6 @@ const ensureSnowmobileRental = async (rentalItemId: number) => {
   }
 
   return rentalItem;
-};
-
-const validateKmRange = (minKm: number, maxKm: number | null | undefined) => {
-  if (maxKm !== null && maxKm !== undefined && maxKm < minKm) {
-    throw new AppError("maxKm must be greater than or equal to minKm", 400);
-  }
 };
 
 export const rentalService = {
@@ -119,7 +113,7 @@ export const rentalService = {
       rentalItemId: rule.rentalItemId,
       pricePerKm: Number(rule.pricePerKm),
       minKm: rule.minKm,
-      maxKm: rule.maxKm,
+      maxKm: rule.maxKm === null ? null : Number(rule.maxKm),
       passengerType: rule.passengerType,
       rentalItem: {
         name: rule.rentalItem.name,
@@ -130,7 +124,6 @@ export const rentalService = {
 
   async createPriceRule(data: CreateRentalPriceRuleInput) {
     await ensureSnowmobileRental(data.rentalItemId);
-    validateKmRange(data.minKm ?? 1, data.maxKm);
 
     const rule = await rentalRepository.createPriceRule({
       rentalItem: {
@@ -147,7 +140,7 @@ export const rentalService = {
       rentalItemId: rule.rentalItemId,
       pricePerKm: Number(rule.pricePerKm),
       minKm: rule.minKm,
-      maxKm: rule.maxKm,
+      maxKm: rule.maxKm === null ? null : Number(rule.maxKm),
       passengerType: rule.passengerType,
     };
   },
@@ -159,10 +152,6 @@ export const rentalService = {
     }
 
     await ensureSnowmobileRental(data.rentalItemId ?? existing.rentalItemId);
-
-    const nextMinKm = data.minKm ?? existing.minKm;
-    const nextMaxKm = data.maxKm ?? existing.maxKm;
-    validateKmRange(nextMinKm, nextMaxKm);
 
     const rule = await rentalRepository.updatePriceRule(ruleId, {
       ...(data.rentalItemId !== undefined
@@ -179,7 +168,7 @@ export const rentalService = {
       rentalItemId: rule.rentalItemId,
       pricePerKm: Number(rule.pricePerKm),
       minKm: rule.minKm,
-      maxKm: rule.maxKm,
+      maxKm: rule.maxKm === null ? null : Number(rule.maxKm),
       passengerType: rule.passengerType,
     };
   },

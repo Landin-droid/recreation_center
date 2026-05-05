@@ -21,7 +21,7 @@ export const reservationRepository = {
     prisma.reservation.findMany({
       where,
       include: reservationInclude,
-      orderBy: [{ reservationDate: "desc" }, { reservationId: "desc" }],
+      orderBy: [{ creationDate: "desc" }, { reservationId: "desc" }, { reservationDate: "desc" }],
     }),
 
   findById: (reservationId: number) =>
