@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { AppShell, Title, Panel, Badge, Loader, EmptyState, Button, Select, Field } from "@shared/ui/kit";
 import { dashboardApi } from "@features/dashboard/api";
 import type { BookableObject, Reservation } from "@shared/api/types";
@@ -138,9 +138,13 @@ export function BookingPage() {
     
     try {
       const reservations = await dashboardApi.listReservations();
-      // Filter reservations for this object that are not cancelled
+      // Filter reservations for this object that still block the date
       const busy = reservations
-        .filter(r => r.bookableObject.bookableObjectId === obj.bookableObjectId && r.status !== "cancelled")
+        .filter(
+          (r) =>
+            r.bookableObject.bookableObjectId === obj.bookableObjectId &&
+            !["cancelled", "expired"].includes(r.status),
+        )
         .map(r => parseISO(r.reservationDate));
       setBusyDates(busy);
     } catch (err) {
