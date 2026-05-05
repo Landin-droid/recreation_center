@@ -206,8 +206,8 @@ export const reservationService = {
       reservationDate: derived.reservationDate,
       guestsCount: data.guestsCount,
       notes: data.notes,
-      status: data.status ?? ReservationStatus.pending,
-      cancellationReason: data.cancellationReason,
+      status: ReservationStatus.pending,
+      cancellationReason: null,
       totalSum: derived.totalSum,
       reservationMenuItems: {
         create: derived.reservationMenuItemsCreate,
@@ -230,9 +230,6 @@ export const reservationService = {
         data.reservationDate ?? existing.reservationDate.toISOString(),
       guestsCount: data.guestsCount ?? existing.guestsCount,
       notes: data.notes ?? existing.notes ?? undefined,
-      status: data.status ?? existing.status,
-      cancellationReason:
-        data.cancellationReason ?? existing.cancellationReason ?? undefined,
       menuItems:
         data.menuItems ??
         existing.reservationMenuItems.map((item) => ({
@@ -260,8 +257,6 @@ export const reservationService = {
             reservationDate: derived.reservationDate,
             guestsCount: normalizedPayload.guestsCount,
             notes: normalizedPayload.notes,
-            status: normalizedPayload.status ?? existing.status,
-            cancellationReason: normalizedPayload.cancellationReason,
             totalSum: derived.totalSum,
             reservationMenuItems: {
               create: derived.reservationMenuItemsCreate,

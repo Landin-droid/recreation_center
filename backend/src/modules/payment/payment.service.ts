@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { emailService } from "../../lib/email";
 import { Prisma } from "../../generated/prisma/client";
 import { KassaPaymentResponse, KassaRefundResponse } from "./payment.types";
+import { AppError } from "../../middleware/errorHandler";
 
 /**
  * Payment Service
@@ -59,9 +60,38 @@ class PaymentService {
         throw new Error("Payment amount must be greater than 0");
       }
 
-      // 2. Проверить, не создан ли уже активный платёж
-      // TODO: Implement findPaymentByReservationId in repository if needed
-      // For now, we'll skip this check and let subsequent calls handle duplicates
+      if (["cancelled", "expired"].includes(reservation.status)) {
+        throw new AppError("Cannot pay for cancelled or expired reservation", 400);
+      }
+
+      if (reservation.status === "paid") {
+        throw new AppError("Reservation is already paid", 400);
+      }
+
+      const conflictingReservation = await prisma.reservation.findFirst({
+        where: {
+          bookableObjectId: reservation.bookableObjectId,
+          reservationDate: reservation.reservationDate,
+          reservationId: { not: reservation.reservationId },
+          status: {
+            notIn: ["cancelled", "expired"],
+          },
+        },
+      });
+
+      if (conflictingReservation) {
+        throw new AppError(
+          "Another active reservation already exists for this object and date",
+          409,
+        );
+      }
+
+      const existingPayment =
+        await paymentRepository.findPaymentByReservationId(reservationId);
+
+      if (existingPayment) {
+        throw new AppError("Payment already exists for this reservation", 409);
+      }
 
       // 3. Генерировать ключ идемпотентности
       const idempotencyKey = kassaClient.generateIdempotencyKey();
