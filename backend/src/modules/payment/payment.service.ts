@@ -217,16 +217,7 @@ class PaymentService {
         console.log(`✓ Payment ${payment.paymentId} succeeded`);
 
         // Извлечь метод оплаты из ответа ЮKassa
-        const kassaMethodType = webhookPayload.object?.payment_method?.type;
-        let method: string | undefined;
-
-        if (kassaMethodType === "bank_card") {
-          method = "card";
-        } else if (kassaMethodType === "sbp") {
-          method = "SBP";
-        } else if (kassaMethodType) {
-          method = "yookassa"; // Fallback for other methods
-        }
+        const method = webhookPayload.object?.payment_method?.type;
 
         await paymentRepository.updatePaymentStatus(payment.paymentId, {
           status: "succeeded",
@@ -269,6 +260,13 @@ class PaymentService {
         console.log(
           `⏳ Payment ${payment.paymentId} waiting for capture (two-stage)`,
         );
+
+        // Обновить статус в БД
+        await paymentRepository.updatePaymentStatus(payment.paymentId, {
+          status: "waiting_for_capture",
+          kassaPaymentId,
+          method: webhookPayload.object?.payment_method?.type,
+        });
 
         // Можно автоматически захватить платёж
         if (kassaClient.isReady()) {
@@ -367,22 +365,20 @@ class PaymentService {
           `Payment status changed: ${payment.status} -> ${kassaPayment.status}`,
         );
 
-        // Обработать изменение статуса
+        // Синхронизировать статус и метод
+        await paymentRepository.updatePaymentStatus(payment.paymentId, {
+          status: kassaPayment.status as any,
+          kassaPaymentId: payment.kassaPaymentId,
+          method: kassaPayment.payment_method?.type,
+        });
+
+        // Обработать переход в успешный статус
         if (
           kassaPayment.status === "succeeded" &&
           payment.status !== "succeeded"
         ) {
           // Извлечь метод оплаты
-          const kassaMethodType = kassaPayment.payment_method?.type;
-          let method: string | undefined;
-
-          if (kassaMethodType === "bank_card") {
-            method = "card";
-          } else if (kassaMethodType === "sbp") {
-            method = "SBP";
-          } else if (kassaMethodType) {
-            method = "yookassa";
-          }
+          const method = kassaPayment.payment_method?.type;
 
           await paymentRepository.updatePaymentStatus(payment.paymentId, {
             status: "succeeded",
@@ -716,6 +712,7 @@ class PaymentService {
       return {
         paymentId: payment.paymentId,
         status: payment.status,
+        method: payment.method,
         amount: payment.amount.toString(),
         kassaPaymentId: payment.kassaPaymentId,
         reservation: {

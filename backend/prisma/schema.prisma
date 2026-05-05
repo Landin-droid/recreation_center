@@ -235,6 +235,7 @@ enum ReservationStatus {
 
 enum PaymentStatus {
   pending
+  waiting_for_capture
   succeeded
   failed
   refunded
@@ -242,9 +243,13 @@ enum PaymentStatus {
 }
 
 enum PaymentMethod {
-  card
-  SBP
-  yookassa
+  bank_card
+  sbp
+  yoo_money
+  sberbank
+  tinkoff_bank
+  qiwi
+  cash
 }
 
 enum MenuCategory {

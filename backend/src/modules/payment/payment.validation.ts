@@ -32,7 +32,14 @@ export const webhookPayloadSchema = z.object({
           idempotencyKey: z.string().optional(),
         })
         .optional(),
+      payment_method: z
+        .object({
+          type: z.string(),
+        })
+        .passthrough()
+        .optional(),
     })
+    .passthrough()
     .optional(),
 });
 
