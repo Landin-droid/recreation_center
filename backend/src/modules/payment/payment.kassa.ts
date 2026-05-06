@@ -6,6 +6,7 @@ import {
   KassaPaymentResponse,
   KassaRefundResponse,
   KassaErrorResponse,
+  KassaReceipt,
 } from "./payment.types";
 
 /**
@@ -136,6 +137,7 @@ class YookassaClient {
         capture: request.capture !== false, // По умолчанию true (один этап)
         description: request.description || "Payment",
         metadata: request.metadata || {},
+        ...(request.receipt && { receipt: request.receipt }),
       };
 
       const response = await this.axiosInstance.post<KassaPaymentResponse>(
@@ -272,27 +274,33 @@ class YookassaClient {
   async createRefund(
     paymentId: string,
     idempotencyKey: string,
-    amount?: number,
+    amount: number,
     description?: string,
+    receipt?: KassaReceipt,
   ): Promise<KassaRefundResponse> {
     try {
       if (!paymentId) {
         throw new Error("Payment ID is required");
       }
 
+      if (!amount || amount <= 0) {
+        throw new Error("Refund amount must be greater than 0");
+      }
+
       const refundPayload: any = {
         payment_id: paymentId,
-      };
-
-      if (amount && amount > 0) {
-        refundPayload.amount = {
+        amount: {
           value: (amount / 100).toFixed(2),
           currency: "RUB",
-        };
-      }
+        },
+      };
 
       if (description) {
         refundPayload.description = description;
+      }
+
+      if (receipt) {
+        refundPayload.receipt = receipt;
       }
 
       const response = await this.axiosInstance.post<KassaRefundResponse>(

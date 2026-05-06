@@ -134,6 +134,22 @@ export interface Reservation {
   payment: ReservationPayment | null;
 }
 
+export interface CancelReservationResult {
+  action: "cancelled" | "refund_started" | "refunded";
+  reservation: Reservation;
+  refund: null | {
+    refundId: number;
+    paymentId: number;
+    refundAmount: string | number;
+    status: string;
+    kassaRefundId: string | null;
+    kassaStatus?: string;
+  };
+  refundAmount: number;
+  withheldAmount: number;
+  policy?: string;
+}
+
 export interface PaymentInitiation {
   paymentId: number;
   confirmationUrl: string;

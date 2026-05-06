@@ -38,6 +38,27 @@ export interface KassaPaymentRequest {
     return_url: string; // URL возврата после платежа
   };
   metadata?: Record<string, string>; // Дополнительные данные (макс 16 ключей)
+  receipt?: KassaReceipt;
+}
+
+export interface KassaReceiptItem {
+  description: string;
+  quantity: string;
+  amount: {
+    value: string;
+    currency: string;
+  };
+  vat_code: number;
+  payment_mode?: "full_payment" | "full_prepayment";
+  payment_subject?: "service" | "commodity" | "payment" | "another";
+}
+
+export interface KassaReceipt {
+  customer: {
+    email?: string;
+    phone?: string;
+  };
+  items: KassaReceiptItem[];
 }
 
 /**

@@ -1,6 +1,7 @@
 import { http, unwrap } from "@shared/api/http";
 import type {
   BookableObject,
+  CancelReservationResult,
   MenuItem,
   PaymentInitiation,
   PaymentStatus,
@@ -31,7 +32,7 @@ export const dashboardApi = {
     return unwrap<Reservation>(http.post("/reservations", payload));
   },
   cancelReservation(reservationId: number, reason?: string) {
-    return unwrap<Reservation>(
+    return unwrap<CancelReservationResult>(
       http.post(`/reservations/${reservationId}/cancel`, { reason }),
     );
   },

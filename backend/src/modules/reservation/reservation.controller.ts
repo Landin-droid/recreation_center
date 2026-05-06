@@ -65,8 +65,8 @@ export const reservationController = {
   cancel: asyncHandler(async (req: Request, res: Response) => {
     const id = parseIdParam(String(req.params.id), "reservation");
     const { reason } = req.body;
-    const reservation = await reservationService.cancelReservation(id, reason);
-    res.json({ success: true, data: reservation });
+    const result = await paymentService.cancelOrRefundReservation(id, reason);
+    res.json({ success: true, data: result });
   }),
 
   getPayment: asyncHandler(async (req: Request, res: Response) => {

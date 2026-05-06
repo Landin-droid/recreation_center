@@ -6,8 +6,25 @@ import dayjs from "dayjs";
 import crypto from "crypto";
 import { emailService } from "../../lib/email";
 import { Prisma } from "../../generated/prisma/client";
-import { KassaPaymentResponse, KassaRefundResponse } from "./payment.types";
+import {
+  KassaPaymentResponse,
+  KassaReceipt,
+  KassaRefundResponse,
+} from "./payment.types";
 import { AppError } from "../../middleware/errorHandler";
+
+const FULL_REFUND_OBJECT_TYPES = new Set(["cottage", "gazebo"]);
+const EXPENSE_ELIGIBLE_OBJECT_TYPES = new Set([
+  "banquet_hall",
+  "karaoke_bar",
+  "outdoor_venue",
+]);
+const LATE_CANCELLATION_WINDOW_DAYS = 2;
+
+const formatRub = (amount: number) => amount.toFixed(2);
+
+const normalizePhoneForReceipt = (phone: string | null | undefined) =>
+  phone ? phone.replace(/[^\d+]/g, "") : undefined;
 
 /**
  * Payment Service
@@ -30,6 +47,38 @@ function normalizeEventType(eventType: string): string {
   return eventType.replace(/\./g, "_").toLowerCase();
 }
 class PaymentService {
+  private buildReceipt(params: {
+    user: { email: string; phoneNumber?: string | null };
+    objectName: string;
+    reservationDate: Date;
+    amount: number;
+    descriptionPrefix: string;
+  }): KassaReceipt {
+    const description = `${params.descriptionPrefix} ${params.objectName} ${dayjs(
+      params.reservationDate,
+    ).format("DD.MM.YYYY")}`.slice(0, 128);
+
+    return {
+      customer: {
+        email: params.user.email,
+        phone: normalizePhoneForReceipt(params.user.phoneNumber),
+      },
+      items: [
+        {
+          description,
+          quantity: "1.00",
+          amount: {
+            value: formatRub(params.amount),
+            currency: "RUB",
+          },
+          vat_code: 1,
+          payment_mode: "full_payment",
+          payment_subject: "service",
+        },
+      ],
+    };
+  }
+
   /**
    * Инициировать платёж (создание объекта Payment в Yookassa)
    *
@@ -138,6 +187,13 @@ class PaymentService {
           metadata: {
             reservationId: String(reservationId),
           },
+          receipt: this.buildReceipt({
+            user: reservation.user,
+            objectName: reservation.bookableObject.name,
+            reservationDate: reservation.reservationDate,
+            amount: reservation.totalSum.toNumber(),
+            descriptionPrefix: "Бронирование",
+          }),
         };
 
         const kassaResponse = await kassaClient.createPayment(
@@ -464,14 +520,19 @@ class PaymentService {
     originalAmount: number;
     expenses: any[];
     totalExpenses: number;
-    platformFee: number;
     refundAmount: number;
+    withheldAmount: number;
+    isLateCancellation: boolean;
+    isExpenseEligible: boolean;
+    policy: string;
   }> {
     try {
-      // 1. Найти платёж
       const reservation = await prisma.reservation.findUnique({
         where: { reservationId },
-        include: { payment: true },
+        include: {
+          payment: true,
+          bookableObject: true,
+        },
       });
 
       if (!reservation?.payment) {
@@ -479,32 +540,54 @@ class PaymentService {
       }
 
       const originalAmount = reservation.payment.amount.toNumber();
+      const objectType = reservation.bookableObject.type;
+      const daysUntilReservation = dayjs(reservation.reservationDate).diff(
+        dayjs(),
+        "day",
+        true,
+      );
+      const isLateCancellation =
+        daysUntilReservation < LATE_CANCELLATION_WINDOW_DAYS;
+      const isExpenseEligible = EXPENSE_ELIGIBLE_OBJECT_TYPES.has(objectType);
 
-      // 2. Получить все расходы по отмене
       const expenses =
         await paymentRepository.getCancellationExpenses(reservationId);
 
-      // 3. Сумма невозвратимых расходов
-      const totalNonRefundableExpenses = expenses
-        .filter((e) => !e.description?.includes("refundable"))
-        .reduce((sum, e) => sum + parseFloat(e.amount || "0"), 0);
+      let withheldAmount = 0;
+      let policy = "Full refund: this object type always returns 100%.";
 
-      // 4. Комиссия платёжной системы (обычно 1-2%, не возвращается)
-      // Yookassa takes ~2% commission
-      const platformFee = originalAmount * 0.015; // 1.5% default
+      if (
+        isExpenseEligible &&
+        isLateCancellation &&
+        !FULL_REFUND_OBJECT_TYPES.has(objectType)
+      ) {
+        withheldAmount = expenses
+          .filter((expense) => expense.receiptUrl || expense.supplierName)
+          .reduce((sum, expense) => sum + parseFloat(expense.amount || "0"), 0);
+        policy =
+          withheldAmount > 0
+            ? "Partial refund: late cancellation with documented expenses."
+            : "Full refund: no documented expenses were recorded.";
+      } else if (isExpenseEligible) {
+        policy = "Full refund: cancellation is not later than 2 days before reservation.";
+      }
 
-      // 5. Итоговая сумма возврата
-      const refundAmount = Math.max(
-        0,
-        originalAmount - totalNonRefundableExpenses - platformFee,
+      withheldAmount = Math.min(originalAmount, Math.max(0, withheldAmount));
+      const refundAmount = Math.max(0, originalAmount - withheldAmount);
+
+      const documentedExpenses = expenses.filter(
+        (expense) => expense.receiptUrl || expense.supplierName,
       );
 
       return {
         originalAmount,
-        expenses,
-        totalExpenses: totalNonRefundableExpenses,
-        platformFee,
+        expenses: documentedExpenses,
+        totalExpenses: withheldAmount,
         refundAmount,
+        withheldAmount,
+        isLateCancellation,
+        isExpenseEligible,
+        policy,
       };
     } catch (error) {
       console.error(
@@ -550,11 +633,18 @@ class PaymentService {
         throw new Error(
           `Requested refund ${amount} exceeds available ${calculation.refundAmount}. ` +
             `Original: ${calculation.originalAmount}, Expenses: ${calculation.totalExpenses}, ` +
-            `Fee: ${calculation.platformFee}`,
+            `Policy: ${calculation.policy}`,
         );
       }
 
       const refundAmount = amount || calculation.refundAmount;
+
+      if (refundAmount <= 0) {
+        throw new AppError(
+          "Refund amount is zero because documented expenses cover the payment amount",
+          400,
+        );
+      }
 
       // 4. Создать запись о возврате в БД
       const refund = await paymentRepository.createRefund({
@@ -584,19 +674,53 @@ class PaymentService {
           refundIdempotencyKey,
           Math.round(refundAmount * 100), // копейки
           reason,
+          refundAmount < calculation.originalAmount
+            ? this.buildReceipt({
+                user: payment.reservation.user,
+                objectName: payment.reservation.bookableObject.name,
+                reservationDate: payment.reservation.reservationDate,
+                amount: refundAmount,
+                descriptionPrefix: "Возврат за бронирование",
+              })
+            : undefined,
         );
 
-        // 6. Обновить возврат с данными от Yookassa
-        await paymentRepository.updateRefundStatus(refund.refundId, {
-          status: "PENDING", // Начальный статус после создания
+        const refundStatus =
+          kassaRefund.status === "succeeded"
+            ? "COMPLETED"
+            : kassaRefund.status === "canceled"
+              ? "CANCELLED"
+              : "PENDING";
+
+        const updatedRefund = await paymentRepository.updateRefundStatus(refund.refundId, {
+          status: refundStatus,
           kassaRefundId: kassaRefund.id,
+          ...(refundStatus === "COMPLETED" && { completedAt: new Date() }),
         });
+
+        if (refundStatus === "COMPLETED") {
+          await paymentRepository.updatePaymentStatus(payment.paymentId, {
+            status: "refunded",
+            kassaPaymentId: payment.kassaPaymentId,
+            method: payment.method ?? undefined,
+          });
+
+          await paymentRepository.updateReservationStatus(
+            payment.reservationId,
+            "cancelled",
+            reason ?? "Reservation cancelled due to payment refund",
+          );
+        }
 
         console.log(
           `Refund ${refund.refundId} created in Yookassa with ID ${kassaRefund.id}`,
         );
 
-        return refund;
+        return {
+          ...updatedRefund,
+          calculation,
+          kassaStatus: kassaRefund.status,
+        };
       } catch (kassaError) {
         console.error(
           `Failed to create refund in Yookassa for payment ${payment.paymentId}:`,
@@ -611,6 +735,101 @@ class PaymentService {
       console.error(`Failed to refund payment ${paymentId}:`, error);
       throw error;
     }
+  }
+
+  async cancelOrRefundReservation(reservationId: number, reason?: string) {
+    const reservation = await prisma.reservation.findUnique({
+      where: { reservationId },
+      include: {
+        payment: true,
+        user: true,
+        bookableObject: true,
+      },
+    });
+
+    if (!reservation) {
+      throw new AppError("Reservation not found", 404);
+    }
+
+    if (reservation.status === "cancelled") {
+      throw new AppError("Reservation is already cancelled", 400);
+    }
+
+    const payment = reservation.payment;
+
+    if (!payment) {
+      const cancelled = await paymentRepository.updateReservationStatus(
+        reservationId,
+        "cancelled",
+        reason ?? "Reservation cancelled by customer",
+      );
+
+      return {
+        action: "cancelled",
+        reservation: cancelled,
+        refund: null,
+        refundAmount: 0,
+        withheldAmount: 0,
+        policy: "Reservation had no payment.",
+      };
+    }
+
+    if (["pending", "waiting_for_capture"].includes(payment.status)) {
+      if (
+        payment.status === "waiting_for_capture" &&
+        payment.kassaPaymentId &&
+        kassaClient.isReady()
+      ) {
+        const cancelIdempotencyKey = kassaClient.generateIdempotencyKey();
+        await kassaClient.cancelPayment(
+          payment.kassaPaymentId,
+          cancelIdempotencyKey,
+        );
+      }
+
+      await paymentRepository.updatePaymentStatus(payment.paymentId, {
+        status: "cancelled",
+        ...(payment.kassaPaymentId && { kassaPaymentId: payment.kassaPaymentId }),
+        method: payment.method ?? undefined,
+      });
+
+      const cancelled = await paymentRepository.updateReservationStatus(
+        reservationId,
+        "cancelled",
+        reason ?? "Reservation cancelled before successful payment",
+      );
+
+      return {
+        action: "cancelled",
+        reservation: cancelled,
+        refund: null,
+        refundAmount: 0,
+        withheldAmount: 0,
+        policy: "Reservation payment was not completed.",
+      };
+    }
+
+    if (payment.status !== "succeeded") {
+      throw new AppError(
+        `Cannot refund reservation with payment status "${payment.status}"`,
+        400,
+      );
+    }
+
+    const refund = await this.refundPayment(
+      payment.paymentId,
+      undefined,
+      reason ?? "Customer cancelled reservation",
+    );
+
+    return {
+      action: refund.kassaStatus === "succeeded" ? "refunded" : "refund_started",
+      reservation,
+      refund,
+      refundAmount: Number(refund.refundAmount),
+      withheldAmount: refund.calculation?.withheldAmount ?? 0,
+      policy: refund.calculation?.policy,
+    };
   }
 
   /**

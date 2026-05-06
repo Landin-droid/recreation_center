@@ -38,5 +38,41 @@ export const emailjsService = {
     } catch (error) {
       console.error('Failed to send password reset email:', error);
     }
+  },
+
+  sendRefundNotification: async (
+    toEmail: string,
+    userName: string,
+    refundDetails: {
+      reservationId: number;
+      objectName: string;
+      refundAmount: number;
+      withheldAmount: number;
+      status: string;
+      policy?: string;
+    },
+  ) => {
+    try {
+      const templateParams = {
+        to_email: toEmail,
+        user_name: userName,
+        booking_id: refundDetails.reservationId,
+        object_name: refundDetails.objectName,
+        refund_amount: refundDetails.refundAmount,
+        withheld_amount: refundDetails.withheldAmount,
+        refund_status: refundDetails.status,
+        refund_policy: refundDetails.policy || "",
+      };
+
+      await emailjs.send(
+        SERVICE_ID,
+        TEMPLATE_BOOKING,
+        templateParams,
+        PUBLIC_KEY,
+      );
+      console.log('Refund notification email sent');
+    } catch (error) {
+      console.error('Failed to send refund notification email:', error);
+    }
   }
 };
