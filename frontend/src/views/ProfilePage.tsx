@@ -90,7 +90,7 @@ export function ProfilePage() {
   };
 
   const canCancel = (res: Reservation) => {
-    if (["cancelled", "expired", "paid"].includes(res.status)) return false;
+    if (["cancelled", "expired"].includes(res.status)) return false;
     const resDate = parseISO(res.reservationDate);
     const deadline = addHours(resDate, 10);
     return isBefore(new Date(), deadline);
