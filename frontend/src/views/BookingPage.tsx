@@ -169,7 +169,7 @@ export function BookingPage() {
       });
       
       // Send confirmation email via EmailJS
-      await emailjsService.sendBookingConfirmation(
+      await emailjsService.sendReservationConfirmation(
         user.email,
         user.fullName,
         reservation
