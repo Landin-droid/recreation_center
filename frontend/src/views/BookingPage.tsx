@@ -143,7 +143,7 @@ export function BookingPage() {
         .filter(
           (r) =>
             r.bookableObject.bookableObjectId === obj.bookableObjectId &&
-            !["cancelled", "expired"].includes(r.status),
+            !["canceled", "expired", "refunded"].includes(r.status),
         )
         .map(r => parseISO(r.reservationDate));
       setBusyDates(busy);

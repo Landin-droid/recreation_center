@@ -68,7 +68,7 @@ export const userService = {
       fullName: data.fullName,
       email: data.email,
       passwordHash,
-      role: "USER",
+      role: "user",
       ...(data.phoneNumber ? { phoneNumber: data.phoneNumber } : {}),
     };
 

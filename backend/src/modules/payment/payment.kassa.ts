@@ -7,6 +7,7 @@ import {
   KassaRefundResponse,
   KassaErrorResponse,
   KassaReceipt,
+  KassaReceiptResponse,
 } from "./payment.types";
 
 /**
@@ -114,10 +115,10 @@ class YookassaClient {
   ): Promise<KassaPaymentResponse> {
     try {
       // Валидация необходимых параметров
-      if (!request.amount || request.amount <= 0) {
-        throw new Error("Invalid amount: must be greater than 0");
+      if (!request.amount.value || Number(request.amount.value) <= 0) {
+        throw new Error("Invalid amount value: must be greater than 0");
       }
-      if (!request.currency) {
+      if (!request.amount.currency) {
         throw new Error("Currency is required (e.g., 'RUB')");
       }
       if (!request.confirmation?.return_url) {
@@ -127,17 +128,18 @@ class YookassaClient {
       // Формирование запроса согласно документации
       const paymentPayload = {
         amount: {
-          value: (request.amount / 100).toFixed(2), // Преобразование из копеек в рубли
-          currency: request.currency,
+          value: (Number(request.amount.value) / 100).toFixed(2), // Преобразование из копеек в рубли
+          currency: request.amount.currency,
         },
         confirmation: {
           type: request.confirmation.type || "redirect",
           return_url: request.confirmation.return_url,
         },
-        capture: request.capture !== false, // По умолчанию true (один этап)
+        capture: true,
         description: request.description || "Payment",
         metadata: request.metadata || {},
         ...(request.receipt && { receipt: request.receipt }),
+        ...(request.statements && { statements: request.statements }),
       };
 
       const response = await this.axiosInstance.post<KassaPaymentResponse>(
@@ -293,6 +295,9 @@ class YookassaClient {
           value: (amount / 100).toFixed(2),
           currency: "RUB",
         },
+        metadata: {
+          paymentId,
+        },
       };
 
       if (description) {
@@ -339,6 +344,23 @@ class YookassaClient {
       console.error("Failed to get refund status:", error);
       throw error;
     }
+  }
+
+  async listReceipts(params: {
+    paymentId?: string;
+    refundId?: string;
+  }): Promise<{ items: KassaReceiptResponse[] }> {
+    const response = await this.axiosInstance.get<{ items: KassaReceiptResponse[] }>(
+      "/receipts",
+      {
+        params: {
+          payment_id: params.paymentId,
+          refund_id: params.refundId,
+        },
+      },
+    );
+
+    return response.data;
   }
 
   /**

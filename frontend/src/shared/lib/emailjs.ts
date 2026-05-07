@@ -7,7 +7,13 @@ const TEMPLATE_RESET = import.meta.env.VITE_EMAILJS_TEMPLATE_RESET_PASWORD_ID;
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 export const emailjsService = {
-  sendBookingConfirmation: async (toEmail: string, userName: string, bookingDetails: any) => {
+  sendReservationConfirmation: async (toEmail: string, userName: string, bookingDetails: {
+    reservationId: number;
+    bookableObject: { name: string };
+    reservationDate: string;
+    totalSum: number;
+    guestsCount: number;
+  }) => {
     try {
       const templateParams = {
         to_email: toEmail,

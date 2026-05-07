@@ -200,95 +200,6 @@ router.put("/:id", authenticate, reservationController.update);
 
 /**
  * @swagger
- * /api/reservations/{id}:
- *   delete:
- *     summary: Удалить бронирование
- *     tags:
- *       - Reservations
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Бронирование успешно удалено
- */
-router.delete("/:id", authenticate, reservationController.delete);
-
-/**
- * @swagger
- * /api/reservations/{id}/payment/initiate:
- *   post:
- *     summary: Инициировать платеж для бронирования
- *     tags:
- *       - Reservations
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       201:
- *         description: Платеж успешно инициирован
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/PaymentInitiateResponse'
- */
-router.post(
-  "/:id/payment/initiate",
-  authenticate,
-  reservationController.initiatePayment,
-);
-
-/**
- * @swagger
- * /api/reservations/{id}/payment:
- *   get:
- *     summary: Получить информацию о платеже бронирования
- *     tags:
- *       - Reservations
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Информация о платеже получена
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     payment:
- *                       $ref: '#/components/schemas/Payment'
- *                       nullable: true
- */
-router.get("/:id/payment", authenticate, reservationController.getPayment);
-
-/**
- * @swagger
  * /api/reservations/{id}/cancel:
  *   post:
  *     summary: Отменить бронирование
@@ -324,6 +235,27 @@ router.get("/:id/payment", authenticate, reservationController.getPayment);
  *                 data:
  *                   $ref: '#/components/schemas/Reservation'
  */
-router.post("/:id/cancel", authenticate, reservationController.cancel);
+router.patch("/:id", authenticate, reservationController.cancel);
+
+/**
+ * @swagger
+ * /api/reservations/{id}:
+ *   delete:
+ *     summary: Удалить бронирование
+ *     tags:
+ *       - Reservations
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Бронирование успешно удалено
+ */
+router.delete("/:id", authenticate, reservationController.delete);
 
 export default router;

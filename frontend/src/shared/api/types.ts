@@ -117,7 +117,6 @@ export interface Reservation {
   totalSum: number;
   notes: string | null;
   status: string;
-  cancellationReason: string | null;
   user: {
     userId: number;
     fullName: string;
@@ -135,7 +134,7 @@ export interface Reservation {
 }
 
 export interface CancelReservationResult {
-  action: "cancelled" | "refund_started" | "refunded";
+  action: "canceled" | "refund_started" | "refunded";
   reservation: Reservation;
   refund: null | {
     refundId: number;
@@ -164,7 +163,6 @@ export interface PaymentStatus {
   reservation: {
     reservationId: number;
     status: string;
-    cancellationReason: string | null;
   };
 }
 

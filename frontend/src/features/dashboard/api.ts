@@ -38,11 +38,16 @@ export const dashboardApi = {
   },
   initiatePayment(reservationId: number) {
     return unwrap<PaymentInitiation>(
-      http.post(`/reservations/${reservationId}/payment/initiate`),
+      http.post("/payments", { reservationId }),
     );
   },
   getPaymentStatus(paymentId: number) {
-    return unwrap<PaymentStatus>(http.get(`/payments/${paymentId}/status`));
+    return unwrap<PaymentStatus>(http.patch(`/payments/${paymentId}`));
+  },
+  createRefund(paymentId: number, reason?: string) {
+    return unwrap<CancelReservationResult["refund"]>(
+      http.post("/refunds", { paymentId, reason }),
+    );
   },
   updateProfile(userId: number, data: { fullName?: string; email?: string; phoneNumber?: string }) {
     return unwrap<User>(http.put(`/users/${userId}`, data));

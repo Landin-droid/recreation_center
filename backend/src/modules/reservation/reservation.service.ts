@@ -21,7 +21,6 @@ const formatReservation = (reservation: ReservationWithRelations) => ({
   totalSum: Number(reservation.totalSum),
   notes: reservation.notes,
   status: reservation.status,
-  cancellationReason: reservation.cancellationReason,
   user: {
     userId: reservation.user.userId,
     fullName: reservation.user.fullName,
@@ -207,7 +206,6 @@ export const reservationService = {
       guestsCount: data.guestsCount,
       notes: data.notes,
       status: ReservationStatus.pending,
-      cancellationReason: null,
       totalSum: derived.totalSum,
       reservationMenuItems: {
         create: derived.reservationMenuItemsCreate,
@@ -289,8 +287,8 @@ export const reservationService = {
       throw new AppError("Reservation not found", 404);
     }
 
-    if (existing.status === "cancelled") {
-      throw new AppError("Reservation is already cancelled", 400);
+    if (["canceled", "expired", "refunded"].includes(existing.status)) {
+      throw new AppError("Reservation is already final", 400);
     }
 
     if (existing.status === "paid") {
@@ -301,8 +299,7 @@ export const reservationService = {
       tx.reservation.update({
         where: { reservationId },
         data: {
-          status: "cancelled",
-          cancellationReason: reason ?? null,
+          status: "canceled",
         },
         include: reservationInclude,
       }),

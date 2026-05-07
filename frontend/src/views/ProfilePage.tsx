@@ -90,7 +90,7 @@ export function ProfilePage() {
   };
 
   const canCancel = (res: Reservation) => {
-    if (["cancelled", "expired"].includes(res.status)) return false;
+    if (["canceled", "expired", "refunded"].includes(res.status)) return false;
     const resDate = parseISO(res.reservationDate);
     const deadline = addHours(resDate, 10);
     return isBefore(new Date(), deadline);
@@ -98,10 +98,10 @@ export function ProfilePage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "confirmed": return <Badge tone="success">Подтверждено</Badge>;
       case "paid": return <Badge tone="success">Оплачено</Badge>;
       case "pending": return <Badge tone="warning">Ожидает оплаты</Badge>;
-      case "cancelled": return <Badge tone="danger">Отменено</Badge>;
+      case "canceled": return <Badge tone="danger">Отменено</Badge>;
+      case "refunded": return <Badge tone="success">Возвращено</Badge>;
       case "expired": return <Badge tone="danger">Истекло время действия</Badge>;
       default: return <Badge>{status}</Badge>;
     }

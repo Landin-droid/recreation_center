@@ -8,23 +8,23 @@ datasource db {
 }
 
 enum UserRole {
-  ADMIN
-  STAFF
-  USER
+  admin
+  staff
+  user
 }
 
 model User {
-  userId           Int           @id @default(autoincrement()) @map("user_id")
-  fullName         String        @map("full_name")
-  email            String        @unique
-  phoneNumber      String?       @map("phone_number")
-  registrationDate DateTime      @default(now()) @map("registration_date")
-  passwordHash     String        @map("password_hash")
-  role             UserRole      @default(USER)
-  resetPasswordToken String?     @map("reset_password_token")
-  resetPasswordExpires DateTime? @map("reset_password_expires")
-  refreshTokens    RefreshToken[]
-  reservations     Reservation[]
+  userId               Int            @id @default(autoincrement()) @map("user_id")
+  fullName             String         @map("full_name")
+  email                String         @unique
+  phoneNumber          String?        @map("phone_number")
+  registrationDate     DateTime       @default(now()) @map("registration_date")
+  passwordHash         String         @map("password_hash")
+  role                 UserRole       @default(user)
+  resetPasswordToken   String?        @map("reset_password_token")
+  resetPasswordExpires DateTime?      @map("reset_password_expires")
+  refreshTokens        RefreshToken[]
+  reservations         Reservation[]
 
   @@map("user")
 }
@@ -59,8 +59,8 @@ model BookableObject {
   cottage          Cottage?
   gazebo           Gazebo?
   karaokeBar       KaraokeBar?
-  objectMenuItems  ObjectMenuItem[]
   outdoorVenue     OutdoorVenue?
+  objectMenuItems  ObjectMenuItem[]
   reservations     Reservation[]
 
   @@map("bookable_object")
@@ -117,13 +117,10 @@ model Reservation {
   notes                String?
   status               ReservationStatus      @default(pending)
   paymentDeadline      DateTime?              @map("payment_deadline")
-  cancellationReason   String?                @map("cancellation_reason")
   payment              Payment?
   bookableObject       BookableObject         @relation(fields: [bookableObjectId], references: [bookableObjectId])
   user                 User                   @relation(fields: [userId], references: [userId])
   reservationMenuItems ReservationMenuItem[]
-  cancellationExpenses CancellationExpense[]
-  refunds              Refund[]
 
   @@index([bookableObjectId, reservationDate])
   @@index([paymentDeadline])
@@ -139,14 +136,48 @@ model Payment {
   idempotencyKey    String           @unique @map("idempotency_key")
   status            PaymentStatus    @default(pending)
   method            PaymentMethod?
-  cheque_url        String?
   reservation       Reservation      @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
-  refunds           Refund[]
+  refund            Refund?
+  receipt           Receipt? 
 
   @@index([status])
-  @@index([kassaPaymentId])
-  @@index([idempotencyKey])
   @@map("payment")
+}
+
+model Refund {
+  refundId           Int                @id @default(autoincrement()) @map("refund_id")
+  paymentId          Int                @unique @map("payment_id")
+  originalAmount     Decimal            @map("original_amount")
+  refundAmount       Decimal            @map("refund_amount")
+  reason             String?
+  cancellationParty  String?            @map("cancellation_party")
+  cancellationReason String?            @map("cancellation_reason")
+  kassaRefundId      String?            @unique @map("kassa_refund_id")
+  status             RefundStatus       @default(pending) @map("status")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  completedAt        DateTime?          @map("completed_at")
+  payment            Payment            @relation(fields: [paymentId], references: [paymentId], onDelete: Cascade)
+  receipt            Receipt?
+
+  @@index([status, createdAt])
+  @@index([paymentId])
+  @@map("refund")
+}
+
+model Receipt {
+  receiptId       Int          @id @default(autoincrement()) @map("receipt_id")
+  kassaReceiptId  String       @unique @map("kassa_receipt_id")
+  type            ReceiptType
+  status          String?
+  paymentId       Int?         @unique @map("payment_id")
+  refundId        Int?         @unique @map("refund_id")
+  rawPayload      Json?        @map("raw_payload")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  payment         Payment?     @relation(fields: [paymentId], references: [paymentId])
+  refund          Refund?      @relation(fields: [refundId], references: [refundId])
+
+  @@map("receipt")
 }
 
 model MenuItem {
@@ -209,12 +240,34 @@ model RentalPriceRule {
   rentalItemId  Int           @map("rental_item_id")
   pricePerKm    Decimal       @map("price_per_km")
   minKm         Int           @default(1) @map("min_km")
-  maxKm         Decimal?          @map("max_km")
+  maxKm         Decimal?      @map("max_km")
   passengerType PassengerType @map("passenger_type")
   rentalItem    RentalItem    @relation(fields: [rentalItemId], references: [rentalItemId], onDelete: Cascade)
 
   @@unique([rentalItemId, passengerType])
   @@map("rental_price_rule")
+}
+
+model WebhookLog {
+  webhookLogId  Int              @id @default(autoincrement()) @map("webhook_log_id")
+  source        String           @map("source")
+  eventType     WebhookEventType @map("event_type")
+  payload       String           @map("payload") @db.Text
+  processed     Boolean          @default(false)
+  error         String?          @map("error")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  @@index([source, createdAt])
+  @@index([createdAt])
+  @@map("webhook_log")
+}
+
+enum ReservationStatus {
+  pending
+  paid
+  canceled
+  expired
+  refunded
 }
 
 enum BookableObjectType {
@@ -225,30 +278,19 @@ enum BookableObjectType {
   karaoke_bar
 }
 
-enum ReservationStatus {
-  pending
-  confirmed
-  paid
-  cancelled
-  expired
-}
-
 enum PaymentStatus {
   pending
-  waiting_for_capture
   succeeded
-  failed
-  refunded
-  cancelled
+  canceled
 }
 
 enum PaymentMethod {
   bank_card
-  sbp
   yoo_money
   sberbank
+  alfa_pay
   tinkoff_bank
-  qiwi
+  sbp
   cash
 }
 
@@ -277,91 +319,20 @@ enum PassengerType {
   child
 }
 
-enum CancellationExpenseType {
-  FOOD_PURCHASE
-  SERVICE_THIRD_PARTY
-  EMPLOYEE_HOURS
-  DELIVERY
-  OTHER
-}
-
 enum RefundStatus {
-  PENDING
-  APPROVED
-  IN_PROGRESS
-  COMPLETED
-  REJECTED
-  CANCELLED
-}
-
-enum CancellationReasonCode {
-  EARLY_CANCELLATION
-  FORCE_MAJEURE
-  CUSTOMER_REQUEST
-  PAYMENT_FAILED
-  PAYMENT_TIMEOUT
-  ADMIN_CANCELLATION
-  SYSTEM_CANCELLATION
+  pending
+  succeeded
+  canceled
 }
 
 enum WebhookEventType {
+  payment_waiting_for_capture
   payment_succeeded
-  payment_failed
-  payment_cancelled
-  refund_completed
-  refund_failed
+  payment_canceled
+  refund_succeeded
 }
 
-model CancellationExpense {
-  expenseId       Int                      @id @default(autoincrement()) @map("expense_id")
-  reservationId   Int                      @map("reservation_id")
-  expenseType     CancellationExpenseType  @map("expense_type")
-  amount          Decimal
-  description     String?
-  receiptUrl      String?                  @map("receipt_url")
-  supplierName    String?                  @map("supplier_name")
-  isRefundable    Boolean                  @default(false) @map("is_refundable")
-  refundStatus    RefundStatus             @default(PENDING) @map("refund_status")
-  createdAt       DateTime                 @default(now()) @map("created_at")
-  reservation     Reservation              @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
-
-  @@index([reservationId, refundStatus])
-  @@map("cancellation_expense")
-}
-
-model Refund {
-  refundId                 Int                    @id @default(autoincrement()) @map("refund_id")
-  paymentId                Int                    @map("payment_id")
-  reservationId            Int                    @map("reservation_id")
-  originalAmount           Decimal                @map("original_amount")
-  totalExpenses            Decimal                @default(0) @map("total_expenses")
-  refundAmount             Decimal                @map("refund_amount")
-  reason                   String?
-  cancellationInitiatedBy  CancellationReasonCode @map("cancellation_initiated_by")
-  cancellationReasonCode   CancellationReasonCode @map("cancellation_reason_code")
-  expenseDocumentation    String?                 @map("expense_documentation") @db.Text
-  kassaRefundId           String?                 @unique @map("kassa_refund_id")
-  status                  RefundStatus            @default(PENDING) @map("status")
-  createdAt               DateTime                @default(now()) @map("created_at")
-  completedAt             DateTime?               @map("completed_at")
-  payment                 Payment                 @relation(fields: [paymentId], references: [paymentId], onDelete: Cascade)
-  reservation             Reservation             @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
-
-  @@index([status, createdAt])
-  @@index([paymentId])
-  @@map("refund")
-}
-
-model WebhookLog {
-  webhookLogId  Int              @id @default(autoincrement()) @map("webhook_log_id")
-  source        String           @map("source")
-  eventType     WebhookEventType @map("event_type")
-  payload       String           @map("payload") @db.Text
-  processed     Boolean          @default(false)
-  error         String?          @map("error")
-  createdAt     DateTime         @default(now()) @map("created_at")
-
-  @@index([source, createdAt])
-  @@index([createdAt])
-  @@map("webhook_log")
+enum ReceiptType {
+  payment
+  refund
 }

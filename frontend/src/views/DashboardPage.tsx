@@ -24,7 +24,7 @@ function paymentTone(status: string | undefined) {
   if (!status) return "neutral" as const;
   if (["succeeded", "paid", "confirmed"].includes(status)) return "success" as const;
   if (["pending"].includes(status)) return "warning" as const;
-  if (["cancelled", "failed", "expired"].includes(status)) return "danger" as const;
+  if (["canceled", "failed", "expired"].includes(status)) return "danger" as const;
   return "neutral" as const;
 }
 
@@ -402,9 +402,6 @@ export function DashboardPage() {
                       <span>Создано: {formatDateTime(reservation.creationDate)}</span>
                       <span>Тип объекта: {prettifyEnum(reservation.bookableObject.type)}</span>
                       {reservation.notes ? <span>Комментарий: {reservation.notes}</span> : null}
-                      {reservation.cancellationReason ? (
-                        <span>Причина отмены: {reservation.cancellationReason}</span>
-                      ) : null}
                     </div>
 
                     {reservation.menuItems.length > 0 ? (
@@ -442,7 +439,26 @@ export function DashboardPage() {
                         </Button>
                       ) : null}
 
-                      {!["cancelled", "paid"].includes(reservation.status) ? (
+                      {reservation.status === "paid" && reservation.payment ? (
+                        <Button
+                          variant="danger"
+                          onClick={() => {
+                            const reason = window.prompt(
+                              "Укажите причину возврата",
+                              "Отмена пользователем",
+                            );
+                            cancelReservationMutation.mutate({
+                              reservationId: reservation.reservationId,
+                              reason: reason || undefined,
+                            });
+                          }}
+                          disabled={cancelReservationMutation.isPending}
+                        >
+                          Возврат средств
+                        </Button>
+                      ) : null}
+
+                      {!["canceled", "paid", "refunded", "expired"].includes(reservation.status) ? (
                         <Button
                           variant="danger"
                           onClick={() => {

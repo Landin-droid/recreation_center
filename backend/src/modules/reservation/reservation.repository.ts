@@ -58,7 +58,7 @@ export const reservationRepository = {
         bookableObjectId,
         reservationDate,
         status: {
-          notIn: ["cancelled", "expired"],
+          notIn: ["canceled", "expired", "refunded"],
         },
         ...(reservationIdToExclude
           ? { reservationId: { not: reservationIdToExclude } }

@@ -1,18 +1,81 @@
-import {
-  PaymentStatus,
-  PaymentMethod,
-  RefundStatus,
-  CancellationReasonCode,
-} from "../../generated/prisma/client";
+import { PaymentMethod, PaymentStatus, RefundStatus } from "../../generated/prisma/client";
 
-/**
- * Типы согласно официальной документации Yookassa
- * https://yookassa.ru/developers/api
- */
+export interface KassaAmount {
+  value: string;
+  currency: "RUB";
+}
 
-/**
- * Платёж в нашей системе
- */
+export interface KassaReceiptItem {
+  description: string;
+  amount: KassaAmount;
+  vat_code: 12;
+  quantity: number;
+  payment_subject: "service";
+  payment_mode: "full_payment";
+}
+
+export interface KassaReceipt {
+  customer: {
+    email: string;
+    phone?: string;
+  };
+  items: KassaReceiptItem[];
+  internet: true;
+}
+
+export interface KassaStatement {
+  type: "payment_overview";
+  delivery_method: {
+    type: "email";
+    email: string;
+  }
+}
+
+export interface KassaPaymentRequest {
+  amount: KassaAmount;
+  description: string;
+  receipt: KassaReceipt;
+  confirmation: {
+    type: "redirect";
+    locale: "ru_RU";
+    return_url: string;
+  };
+  capture: true;
+  metadata: Record<string, string>;
+  statements?: KassaStatement[];
+}
+
+export interface KassaPaymentResponse {
+  id: string;
+  status: "pending" | "waiting_for_capture" | "succeeded" | "canceled";
+  amount: KassaAmount;
+  income_amount: KassaAmount;
+  description?: string;
+  payment_method?: {
+    type: string;
+    id?: string;
+    saved?: boolean;
+  };
+  created_at: string;
+  expires_at?: string;
+  confirmation?: {
+    type: string;
+    confirmation_url?: string;
+    return_url?: string;
+  };
+  test: boolean;
+  refunded_amount?: KassaAmount;
+  paid: boolean;
+  refundable: boolean;
+  receipt_registration?: "pending" | "succeeded" | "canceled";
+  metadata?: Record<string, string>;
+  cancellation_details?: {
+    party: string;
+    reason: string;
+  };
+  [key: string]: unknown;
+}
+
 export interface PaymentResponse {
   paymentId: number;
   reservationId: number;
@@ -20,177 +83,39 @@ export interface PaymentResponse {
   status: PaymentStatus;
   method: PaymentMethod | null;
   kassaPaymentId: string | null;
-  createdAt: string;
+  confirmationUrl?: string;
 }
 
-/**
- * Запрос на создание платежа в Yookassa
- *
- * https://yookassa.ru/developers/api#create-payment
- */
-export interface KassaPaymentRequest {
-  amount: number; // В копейках
-  currency: string; // ISO-4217, обычно "RUB"
-  description?: string; // Описание платежа (макс 128 символов)
-  capture?: boolean; // true = один этап, false = два этапа (capture требуется позже)
-  confirmation?: {
-    type?: string; // "redirect" для веб-платежей
-    return_url: string; // URL возврата после платежа
-  };
-  metadata?: Record<string, string>; // Дополнительные данные (макс 16 ключей)
-  receipt?: KassaReceipt;
-}
-
-export interface KassaReceiptItem {
-  description: string;
-  quantity: string;
-  amount: {
-    value: string;
-    currency: string;
-  };
-  vat_code: number;
-  payment_mode?: "full_payment" | "full_prepayment";
-  payment_subject?: "service" | "commodity" | "payment" | "another";
-}
-
-export interface KassaReceipt {
-  customer: {
-    email?: string;
-    phone?: string;
-  };
-  items: KassaReceiptItem[];
-}
-
-/**
- * Статусы платежа согласно документации:
- * - pending: Ожидает подтверждения пользователя
- * - waiting_for_capture: Авторизован, требует capture (двухэтапный платёж)
- * - succeeded: Успешно завершён
- * - canceled: Отменён
- *
- * https://yookassa.ru/developers/api#payment-object
- */
-export interface KassaPaymentResponse {
-  id: string; // ID платежа в Yookassa
-  status: "pending" | "waiting_for_capture" | "succeeded" | "canceled";
-  amount: {
-    value: string; // Строка с точкой (e.g., "100.00")
-    currency: string;
-  };
-  paid: boolean; // true если статус succeeded или waiting_for_capture
-  refundable: boolean; // Возможен ли возврат
-  confirmation?: {
-    type: string;
-    confirmation_url?: string; // URL для редиректа пользователя
-    return_url?: string;
-    confirmation_token?: string;
-  };
-  created_at: string; // ISO 8601
-  expires_at?: string; // Истекает в (для pending платежей)
-  captured_at?: string; // Время захвата
+export interface KassaRefundRequest {
+  payment_id: string;
+  amount: KassaAmount;
   description?: string;
-  receipt_registration?: "pending" | "succeeded" | "canceled";
+  receipt: KassaReceipt;
   metadata?: Record<string, string>;
-  payment_method?: {
-    type: string;
-    id: string;
-    saved: boolean;
-    card?: {
-      first6: string;
-      last4: string;
-      expiry_month: string;
-      expiry_year: string;
-      card_type: string;
-    };
-  };
-  recipient?: {
-    account_id: string;
-    gateway_id?: string;
-  };
-  test: boolean;
-  refunded_amount?: {
-    value: string;
-    currency: string;
-  };
-  cancellation_details?: {
-    party: "yoo_money" | "payment_network" | "merchant";
-    reason: string;
-  };
 }
 
-/**
- * Возврат платежа
- *
- * https://yookassa.ru/developers/api#refund-object
- */
 export interface KassaRefundResponse {
-  id: string; // ID возврата в Yookassa
-  payment_id: string; // ID платежа
-  status: "pending" | "succeeded" | "canceled"; // Статусы возврата
-  amount: {
-    value: string;
-    currency: string;
-  };
-  created_at: string;
-  description?: string;
-  receipt_registration?: "pending" | "succeeded" | "canceled";
-  metadata?: Record<string, string>;
-  cancellation_details?: {
-    party: "yoo_money" | "payment_network" | "merchant";
-    reason: string;
-  };
-}
-
-/**
- * Ошибка от Yookassa API
- *
- * https://yookassa.ru/developers/using-api/response-handling/response-format
- */
-export interface KassaErrorResponse {
-  type: "error";
-  id: string; // ID ошибки для техподдержки
-  code:
-    | "invalid_request"
-    | "invalid_credentials"
-    | "forbidden"
-    | "not_found"
-    | "too_many_requests"
-    | "internal_server_error";
-  description: string;
-  parameter?: string; // Параметр, вызвавший ошибку
-}
-
-/**
- * Payload вебхука от Yookassa
- */
-export interface KassaWebhookPayload {
-  type: string; // e.g., "payment.succeeded", "payment.canceled"
-  event: string;
-  object: {
-    id: string;
-    status: string;
-    [key: string]: any;
-  };
-}
-
-/**
- * Внутреннее представление платежа Yookassa
- */
-export interface YookassaPaymentInfo {
   id: string;
-  status: KassaPaymentResponse["status"];
-  amount: number; // В копейках
-  currency: string;
-  paidAt?: Date;
-  cancelledAt?: Date;
-  refundedAmount?: number;
+  payment_id: string;
+  status: "pending" | "succeeded" | "canceled";
+  cancellation_details?: {
+    party: "yoo_money" | "refund_network";
+    reason:
+      | "general_decline"
+      | "insufficient_funds"
+      | "rejected_by_payee"
+      | "rejected_by_timeout"
+      | "yoo_money_account_closed";
+  };
+  receipt_registration?: "pending" | "succeeded" | "canceled";
+  created_at: string;
+  amount: KassaAmount;
   description?: string;
-}
-
-export interface RefundRequest {
-  paymentId: number;
-  amount?: number;
-  reason?: string;
+  refund_authorization_details?: {
+    rrn: string;
+  };
+  metadata?: Record<string, string>;
+  [key: string]: unknown;
 }
 
 export interface RefundResponse {
@@ -201,28 +126,33 @@ export interface RefundResponse {
   kassaRefundId: string | null;
 }
 
-export interface CancellationExpenseRecord {
-  expenseId: number;
-  expenseType: string;
-  amount: string;
-  description: string | null;
-  receiptUrl: string | null;
-  supplierName: string | null;
+export interface KassaReceiptResponse {
+  id: string;
+  type: "payment" | "refund";
+  payment_id?: string;
+  refund_id?: string;
+  status?: "pending" | "succeeded" | "canceled";
+  [key: string]: unknown;
 }
 
-export interface WebhookPayload {
-  type: string;
-  event: string;
-  object?: {
+export interface KassaErrorResponse {
+  type: "error";
+  id: string;
+  code: string;
+  description?: string;
+  parameter?: string;
+}
+
+export interface KassaWebhookPayload {
+  type: "notification";
+  event:
+    | "payment.succeeded"
+    | "payment.canceled"
+    | "payment.waiting_for_capture"
+    | "refund.succeeded";
+  object: {
     id: string;
     status: string;
-    amount?: {
-      value: string;
-      currency: string;
-    };
-    metadata?: {
-      reservationId: string;
-      idempotencyKey: string;
-    };
+    [key: string]: unknown;
   };
 }
