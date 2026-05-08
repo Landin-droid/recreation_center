@@ -439,8 +439,8 @@ class PaymentService {
 
     const refund = await paymentRepository.createRefund({
       paymentId,
-      originalAmount: payment.amount,
-      refundAmount: payment.amount,
+      originalAmount: new Prisma.Decimal(payment.amount.toString()),
+      refundAmount: new Prisma.Decimal(payment.amount.toString()),
       reason,
     });
 

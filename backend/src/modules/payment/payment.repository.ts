@@ -1,5 +1,9 @@
 import prisma from "../../lib/prisma";
-import { PaymentStatus, Prisma, RefundStatus } from "../../generated/prisma/client";
+import {
+  PaymentStatus,
+  Prisma,
+  RefundStatus,
+} from "../../generated/prisma/client";
 
 const paymentInclude = {
   reservation: {
@@ -95,7 +99,6 @@ class PaymentRepository {
         originalAmount: data.originalAmount,
         refundAmount: data.refundAmount,
         reason: data.reason,
-        status: "pending",
       },
       include: refundInclude,
     });
