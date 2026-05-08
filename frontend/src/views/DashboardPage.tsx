@@ -155,6 +155,25 @@ export function DashboardPage() {
     },
   });
 
+  const createRefundMutation = useMutation({
+    mutationFn: ({
+      paymentId,
+      reason,
+    }: {
+      paymentId: number;
+      reason?: string;
+    }) => dashboardApi.createRefund(paymentId, reason),
+    onSuccess: () => {
+      setFeedback("Запрос на возврат отправлен.");
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", "reservations"],
+      });
+    },
+    onError: (error) => {
+      setFeedback(extractErrorMessage(error));
+    },
+  });
+
   const initiatePaymentMutation = useMutation({
     mutationFn: dashboardApi.initiatePayment,
     onSuccess: (payload) => {
@@ -525,12 +544,14 @@ export function DashboardPage() {
                               "Укажите причину возврата",
                               "Отмена пользователем",
                             );
-                            cancelReservationMutation.mutate({
-                              reservationId: reservation.reservationId,
-                              reason: reason || undefined,
-                            });
+                            if (reservation.payment?.paymentId) {
+                              createRefundMutation.mutate({
+                                paymentId: reservation.payment.paymentId,
+                                reason: reason || undefined,
+                              });
+                            }
                           }}
-                          disabled={cancelReservationMutation.isPending}>
+                          disabled={createRefundMutation.isPending}>
                           Возврат средств
                         </Button>
                       ) : null}
