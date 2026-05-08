@@ -11,20 +11,45 @@ interface EmailParams {
 
 class EmailService {
   private get isConfigured(): boolean {
-    return Boolean(
-      env.EMAILJS_SERVICE_ID &&
-      env.EMAILJS_PUBLIC_KEY &&
-      env.EMAILJS_TEMPLATE_RESET_PASSWORD_ID,
-    );
+    return Boolean(env.EMAILJS_SERVICE_ID && env.EMAILJS_PUBLIC_KEY);
+  }
+
+  private logMissingTemplate(templateName: string, templateId?: string) {
+    if (!templateId) {
+      console.warn(
+        `⚠️  EmailJS template not configured: ${templateName} (env variable is missing)`,
+      );
+      return true;
+    }
+    return false;
   }
 
   async verifyConnection() {
     if (!this.isConfigured) {
-      console.log("ℹ️ Email service is in placeholder mode");
+      console.log("⚠️  EmailJS: Missing configuration");
+      console.log(
+        "   - EMAILJS_SERVICE_ID:",
+        env.EMAILJS_SERVICE_ID ? "✓" : "❌ missing",
+      );
+      console.log(
+        "   - EMAILJS_PUBLIC_KEY:",
+        env.EMAILJS_PUBLIC_KEY ? "✓" : "❌ missing",
+      );
+      console.log(
+        "   - EMAILJS_TEMPLATE_RECEIPT_ID:",
+        env.EMAILJS_TEMPLATE_RECEIPT_ID ? "✓" : "⚠️  optional",
+      );
+      console.log(
+        "   - EMAILJS_TEMPLATE_RESET_PASSWORD_ID:",
+        env.EMAILJS_TEMPLATE_RESET_PASSWORD_ID ? "✓" : "⚠️  optional",
+      );
+      console.log(
+        "📧 Email service is in placeholder mode (templates will log instead of sending)",
+      );
       return true;
     }
 
-    console.log("ℹ️ Email service is configured and ready to send emails");
+    console.log("✅ EmailJS configured and ready to send emails");
     return true;
   }
 
@@ -34,30 +59,43 @@ class EmailService {
   ) {
     if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_PUBLIC_KEY || !templateId) {
       console.log(
-        "📧 Email placeholder: template not configured",
-        templateId,
-        templateParams,
+        "📧 Email placeholder (template not configured):",
+        JSON.stringify(
+          { templateId, to_email: templateParams.to_email },
+          null,
+          2,
+        ),
       );
       return;
     }
 
     try {
-      await axios.post(EMAILJS_API_URL, {
+      const response = await axios.post(EMAILJS_API_URL, {
         service_id: env.EMAILJS_SERVICE_ID,
         template_id: templateId,
         user_id: env.EMAILJS_PUBLIC_KEY,
         template_params: templateParams,
       });
+      console.log("✅ Email sent successfully to", templateParams.to_email);
+      return response.data;
     } catch (error: any) {
       console.error(
-        "Failed to send email via EmailJS:",
-        error?.message || error,
+        "❌ Failed to send email via EmailJS:",
+        error?.response?.data || error?.message || error,
       );
       throw error;
     }
   }
 
   async sendPasswordResetEmail(email: string, token: string) {
+    if (
+      this.logMissingTemplate(
+        "EMAILJS_TEMPLATE_RESET_PASSWORD_ID",
+        env.EMAILJS_TEMPLATE_RESET_PASSWORD_ID,
+      )
+    ) {
+      return;
+    }
     const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
     await this.sendEmail(env.EMAILJS_TEMPLATE_RESET_PASSWORD_ID, {
       to_email: email,
@@ -68,8 +106,8 @@ class EmailService {
   async sendReceipt(
     email: string,
     receiptData: {
-      receiptTypeLabel: string;
       receiptType: "payment" | "refund";
+      receiptTypeLabel: string;
       amount: string;
       receiptId: string;
       receiptStatus?: string;
@@ -79,7 +117,7 @@ class EmailService {
       fiscalDocumentNumber?: string;
       fiscalStorageNumber?: string;
       fiscalAttribute?: string;
-      fiscalProviderId: string;
+      fiscalProviderId?: string;
       objectName: string;
       reservationDate: string;
       itemDescription: string;
@@ -89,6 +127,14 @@ class EmailService {
       vatInfo?: string;
     },
   ) {
+    if (
+      this.logMissingTemplate(
+        "EMAILJS_TEMPLATE_RECEIPT_ID",
+        env.EMAILJS_TEMPLATE_RECEIPT_ID,
+      )
+    ) {
+      return;
+    }
     await this.sendEmail(env.EMAILJS_TEMPLATE_RECEIPT_ID, {
       to_email: email,
       receipt_type_label: receiptData.receiptTypeLabel,
