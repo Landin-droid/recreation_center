@@ -20,8 +20,46 @@ const formatRub = (amount: number) => amount.toFixed(2);
 const normalizePhoneForReceipt = (phone: string | null | undefined) =>
   phone ? phone.replace(/[^\d]/g, "") : undefined;
 
+const formatReceiptDate = (date?: string | Date | null) =>
+  date ? dayjs(date).format("D MMMM YYYY HH:mm") : "";
+
 const normalizeEventType = (eventType: string) =>
   eventType.replace(/\./g, "_").toLowerCase();
+
+const buildReceiptEmailParams = (
+  rawReceipt: any,
+  type: "payment" | "refund",
+  objectName: string,
+  reservationDate: Date,
+  amount: number,
+  contactEmail: string,
+) => {
+  const fiscalizationDate = formatReceiptDate(rawReceipt?.registered_at);
+  const item = rawReceipt?.items?.[0];
+  const total = rawReceipt?.items[0]?.amount?.value;
+
+  return {
+    amount: `${amount.toFixed(2)} ₽`,
+    receiptType: type,
+    receiptTypeLabel: type === "payment" ? "Чек прихода" : "Чек возврата",
+    receiptId: rawReceipt?.id || "",
+    receiptStatus: rawReceipt?.status || "",
+    fiscalizationDate,
+    contactEmail,
+    yookassaReceiptId: rawReceipt?.id || "",
+    fiscalDocumentNumber: rawReceipt?.fiscal_document_number,
+    fiscalStorageNumber: rawReceipt?.fiscal_storage_number,
+    fiscalAttribute: rawReceipt?.fiscal_attribute,
+    fiscalProviderId: rawReceipt?.fiscal_provider_id,
+    objectName,
+    reservationDate: formatReceiptDate(reservationDate),
+    itemDescription: item?.description || objectName,
+    itemQuantity: item?.quantity?.toString() || "1",
+    itemPrice: `${item?.amount?.value || total} ₽`,
+    totalSum: `${total} ₽`,
+    vatInfo: "НДС 22/122",
+  };
+};
 
 class PaymentService {
   private buildReceipt(params: {
@@ -281,22 +319,28 @@ class PaymentService {
         (error) => console.warn("Failed to sync payment receipt:", error),
       );
 
+      const paymentWithReceipt = await paymentRepository.findPaymentById(
+        payment.paymentId,
+      );
+
       const fullReservation = await prisma.reservation.findUnique({
         where: { reservationId: payment.reservationId },
         include: { user: true, bookableObject: true },
       });
 
-      if (fullReservation?.user.email) {
-        await emailService.sendReservationConfirmation(
+      if (fullReservation?.user.email && paymentWithReceipt?.receipt?.rawPayload) {
+        const receiptParams = buildReceiptEmailParams(
+          paymentWithReceipt.receipt.rawPayload,
+          "payment",
+          fullReservation.bookableObject.name,
+          fullReservation.reservationDate,
+          fullReservation.totalSum.toNumber(),
           fullReservation.user.email,
-          fullReservation.user.fullName,
-          {
-            reservationId: fullReservation.reservationId,
-            bookableObject: fullReservation.bookableObject,
-            reservationDate: fullReservation.reservationDate,
-            totalSum: fullReservation.totalSum.toString(),
-            guestsCount: fullReservation.guestsCount,
-          },
+        );
+
+        await emailService.sendReceipt(
+          fullReservation.user.email,
+          receiptParams,
         );
       }
     }
@@ -412,24 +456,34 @@ class PaymentService {
         payment.reservationId,
         "refunded",
       );
-      
-      // Отправка письма о возврате средств
-      await emailService
-        .sendRefundConfirmation(payment.reservation.user.email, {
-          refundId: refund.refundId,
-          bookableObjectName: payment.reservation.bookableObject.name,
-          reservationDate: payment.reservation.reservationDate,
-          refundAmount: updated.refundAmount,
-          userName: payment.reservation.user.fullName,
-        })
-        .catch((error) =>
-          console.warn("Failed to send refund confirmation email:", error),
-        );
-    }
 
-    await this.syncRefundReceipt(refund.refundId, kassaRefund.id).catch(
-      (error) => console.warn("Failed to sync refund receipt:", error),
-    );
+      await this.syncRefundReceipt(refund.refundId, kassaRefund.id).catch(
+        (error) => console.warn("Failed to sync refund receipt:", error),
+      );
+
+      const refundWithReceipt = await paymentRepository.findRefundById(
+        refund.refundId,
+      );
+
+      if (
+        payment.reservation.user.email &&
+        refundWithReceipt?.receipt?.rawPayload
+      ) {
+        const receiptParams = buildReceiptEmailParams(
+          refundWithReceipt.receipt.rawPayload,
+          "refund",
+          payment.reservation.bookableObject.name,
+          payment.reservation.reservationDate,
+          refundAmount,
+          payment.reservation.user.email,
+        );
+
+        await emailService.sendReceipt(
+          payment.reservation.user.email,
+          receiptParams,
+        );
+      }
+    }
 
     return {
       ...updated,

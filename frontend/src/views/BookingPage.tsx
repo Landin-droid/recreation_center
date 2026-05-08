@@ -3,13 +3,11 @@ import { AppShell, Title, Panel, Badge, Loader, EmptyState, Button, Select, Fiel
 import { dashboardApi } from "@features/dashboard/api";
 import type { BookableObject, Reservation } from "@shared/api/types";
 import { formatCurrency } from "@shared/lib/format";
-import { format, addDays, isSameDay, parseISO, isBefore, startOfDay } from "date-fns";
+import { format, isSameDay, parseISO, isBefore, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
-
-import { emailjsService } from "@shared/lib/emailjs";
 
 function ImageCarousel({ images, name }: { images: string[]; name: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -157,7 +155,7 @@ export function BookingPage() {
     
     setIsBooking(true);
     try {
-      const reservation = await dashboardApi.createReservation({
+      await dashboardApi.createReservation({
         userId: user.userId,
         bookableObjectId: selectedObject.bookableObjectId,
         reservationDate: selectedDate,
@@ -167,14 +165,7 @@ export function BookingPage() {
           quantity: item.quantity
         }))
       });
-      
-      // Send confirmation email via EmailJS
-      await emailjsService.sendReservationConfirmation(
-        user.email,
-        user.fullName,
-        reservation
-      );
-      
+        
       // Navigate to profile or payment
       navigate("/profile");
     } catch (err: any) {

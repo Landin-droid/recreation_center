@@ -1,39 +1,115 @@
+import axios from "axios";
 import { Decimal } from "@prisma/client/runtime/client";
 import { BookableObjectType } from "../generated/prisma/enums";
+import { env } from "../config/env";
+
+const EMAILJS_API_URL = "https://api.emailjs.com/api/v1.0/email/send";
+
+interface EmailParams {
+  [key: string]: string | number | boolean | undefined;
+}
 
 class EmailService {
-  constructor() {}
+  private get isConfigured(): boolean {
+    return Boolean(
+      env.EMAILJS_SERVICE_ID &&
+      env.EMAILJS_PUBLIC_KEY &&
+      env.EMAILJS_TEMPLATE_RESET_PASSWORD_ID,
+    );
+  }
 
-  /**
-   * Проверить конфигурацию
-   */
   async verifyConnection() {
-    console.log("ℹ️ Email service is in placeholder mode");
+    if (!this.isConfigured) {
+      console.log("ℹ️ Email service is in placeholder mode");
+      return true;
+    }
+
+    console.log("ℹ️ Email service is configured and ready to send emails");
     return true;
   }
 
-  async sendReservationConfirmation(email: string, reservationData: any, p0: { reservationId: number; bookableObject: { type: BookableObjectType; name: string; bookableObjectId: number; capacity: number; basePrice: Decimal; isSeasonal: boolean; seasonStart: Date | null; seasonEnd: Date | null; description: string | null; isActive: boolean; imageUrls: string[]; }; reservationDate: Date; totalSum: string; guestsCount: number; }) {
-    console.log(`📧 Email placeholder: Confirmation to ${email}`, reservationData);
+  private async sendEmail(
+    templateId: string | undefined,
+    templateParams: EmailParams,
+  ) {
+    if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_PUBLIC_KEY || !templateId) {
+      console.log(
+        "📧 Email placeholder: template not configured",
+        templateId,
+        templateParams,
+      );
+      return;
+    }
+
+    try {
+      await axios.post(EMAILJS_API_URL, {
+        service_id: env.EMAILJS_SERVICE_ID,
+        template_id: templateId,
+        user_id: env.EMAILJS_PUBLIC_KEY,
+        template_params: templateParams,
+      });
+    } catch (error: any) {
+      console.error(
+        "Failed to send email via EmailJS:",
+        error?.message || error,
+      );
+      throw error;
+    }
   }
 
   async sendPasswordResetEmail(email: string, token: string) {
-    console.log(`📧 Email placeholder: Reset password for ${email}, token: ${token}`);
+    const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+    await this.sendEmail(env.EMAILJS_TEMPLATE_RESET_PASSWORD_ID, {
+      to_email: email,
+      reset_link: resetLink,
+    });
   }
 
-  async sendRefundConfirmation(
+  async sendReceipt(
     email: string,
-    refundData: {
-      refundId: number;
-      bookableObjectName: string;
-      reservationDate: Date;
-      refundAmount: Decimal;
-      userName: string;
+    receiptData: {
+      receiptTypeLabel: string;
+      receiptType: "payment" | "refund";
+      amount: string;
+      receiptId: string;
+      receiptStatus?: string;
+      fiscalizationDate?: string;
+      contactEmail?: string;
+      yookassaReceiptId: string;
+      fiscalDocumentNumber?: string;
+      fiscalStorageNumber?: string;
+      fiscalAttribute?: string;
+      fiscalProviderId: string;
+      objectName: string;
+      reservationDate: string;
+      itemDescription: string;
+      itemQuantity: string;
+      itemPrice: string;
+      totalSum: string;
+      vatInfo?: string;
     },
   ) {
-    console.log(
-      `📧 Email placeholder: Refund confirmation to ${email}`,
-      refundData,
-    );
+    await this.sendEmail(env.EMAILJS_TEMPLATE_RECEIPT_ID, {
+      to_email: email,
+      receipt_type_label: receiptData.receiptTypeLabel,
+      receipt_type: receiptData.receiptType,
+      amount: receiptData.amount,
+      receipt_id: receiptData.receiptId,
+      fiscalization_date: receiptData.fiscalizationDate || "",
+      receipt_status: receiptData.receiptStatus || "",
+      contact_email: receiptData.contactEmail || email,
+      fiscal_document_number: receiptData.fiscalDocumentNumber || "",
+      fiscal_storage_number: receiptData.fiscalStorageNumber || "",
+      fiscal_attribute: receiptData.fiscalAttribute || "",
+      fiscal_provider_id: receiptData.fiscalProviderId || "",
+      object_name: receiptData.objectName,
+      reservation_date: receiptData.reservationDate,
+      item_description: receiptData.itemDescription,
+      item_quantity: receiptData.itemQuantity,
+      item_price: receiptData.itemPrice,
+      total_sum: receiptData.totalSum,
+      vat_info: receiptData.vatInfo || "",
+    });
   }
 }
 
