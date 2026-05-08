@@ -45,9 +45,13 @@ export const dashboardApi = {
     return unwrap<PaymentStatus>(http.patch(`/payments/${paymentId}`));
   },
   createRefund(paymentId: number, reason?: string) {
-    return unwrap<CancelReservationResult["refund"]>(
-      http.post("/refunds", { paymentId, reason }),
-    );
+    return unwrap<{
+      refundId: number;
+      paymentId: number;
+      status: string;
+      amount: string;
+      kassaRefundId: string | null;
+    }>(http.post("/refunds", { paymentId, reason }));
   },
   updateProfile(userId: number, data: { fullName?: string; email?: string; phoneNumber?: string }) {
     return unwrap<User>(http.put(`/users/${userId}`, data));

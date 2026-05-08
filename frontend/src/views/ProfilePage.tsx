@@ -28,6 +28,8 @@ export function ProfilePage() {
   // Notification state
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [cancelModalId, setCancelModalId] = useState<number | null>(null);
+  const [modalMode, setModalMode] = useState<"cancel" | "refund" | null>(null);
+  const [modalReason, setModalReason] = useState("Отмена пользователем");
   const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
@@ -75,14 +77,24 @@ export function ProfilePage() {
   };
 
   const handleCancelReservation = async () => {
-    if (!cancelModalId) return;
+    if (!cancelModalId || !modalMode) return;
     setIsCancelling(true);
     try {
-      await dashboardApi.cancelReservation(cancelModalId, "Отменено пользователем");
+      const result = await dashboardApi.cancelReservation(cancelModalId, modalReason);
       const updated = await dashboardApi.listReservations(user?.userId);
       setReservations(updated);
-      setToast({ message: "Бронирование успешно отменено", type: "success" });
+      setToast({
+        message:
+          modalMode === "refund"
+            ? result.action === "refunded"
+              ? "Возврат успешно проведен"
+              : "Запрос на возврат отправлен"
+            : "Бронирование успешно отменено",
+        type: "success",
+      });
       setCancelModalId(null);
+      setModalMode(null);
+      setModalReason("Отмена пользователем");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       setToast({ message: message || "Ошибка при отмене", type: "error" });
@@ -108,6 +120,57 @@ export function ProfilePage() {
       return false;
     }
     return isBefore(new Date(), getRefundDeadline(res));
+  };
+
+  const translatePaymentStatus = (status?: string | null) => {
+    switch (status) {
+      case "pending":
+        return "Ожидается";
+      case "succeeded":
+        return "Успешно";
+      case "canceled":
+        return "Отменено";
+      case "failed":
+        return "Не удалось";
+      case "waiting_for_capture":
+        return "Ожидает захвата";
+      default:
+        return status ?? "—";
+    }
+  };
+
+  const translatePaymentMethod = (method?: string | null) => {
+    switch (method) {
+      case "bank_card":
+        return "Банковская карта";
+      case "yoo_money":
+        return "ЮMoney";
+      case "sberbank":
+        return "Сбербанк";
+      case "alfa_pay":
+        return "Альфа-Банк";
+      case "tinkoff_bank":
+        return "Тинькофф";
+      case "sbp":
+        return "СБП";
+      case "cash":
+        return "Наличными";
+      default:
+        return method || "не указан";
+    }
+  };
+
+  const translateRefundStatus = (status?: string | null) => {
+    switch (status) {
+      case "pending":
+        return "Ожидает";
+      case "succeeded":
+        return "Успешно";
+      case "canceled":
+        return "Отменено";
+      default:
+        return status ?? "—";
+    }
   };
 
   const formatDeadline = (deadline: string | null) => {
@@ -294,7 +357,10 @@ export function ProfilePage() {
                             <Button 
                               variant="danger" 
                               className="text-xs font-bold py-1.5" 
-                              onClick={() => setCancelModalId(res.reservationId)}
+                              onClick={() => {
+                                setCancelModalId(res.reservationId);
+                                setModalMode("refund");
+                              }}
                             >
                               Возврат средств
                             </Button>
@@ -314,7 +380,10 @@ export function ProfilePage() {
                             <Button 
                               variant="danger" 
                               className="text-xs font-bold py-1.5" 
-                              onClick={() => setCancelModalId(res.reservationId)}
+                              onClick={() => {
+                                setCancelModalId(res.reservationId);
+                                setModalMode("cancel");
+                              }}
                             >
                               Отменить
                             </Button>
@@ -341,18 +410,23 @@ export function ProfilePage() {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                          {res.paymentDeadline && (
+                          {res.payment?.status === "succeeded" ? (
+                            <div className="space-y-1">
+                              <p className="text-xs font-black uppercase text-[#72543d]">Статус оплаты</p>
+                              <p className="font-bold text-[#24170f]">Оплачено</p>
+                            </div>
+                          ) : res.paymentDeadline ? (
                             <div className="space-y-1">
                               <p className="text-xs font-black uppercase text-[#72543d]">Время на оплату</p>
                               <p className="font-bold text-[#24170f]">{formatDeadline(res.paymentDeadline)}</p>
                             </div>
-                          )}
+                          ) : null}
                           <div className="space-y-1">
                             <p className="text-xs font-black uppercase text-[#72543d]">Платеж</p>
                             {res.payment ? (
                               <div className="space-y-1">
-                                <p className="font-bold text-[#24170f]">{res.payment.status}</p>
-                                <p className="text-[color:var(--ink-soft)]">Метод: {res.payment.method || "не указан"}</p>
+                                <p className="font-bold text-[#24170f]">{translatePaymentStatus(res.payment.status)}</p>
+                                <p className="text-[color:var(--ink-soft)]">Метод: {translatePaymentMethod(res.payment.method)}</p>
                                 {res.payment.kassaPaymentId ? (
                                   <p className="text-[color:var(--ink-soft)] break-all">Заказ YK: {res.payment.kassaPaymentId}</p>
                                 ) : null}
@@ -366,7 +440,7 @@ export function ProfilePage() {
                         {res.payment?.refund && (
                           <div className="rounded-2xl bg-[#f4f7ff] p-4 border border-[#e3e9ff] text-sm">
                             <p className="text-xs font-black uppercase text-[#72543d]">Возврат</p>
-                            <p className="font-bold text-[#24170f]">{res.payment.refund.status}</p>
+                            <p className="font-bold text-[#24170f]">{translateRefundStatus(res.payment.refund.status)}</p>
                             <p className="text-[color:var(--ink-soft)]">Сумма возврата: {formatCurrency(res.payment.refund.refundAmount)}</p>
                             {res.payment.refund.kassaRefundId ? (
                               <p className="text-[color:var(--ink-soft)] break-all">ID возврата YK: {res.payment.refund.kassaRefundId}</p>
@@ -400,20 +474,65 @@ export function ProfilePage() {
       {/* Cancel Confirmation Modal */}
       <Modal
         isOpen={cancelModalId !== null}
-        onClose={() => setCancelModalId(null)}
-        title="Отмена бронирования"
+        onClose={() => {
+          setCancelModalId(null);
+          setModalMode(null);
+          setModalReason("Отмена пользователем");
+        }}
+        title={modalMode === "refund" ? "Запрос на возврат" : "Отмена бронирования"}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setCancelModalId(null)} disabled={isCancelling}>
-              Назад
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setCancelModalId(null);
+                setModalMode(null);
+                setModalReason("Отмена пользователем");
+              }}
+              disabled={isCancelling}
+            >
+              Отмена
             </Button>
             <Button variant="danger" onClick={handleCancelReservation} disabled={isCancelling}>
-              {isCancelling ? "Отменяем..." : "Подтвердить отмену"}
+              {isCancelling
+                ? modalMode === "refund"
+                  ? "Отправляем..."
+                  : "Отменяем..."
+                : modalMode === "refund"
+                ? "Запросить возврат"
+                : "Подтвердить отмену"}
             </Button>
           </>
         }
       >
-        <p className="font-medium">Вы уверены, что хотите отменить бронирование №{cancelModalId}? Это действие нельзя будет отменить.</p>
+        {modalMode === "refund" ? (
+          <div className="space-y-4">
+            <p className="font-medium">
+              Вы отправляете запрос на возврат средств по бронированию №{cancelModalId}.
+            </p>
+            <p className="text-sm text-[color:var(--ink-soft)]">
+              Возврат будет выполнен на тот же способ оплаты после проверки. Обычно зачисление занимает до 5 рабочих дней.
+            </p>
+            <Field
+              label="Причина возврата"
+              value={modalReason}
+              onChange={(e) => setModalReason(e.target.value)}
+              placeholder="Укажите причину возврата (опционально)"
+            />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="font-medium">
+              Вы уверены, что хотите отменить бронирование №{cancelModalId}? Это действие нельзя будет отменить.
+            </p>
+            <Field
+              label="Причина отмены"
+              value={modalReason}
+              onChange={(e) => setModalReason(e.target.value)}
+              placeholder="Укажите причину отмены (опционально)"
+            />
+          </div>
+        )}
       </Modal>
 
       {/* Toast Notification */}

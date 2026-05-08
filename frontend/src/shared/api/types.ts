@@ -162,9 +162,6 @@ export interface CancelReservationResult {
     kassaRefundId: string | null;
     kassaStatus?: string;
   };
-  refundAmount: number;
-  withheldAmount: number;
-  policy?: string;
 }
 
 export interface PaymentInitiation {

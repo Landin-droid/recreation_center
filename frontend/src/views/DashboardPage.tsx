@@ -5,7 +5,12 @@ import { authApi } from "@features/auth/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { dashboardApi } from "@features/dashboard/api";
 import { extractErrorMessage } from "@shared/api/http";
-import { formatCurrency, formatDate, formatDateTime, prettifyEnum } from "@shared/lib/format";
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  prettifyEnum,
+} from "@shared/lib/format";
 import {
   AppShell,
   Badge,
@@ -22,24 +27,64 @@ import type { PaymentStatus } from "@shared/api/types";
 
 function paymentTone(status: string | undefined) {
   if (!status) return "neutral" as const;
-  if (["succeeded", "paid", "confirmed"].includes(status)) return "success" as const;
+  if (["succeeded", "paid", "confirmed"].includes(status))
+    return "success" as const;
   if (["pending"].includes(status)) return "warning" as const;
-  if (["canceled", "failed", "expired"].includes(status)) return "danger" as const;
+  if (["canceled", "failed", "expired"].includes(status))
+    return "danger" as const;
   return "neutral" as const;
+}
+
+function translatePaymentStatus(status: string | undefined) {
+  switch (status) {
+    case "pending":
+      return "Ожидается";
+    case "succeeded":
+      return "Успешно";
+    case "canceled":
+      return "Отменено";
+    case "failed":
+      return "Не удалось";
+    case "confirmed":
+      return "Подтверждено";
+    default:
+      return status ?? "—";
+  }
+}
+
+function translateReservationStatus(status: string | undefined) {
+  switch (status) {
+    case "pending":
+      return "Ожидает оплаты";
+    case "paid":
+      return "Оплачено";
+    case "canceled":
+      return "Отменено";
+    case "refunded":
+      return "Возвращено";
+    case "expired":
+      return "Истекло";
+    default:
+      return status ?? "—";
+  }
 }
 
 export function DashboardPage() {
   const queryClient = useQueryClient();
   const { user, clearSession } = useAuthStore();
   const [feedback, setFeedback] = useState("");
-  const [paymentStatuses, setPaymentStatuses] = useState<Record<number, PaymentStatus>>({});
+  const [paymentStatuses, setPaymentStatuses] = useState<
+    Record<number, PaymentStatus>
+  >({});
   const [formState, setFormState] = useState({
     bookableObjectId: "",
     reservationDate: "",
     guestsCount: "1",
     notes: "",
   });
-  const [menuQuantities, setMenuQuantities] = useState<Record<number, string>>({});
+  const [menuQuantities, setMenuQuantities] = useState<Record<number, string>>(
+    {},
+  );
 
   const objectsQuery = useQuery({
     queryKey: ["dashboard", "objects"],
@@ -72,7 +117,9 @@ export function DashboardPage() {
   const createReservationMutation = useMutation({
     mutationFn: dashboardApi.createReservation,
     onSuccess: () => {
-      setFeedback("Бронирование создано. Теперь его можно оплатить или отменить.");
+      setFeedback(
+        "Бронирование создано. Теперь его можно оплатить или отменить.",
+      );
       setFormState({
         bookableObjectId: "",
         reservationDate: "",
@@ -80,7 +127,9 @@ export function DashboardPage() {
         notes: "",
       });
       setMenuQuantities({});
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "reservations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", "reservations"],
+      });
     },
     onError: (error) => {
       setFeedback(extractErrorMessage(error));
@@ -97,7 +146,9 @@ export function DashboardPage() {
     }) => dashboardApi.cancelReservation(reservationId, reason),
     onSuccess: () => {
       setFeedback("Бронирование отменено.");
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "reservations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", "reservations"],
+      });
     },
     onError: (error) => {
       setFeedback(extractErrorMessage(error));
@@ -107,9 +158,13 @@ export function DashboardPage() {
   const initiatePaymentMutation = useMutation({
     mutationFn: dashboardApi.initiatePayment,
     onSuccess: (payload) => {
-      setFeedback(`Платёж создан до ${formatDateTime(payload.paymentDeadline)}.`);
+      setFeedback(
+        `Платёж создан до ${formatDateTime(payload.paymentDeadline)}.`,
+      );
       window.open(payload.confirmationUrl, "_blank", "noopener,noreferrer");
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "reservations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", "reservations"],
+      });
     },
     onError: (error) => {
       setFeedback(extractErrorMessage(error));
@@ -123,7 +178,9 @@ export function DashboardPage() {
         ...current,
         [payload.paymentId]: payload,
       }));
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "reservations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", "reservations"],
+      });
     },
     onError: (error) => {
       setFeedback(extractErrorMessage(error));
@@ -153,8 +210,7 @@ export function DashboardPage() {
             Выйти
           </Button>
         </>
-      }
-    >
+      }>
       <div className="space-y-8">
         <Panel>
           <div className="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
@@ -164,8 +220,14 @@ export function DashboardPage() {
               description="Здесь собраны ключевые пользовательские сценарии: просмотр каталога, создание бронирования, проверка статуса оплаты и работа с профилем текущего пользователя."
             />
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-              <StatCard label="Мои бронирования" value={String(reservations.length)} />
-              <StatCard label="Доступных объектов" value={String(objects.length)} />
+              <StatCard
+                label="Мои бронирования"
+                value={String(reservations.length)}
+              />
+              <StatCard
+                label="Доступных объектов"
+                value={String(objects.length)}
+              />
               <StatCard label="Позиции аренды" value={String(rentals.length)} />
             </div>
           </div>
@@ -206,8 +268,7 @@ export function DashboardPage() {
                   notes: formState.notes || undefined,
                   menuItems: menuItemsPayload,
                 });
-              }}
-            >
+              }}>
               <Select
                 label="Объект"
                 value={formState.bookableObjectId}
@@ -218,11 +279,12 @@ export function DashboardPage() {
                   }));
                   setMenuQuantities({});
                 }}
-                required
-              >
+                required>
                 <option value="">Выберите объект</option>
                 {objects.map((item) => (
-                  <option key={item.bookableObjectId} value={item.bookableObjectId}>
+                  <option
+                    key={item.bookableObjectId}
+                    value={item.bookableObjectId}>
                     {item.name} · {formatCurrency(item.basePrice)}
                   </option>
                 ))}
@@ -278,12 +340,12 @@ export function DashboardPage() {
                       {availableMenuItems.map((item) => (
                         <div
                           key={item.menuItemId}
-                          className="grid gap-3 rounded-[20px] border border-[color:var(--border)] bg-white/75 p-4 md:grid-cols-[1fr,140px]"
-                        >
+                          className="grid gap-3 rounded-[20px] border border-[color:var(--border)] bg-white/75 p-4 md:grid-cols-[1fr,140px]">
                           <div>
                             <p className="font-bold">{item.menuItem.name}</p>
                             <p className="text-sm text-[color:var(--ink-soft)]">
-                              {item.menuItem.description || "Описание отсутствует"}
+                              {item.menuItem.description ||
+                                "Описание отсутствует"}
                             </p>
                             <p className="mt-1 text-sm font-semibold">
                               {formatCurrency(item.menuItem.price)}
@@ -314,7 +376,9 @@ export function DashboardPage() {
               ) : null}
 
               <Button disabled={createReservationMutation.isPending}>
-                {createReservationMutation.isPending ? "Создаём..." : "Создать бронирование"}
+                {createReservationMutation.isPending
+                  ? "Создаём..."
+                  : "Создать бронирование"}
               </Button>
             </form>
           </Panel>
@@ -325,13 +389,17 @@ export function DashboardPage() {
               <Badge tone="success">GET /users/profile</Badge>
             </div>
             <div className="rounded-[24px] border border-[color:var(--border)] bg-white/75 p-5">
-              <p className="text-sm text-[color:var(--ink-soft)]">Текущий пользователь</p>
+              <p className="text-sm text-[color:var(--ink-soft)]">
+                Текущий пользователь
+              </p>
               <h3 className="mt-2 text-xl font-extrabold">{user?.fullName}</h3>
               <div className="mt-3 grid gap-2 text-sm text-[color:var(--ink-soft)]">
                 <span>Email: {user?.email}</span>
                 <span>Телефон: {user?.phoneNumber || "не указан"}</span>
                 <span>Роль: {user?.role}</span>
-                <span>Регистрация: {formatDateTime(user?.registrationDate)}</span>
+                <span>
+                  Регистрация: {formatDateTime(user?.registrationDate)}
+                </span>
               </div>
             </div>
 
@@ -340,7 +408,9 @@ export function DashboardPage() {
                 <h3 className="font-bold">Пункты меню</h3>
                 <div className="mt-3 space-y-3">
                   {menuItems.slice(0, 4).map((item) => (
-                    <div key={item.menuItemId} className="rounded-2xl bg-[#fff8ee] p-3">
+                    <div
+                      key={item.menuItemId}
+                      className="rounded-2xl bg-[#fff8ee] p-3">
                       <p className="font-semibold">{item.name}</p>
                       <p className="text-sm text-[color:var(--ink-soft)]">
                         {formatCurrency(item.price)}
@@ -353,10 +423,14 @@ export function DashboardPage() {
                 <h3 className="font-bold">Прокат</h3>
                 <div className="mt-3 space-y-3">
                   {rentals.slice(0, 4).map((item) => (
-                    <div key={item.rentalItemId} className="rounded-2xl bg-[#fff8ee] p-3">
+                    <div
+                      key={item.rentalItemId}
+                      className="rounded-2xl bg-[#fff8ee] p-3">
                       <p className="font-semibold">{item.name}</p>
                       <p className="text-sm text-[color:var(--ink-soft)]">
-                        {item.pricePerHour ? formatCurrency(item.pricePerHour) : prettifyEnum(item.category)}
+                        {item.pricePerHour
+                          ? formatCurrency(item.pricePerHour)
+                          : prettifyEnum(item.category)}
                       </p>
                     </div>
                   ))}
@@ -364,7 +438,9 @@ export function DashboardPage() {
               </div>
             </div>
 
-            <Link to="/" className="text-sm font-bold text-[color:var(--accent)]">
+            <Link
+              to="/"
+              className="text-sm font-bold text-[color:var(--accent)]">
               Вернуться на главную витрину
             </Link>
           </Panel>
@@ -385,23 +461,20 @@ export function DashboardPage() {
                 return (
                   <div
                     key={reservation.reservationId}
-                    className="rounded-[24px] border border-[color:var(--border)] bg-white/80 p-5"
-                  >
+                    className="rounded-[24px] border border-[color:var(--border)] bg-white/80 p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-bold">{reservation.bookableObject.name}</h3>
+                        <h3 className="text-lg font-bold">
+                          {reservation.bookableObject.name}
+                        </h3>
                         <p className="text-sm text-[color:var(--ink-soft)]">
-                          {formatDate(reservation.reservationDate)} · {reservation.guestsCount} гостей
+                          {formatDate(reservation.reservationDate)} ·{" "}
+                          {reservation.guestsCount} гостей
                         </p>
                       </div>
-                      <Badge tone={paymentTone(reservation.status)}>{reservation.status}</Badge>
-                    </div>
-
-                    <div className="mt-4 grid gap-2 text-sm text-[color:var(--ink-soft)]">
-                      <span>Сумма: {formatCurrency(reservation.totalSum)}</span>
-                      <span>Создано: {formatDateTime(reservation.creationDate)}</span>
-                      <span>Тип объекта: {prettifyEnum(reservation.bookableObject.type)}</span>
-                      {reservation.notes ? <span>Комментарий: {reservation.notes}</span> : null}
+                      <Badge tone={paymentTone(reservation.status)}>
+                        {translateReservationStatus(reservation.status)}
+                      </Badge>
                     </div>
 
                     {reservation.menuItems.length > 0 ? (
@@ -410,7 +483,8 @@ export function DashboardPage() {
                         <div className="mt-2 space-y-1 text-sm text-[color:var(--ink-soft)]">
                           {reservation.menuItems.map((item) => (
                             <p key={item.menuItemId}>
-                              {item.menuItem.name} × {item.quantity} = {formatCurrency(item.itemCost)}
+                              {item.menuItem.name} × {item.quantity} ={" "}
+                              {formatCurrency(item.itemCost)}
                             </p>
                           ))}
                         </div>
@@ -420,9 +494,12 @@ export function DashboardPage() {
                     <div className="mt-4 flex flex-wrap gap-3">
                       {reservation.status === "pending" ? (
                         <Button
-                          onClick={() => initiatePaymentMutation.mutate(reservation.reservationId)}
-                          disabled={initiatePaymentMutation.isPending}
-                        >
+                          onClick={() =>
+                            initiatePaymentMutation.mutate(
+                              reservation.reservationId,
+                            )
+                          }
+                          disabled={initiatePaymentMutation.isPending}>
                           Инициировать оплату
                         </Button>
                       ) : null}
@@ -431,10 +508,11 @@ export function DashboardPage() {
                         <Button
                           variant="secondary"
                           onClick={() =>
-                            checkPaymentMutation.mutate(reservation.payment!.paymentId)
+                            checkPaymentMutation.mutate(
+                              reservation.payment!.paymentId,
+                            )
                           }
-                          disabled={checkPaymentMutation.isPending}
-                        >
+                          disabled={checkPaymentMutation.isPending}>
                           Проверить платёж
                         </Button>
                       ) : null}
@@ -452,13 +530,14 @@ export function DashboardPage() {
                               reason: reason || undefined,
                             });
                           }}
-                          disabled={cancelReservationMutation.isPending}
-                        >
+                          disabled={cancelReservationMutation.isPending}>
                           Возврат средств
                         </Button>
                       ) : null}
 
-                      {!["canceled", "paid", "refunded", "expired"].includes(reservation.status) ? (
+                      {!["canceled", "paid", "refunded", "expired"].includes(
+                        reservation.status,
+                      ) ? (
                         <Button
                           variant="danger"
                           onClick={() => {
@@ -471,8 +550,7 @@ export function DashboardPage() {
                               reason: reason || undefined,
                             });
                           }}
-                          disabled={cancelReservationMutation.isPending}
-                        >
+                          disabled={cancelReservationMutation.isPending}>
                           Отменить
                         </Button>
                       ) : null}
@@ -482,9 +560,19 @@ export function DashboardPage() {
                       <div className="mt-4 rounded-2xl bg-[#f5efe3] p-4 text-sm">
                         <p className="font-bold">Последняя проверка платежа</p>
                         <div className="mt-2 grid gap-1 text-[color:var(--ink-soft)]">
-                          <span>Статус: {paymentStatus.status}</span>
-                          <span>Сумма: {formatCurrency(paymentStatus.amount)}</span>
-                          <span>Статус бронирования: {paymentStatus.reservation.status}</span>
+                          <span>
+                            Статус:{" "}
+                            {translatePaymentStatus(paymentStatus.status)}
+                          </span>
+                          <span>
+                            Сумма: {formatCurrency(paymentStatus.amount)}
+                          </span>
+                          <span>
+                            Статус бронирования:{" "}
+                            {translateReservationStatus(
+                              paymentStatus.reservation.status,
+                            )}
+                          </span>
                         </div>
                       </div>
                     ) : null}
