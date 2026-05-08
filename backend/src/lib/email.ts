@@ -2,6 +2,7 @@ import axios from "axios";
 import { Decimal } from "@prisma/client/runtime/client";
 import { BookableObjectType } from "../generated/prisma/enums";
 import { env } from "../config/env";
+import { access } from "node:fs";
 
 const EMAILJS_API_URL = "https://api.emailjs.com/api/v1.0/email/send";
 
@@ -75,6 +76,7 @@ class EmailService {
         template_id: templateId,
         user_id: env.EMAILJS_PUBLIC_KEY,
         template_params: templateParams,
+        accessToken: env.EMAILJS_PRIVATE_KEY,
       });
       console.log("✅ Email sent successfully to", templateParams.to_email);
       return response.data;
