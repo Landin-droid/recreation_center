@@ -156,3 +156,26 @@ export interface KassaWebhookPayload {
     [key: string]: unknown;
   };
 }
+
+export interface ReceiptEmailData {
+  amount: string;
+  receiptType: "payment" | "refund";
+  receiptTypeLabel: string;
+  receiptId: any;
+  receiptStatus: any;
+  fiscalizationDate: string;
+  contactEmail: string;
+  yookassaReceiptId: any;
+  fiscalDocumentNumber: any;
+  fiscalStorageNumber: any;
+  fiscalAttribute: any;
+  fiscalProviderId: any;
+  objectName: string;
+  reservationDate: string;
+  itemDescription: any;
+  itemQuantity: any;
+  itemPrice: string;
+  totalSum: string;
+  vatInfo: string;
+  to_email: string;
+};

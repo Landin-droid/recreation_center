@@ -6,7 +6,11 @@ import prisma from "../../lib/prisma";
 import { emailService } from "../../lib/email";
 import { kassaClient } from "./payment.kassa";
 import { paymentRepository } from "./payment.repository";
-import { KassaReceipt, KassaStatement } from "./payment.types";
+import {
+  KassaReceipt,
+  KassaStatement,
+  ReceiptEmailData,
+} from "./payment.types";
 
 const FULL_REFUND_WITHIN_HOURS_TYPES = new Set(["cottage", "gazebo"]);
 const ONE_DAY_REFUND_TYPES = new Set([
@@ -96,9 +100,7 @@ class PaymentService {
     };
   }
 
-  private buildStatements(params: {
-    email: string;
-  }): KassaStatement[] {
+  private buildStatements(params: { email: string }): KassaStatement[] {
     return [
       {
         type: "payment_overview",
@@ -263,6 +265,27 @@ class PaymentService {
       throw new AppError("Payment not found", 404);
     }
 
+    let receiptEmailData: ReceiptEmailData | undefined = undefined;
+    if (payment.status === "succeeded" && payment.receipt?.rawPayload) {
+      const fullReservation = await prisma.reservation.findUnique({
+        where: { reservationId: payment.reservationId },
+        include: { user: true, bookableObject: true },
+      });
+      if (fullReservation) {
+        receiptEmailData = {
+          to_email: fullReservation.user.email,
+          ...buildReceiptEmailParams(
+            payment.receipt.rawPayload,
+            "payment",
+            fullReservation.bookableObject.name,
+            fullReservation.reservationDate,
+            fullReservation.totalSum.toNumber(),
+            fullReservation.user.email,
+          ),
+        };
+      }
+    }
+
     return {
       paymentId: payment.paymentId,
       reservationId: payment.reservationId,
@@ -271,6 +294,7 @@ class PaymentService {
       amount: payment.amount.toString(),
       kassaPaymentId: payment.kassaPaymentId,
       receipt: payment.receipt,
+      receiptEmailData,
       reservation: {
         reservationId: payment.reservation.reservationId,
         status: payment.reservation.status,
@@ -328,20 +352,23 @@ class PaymentService {
         include: { user: true, bookableObject: true },
       });
 
-      if (fullReservation?.user.email && paymentWithReceipt?.receipt?.rawPayload) {
-        const receiptParams = buildReceiptEmailParams(
-          paymentWithReceipt.receipt.rawPayload,
-          "payment",
-          fullReservation.bookableObject.name,
-          fullReservation.reservationDate,
-          fullReservation.totalSum.toNumber(),
-          fullReservation.user.email,
-        );
-
-        await emailService.sendReceipt(
-          fullReservation.user.email,
-          receiptParams,
-        );
+      if (
+        fullReservation?.user.email &&
+        paymentWithReceipt?.receipt?.rawPayload
+      ) {
+        // Email sending moved to frontend
+        // const receiptParams = buildReceiptEmailParams(
+        //   paymentWithReceipt.receipt.rawPayload,
+        //   "payment",
+        //   fullReservation.bookableObject.name,
+        //   fullReservation.reservationDate,
+        //   fullReservation.totalSum.toNumber(),
+        //   fullReservation.user.email,
+        // );
+        // await emailService.sendReceipt(
+        //   fullReservation.user.email,
+        //   receiptParams,
+        // );
       }
     }
 
@@ -469,19 +496,19 @@ class PaymentService {
         payment.reservation.user.email &&
         refundWithReceipt?.receipt?.rawPayload
       ) {
-        const receiptParams = buildReceiptEmailParams(
-          refundWithReceipt.receipt.rawPayload,
-          "refund",
-          payment.reservation.bookableObject.name,
-          payment.reservation.reservationDate,
-          refundAmount,
-          payment.reservation.user.email,
-        );
-
-        await emailService.sendReceipt(
-          payment.reservation.user.email,
-          receiptParams,
-        );
+        // Email sending moved to frontend
+        // const receiptParams = buildReceiptEmailParams(
+        //   refundWithReceipt.receipt.rawPayload,
+        //   "refund",
+        //   payment.reservation.bookableObject.name,
+        //   payment.reservation.reservationDate,
+        //   refundAmount,
+        //   payment.reservation.user.email,
+        // );
+        // await emailService.sendReceipt(
+        //   payment.reservation.user.email,
+        //   receiptParams,
+        // );
       }
     }
 
@@ -497,7 +524,34 @@ class PaymentService {
       throw new AppError("Refund not found", 404);
     }
 
-    return refund;
+    let receiptEmailData: ReceiptEmailData | undefined = undefined;
+    if (refund.status === "succeeded" && refund.receipt?.rawPayload) {
+      const payment = await paymentRepository.findPaymentById(refund.paymentId);
+      if (payment) {
+        const fullReservation = await prisma.reservation.findUnique({
+          where: { reservationId: payment.reservationId },
+          include: { user: true, bookableObject: true },
+        });
+        if (fullReservation) {
+          receiptEmailData = {
+            to_email: fullReservation.user.email,
+            ...buildReceiptEmailParams(
+              refund.receipt.rawPayload,
+              "refund",
+              fullReservation.bookableObject.name,
+              fullReservation.reservationDate,
+              refund.refundAmount.toNumber(),
+              fullReservation.user.email,
+            ),
+          };
+        }
+      }
+    }
+
+    return {
+      ...refund,
+      receiptEmailData,
+    };
   }
 
   async cancelOrRefundReservation(reservationId: number, reason?: string) {
