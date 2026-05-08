@@ -3,9 +3,9 @@ import { Navigate } from "react-router-dom";
 import { AppShell, Title, Panel, Badge, Loader, EmptyState, Button, Field, Modal, Toast } from "@shared/ui/kit";
 import { dashboardApi } from "@features/dashboard/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
-import type { Reservation, User } from "@shared/api/types";
+import type { Reservation } from "@shared/api/types";
 import { formatCurrency } from "@shared/lib/format";
-import { format, parseISO, isBefore, addHours } from "date-fns";
+import { format, parseISO, isBefore, addHours, addDays, differenceInMinutes } from "date-fns";
 import { ru } from "date-fns/locale";
 
 export function ProfilePage() {
@@ -66,8 +66,9 @@ export function ProfilePage() {
       updateUser(updatedUser);
       setIsEditing(false);
       setToast({ message: "Профиль успешно обновлен", type: "success" });
-    } catch (err: any) {
-      setToast({ message: err.message || "Ошибка при сохранении профиля", type: "error" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setToast({ message: message || "Ошибка при сохранении профиля", type: "error" });
     } finally {
       setIsSaving(false);
     }
@@ -82,18 +83,40 @@ export function ProfilePage() {
       setReservations(updated);
       setToast({ message: "Бронирование успешно отменено", type: "success" });
       setCancelModalId(null);
-    } catch (err: any) {
-      setToast({ message: err.message || "Ошибка при отмене", type: "error" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setToast({ message: message || "Ошибка при отмене", type: "error" });
     } finally {
       setIsCancelling(false);
     }
   };
 
-  const canCancel = (res: Reservation) => {
-    if (["canceled", "expired", "refunded"].includes(res.status)) return false;
-    const resDate = parseISO(res.reservationDate);
-    const deadline = addHours(resDate, 10);
-    return isBefore(new Date(), deadline);
+  const getRefundDeadline = (reservation: Reservation) => {
+    const reservationDate = parseISO(reservation.reservationDate);
+    const isGazeboOrCottage = ["cottage", "gazebo"].includes(
+      reservation.bookableObject.type,
+    );
+    return isGazeboOrCottage
+      ? addHours(reservationDate, 10)
+      : addDays(reservationDate, -1);
+  };
+
+  const canCancelPending = (res: Reservation) => res.status === "pending";
+
+  const canRefund = (res: Reservation) => {
+    if (res.status !== "paid" || res.payment?.status !== "succeeded") {
+      return false;
+    }
+    return isBefore(new Date(), getRefundDeadline(res));
+  };
+
+  const formatDeadline = (deadline: string | null) => {
+    if (!deadline) return "—";
+    const minutes = differenceInMinutes(parseISO(deadline), new Date());
+    if (minutes <= 0) return "Время действия истекло";
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours > 0 ? `${hours}ч ` : ""}${remainingMinutes} мин`;
   };
 
   const getStatusBadge = (status: string) => {
@@ -240,11 +263,12 @@ export function ProfilePage() {
                           >
                             {expandedId === res.reservationId ? "Скрыть" : "Детали"}
                           </Button>
-                          {res.status === "pending" && (
+
+                          {res.status === "pending" && !res.payment && (
                             <Button 
                               className="text-xs font-bold py-1.5" 
                               onClick={() => {
-                                dashboardApi.initiatePayment(res.reservationId).then(data => {
+                                dashboardApi.initiatePayment(res.reservationId).then((data) => {
                                   window.location.href = data.confirmationUrl;
                                 });
                               }}
@@ -252,7 +276,41 @@ export function ProfilePage() {
                               Оплатить
                             </Button>
                           )}
-                          {canCancel(res) && (
+
+                          {res.status === "pending" && res.payment?.status === "pending" && (
+                            <Button 
+                              className="text-xs font-bold py-1.5" 
+                              onClick={() => {
+                                dashboardApi.getPaymentStatus(res.payment!.paymentId).then((data) => {
+                                  setToast({ message: `Статус платежа: ${data.status}`, type: "info" });
+                                });
+                              }}
+                            >
+                              Проверить платёж
+                            </Button>
+                          )}
+
+                          {res.status === "paid" && canRefund(res) && (
+                            <Button 
+                              variant="danger" 
+                              className="text-xs font-bold py-1.5" 
+                              onClick={() => setCancelModalId(res.reservationId)}
+                            >
+                              Возврат средств
+                            </Button>
+                          )}
+
+                          {res.status === "paid" && !canRefund(res) && res.payment?.status === "succeeded" && (
+                            <Button 
+                              variant="ghost" 
+                              className="text-xs font-bold py-1.5 opacity-60 cursor-not-allowed" 
+                              disabled
+                            >
+                              Возврат недоступен
+                            </Button>
+                          )}
+
+                          {canCancelPending(res) && (
                             <Button 
                               variant="danger" 
                               className="text-xs font-bold py-1.5" 
@@ -281,7 +339,41 @@ export function ProfilePage() {
                             <p className="font-bold text-[#24170f]">{format(parseISO(res.creationDate), "d.MM.yyyy HH:mm")}</p>
                           </div>
                         </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                          {res.paymentDeadline && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-black uppercase text-[#72543d]">Время на оплату</p>
+                              <p className="font-bold text-[#24170f]">{formatDeadline(res.paymentDeadline)}</p>
+                            </div>
+                          )}
+                          <div className="space-y-1">
+                            <p className="text-xs font-black uppercase text-[#72543d]">Платеж</p>
+                            {res.payment ? (
+                              <div className="space-y-1">
+                                <p className="font-bold text-[#24170f]">{res.payment.status}</p>
+                                <p className="text-[color:var(--ink-soft)]">Метод: {res.payment.method || "не указан"}</p>
+                                {res.payment.kassaPaymentId ? (
+                                  <p className="text-[color:var(--ink-soft)] break-all">Заказ YK: {res.payment.kassaPaymentId}</p>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <p className="font-bold text-[#24170f]">Платеж не создан</p>
+                            )}
+                          </div>
+                        </div>
                         
+                        {res.payment?.refund && (
+                          <div className="rounded-2xl bg-[#f4f7ff] p-4 border border-[#e3e9ff] text-sm">
+                            <p className="text-xs font-black uppercase text-[#72543d]">Возврат</p>
+                            <p className="font-bold text-[#24170f]">{res.payment.refund.status}</p>
+                            <p className="text-[color:var(--ink-soft)]">Сумма возврата: {formatCurrency(res.payment.refund.refundAmount)}</p>
+                            {res.payment.refund.kassaRefundId ? (
+                              <p className="text-[color:var(--ink-soft)] break-all">ID возврата YK: {res.payment.refund.kassaRefundId}</p>
+                            ) : null}
+                          </div>
+                        )}
+
                         {res.menuItems && res.menuItems.length > 0 && (
                           <div className="space-y-2">
                             <p className="text-xs font-black uppercase text-[#72543d]">Заказанное меню:</p>

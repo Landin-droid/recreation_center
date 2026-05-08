@@ -9,7 +9,16 @@ export const reservationInclude = {
       menuItem: true,
     },
   },
-  payment: true,
+  payment: {
+    include: {
+      receipt: true,
+      refund: {
+        include: {
+          receipt: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.ReservationInclude;
 
 export type ReservationWithRelations = Prisma.ReservationGetPayload<{

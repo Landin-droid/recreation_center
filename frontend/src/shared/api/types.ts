@@ -102,11 +102,28 @@ export interface ReservationMenuItem {
   };
 }
 
+export interface ReservationReceipt {
+  receiptId: string;
+  type: string;
+  status: string;
+}
+
+export interface ReservationRefund {
+  refundId: number;
+  refundAmount: number;
+  status: string;
+  kassaRefundId: string | null;
+  receipt: ReservationReceipt | null;
+}
+
 export interface ReservationPayment {
   paymentId: number;
   amount: number;
   status: string;
   method: string | null;
+  kassaPaymentId: string | null;
+  receipt: ReservationReceipt | null;
+  refund: ReservationRefund | null;
 }
 
 export interface Reservation {
@@ -117,6 +134,7 @@ export interface Reservation {
   totalSum: number;
   notes: string | null;
   status: string;
+  paymentDeadline: string | null;
   user: {
     userId: number;
     fullName: string;

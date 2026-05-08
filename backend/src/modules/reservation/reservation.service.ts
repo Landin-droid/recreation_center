@@ -42,12 +42,36 @@ const formatReservation = (reservation: ReservationWithRelations) => ({
       price: Number(item.menuItem.price),
     },
   })),
+  paymentDeadline: reservation.paymentDeadline?.toISOString() ?? null,
   payment: reservation.payment
     ? {
         paymentId: reservation.payment.paymentId,
         amount: Number(reservation.payment.amount),
         status: reservation.payment.status,
         method: reservation.payment.method,
+        kassaPaymentId: reservation.payment.kassaPaymentId,
+        receipt: reservation.payment.receipt
+          ? {
+              receiptId: reservation.payment.receipt.kassaReceiptId,
+              type: reservation.payment.receipt.type,
+              status: reservation.payment.receipt.status,
+            }
+          : null,
+        refund: reservation.payment.refund
+          ? {
+              refundId: reservation.payment.refund.refundId,
+              refundAmount: Number(reservation.payment.refund.refundAmount),
+              status: reservation.payment.refund.status,
+              kassaRefundId: reservation.payment.refund.kassaRefundId,
+              receipt: reservation.payment.refund.receipt
+                ? {
+                    receiptId: reservation.payment.refund.receipt.kassaReceiptId,
+                    type: reservation.payment.refund.receipt.type,
+                    status: reservation.payment.refund.receipt.status,
+                  }
+                : null,
+            }
+          : null,
       }
     : null,
 });
