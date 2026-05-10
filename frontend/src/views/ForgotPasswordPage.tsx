@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { AppShell, Title, Panel, Button, Field } from "@shared/ui/kit";
 import { authApi } from "@features/auth/api";
 import { emailjsService } from "@shared/lib/emailjs";
@@ -12,7 +12,7 @@ export function ForgotPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -26,8 +26,8 @@ export function ForgotPasswordPage() {
       }
       
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || "Произошла ошибка");
+    } catch (err: Error | unknown) {
+      setError((err as Error).message || "Произошла ошибка");
     } finally {
       setLoading(false);
     }

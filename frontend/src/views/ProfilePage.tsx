@@ -304,7 +304,7 @@ export function ProfilePage() {
             </p>
             {receipt.registeredAt ? (
               <p className="text-[color:var(--ink-soft)]">
-                Дата регистрации: {receipt.registeredAt}
+                Дата регистрации чека: {receipt.registeredAt}
               </p>
             ) : null}
             <p className="break-all text-[color:var(--ink-soft)]">

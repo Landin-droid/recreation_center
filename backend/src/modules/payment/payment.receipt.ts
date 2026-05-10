@@ -182,7 +182,7 @@ export const generateReceiptPdf = (
         "Сумма",
         `${pdfText(summary.amount)} ${getCurrencySymbol(summary.currency)}`,
       ],
-      ["Дата фиксализации", summary.registeredAt],
+      ["Дата регистрации чека", summary.registeredAt],
       ["ID бронирования", reservation.reservationId],
       ["Объект бронирования", reservation.objectName],
       [

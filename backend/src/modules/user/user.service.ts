@@ -5,7 +5,6 @@ import crypto, { randomBytes, createHash } from "crypto";
 import { AppError } from "../../middleware/errorHandler";
 import { env, jwtSecret } from "../../config/env";
 import { userRepository } from "./user.repository";
-import { emailService } from "../../lib/email";
 import { CreateUserInput, UpdateUserInput } from "./user.validation";
 import { UserInternal, UserResponse } from "./user.types";
 
@@ -205,10 +204,6 @@ export const userService = {
       hashPasswordResetToken(resetToken),
       expiresAt,
     );
-    
-    // Мы всё еще вызываем emailService (заглушку), но теперь возвращаем токен
-    // чтобы фронтенд мог отправить его через EmailJS
-    await emailService.sendPasswordResetEmail(email, resetToken);
     
     return resetToken;
   },
