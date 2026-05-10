@@ -24,14 +24,12 @@ class YookassaClient {
   private axiosInstance: AxiosInstance;
   private shopId: string;
   private apiKey: string;
-  private webhookSecret: string;
   private readonly baseURL = "https://api.yookassa.ru/v3";
   private readonly API_TIMEOUT = 30000; // 30 сек по документации
 
   constructor() {
     this.shopId = env.YOOKASSA_SHOP_ID || "";
     this.apiKey = env.YOOKASSA_API_KEY || "";
-    this.webhookSecret = env.YOOKASSA_WEBHOOK_SECRET || "";
 
     // Базовая конфигурация axios с HTTP Basic Auth
     this.axiosInstance = axios.create({
@@ -372,7 +370,7 @@ class YookassaClient {
    */
   verifyWebhookSignature(body: string, signature: string): boolean {
     try {
-      if (!signature || !this.webhookSecret) {
+      if (!signature) {
         return false;
       }
 
@@ -383,7 +381,7 @@ class YookassaClient {
       }
 
       const expectedHash = crypto
-        .createHmac("sha256", this.webhookSecret)
+        .createHmac("sha256", env.JWT_SECRET)
         .update(body)
         .digest("hex");
 

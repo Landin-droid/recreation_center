@@ -1,4 +1,3 @@
-import { useSearchParams } from "react-router-dom";
 import { AppShell, Title, Panel } from "@shared/ui/kit";
 import { Link } from "react-router-dom";
 

@@ -21,7 +21,6 @@ const envSchema = z.object({
   // ЮKassa configuration
   YOOKASSA_SHOP_ID: z.string().optional(),
   YOOKASSA_API_KEY: z.string().optional(),
-  YOOKASSA_WEBHOOK_SECRET: z.string().optional(),
 
   // Payment configuration
   PAYMENT_SUCCESS_REDIRECT: z
@@ -31,13 +30,6 @@ const envSchema = z.object({
     .string()
     .default("http://localhost:3000/payment/failure"),
   PAYMENT_TIMEOUT_MINUTES: z.coerce.number().int().positive().default(15),
-
-  // EmailJS configuration for backend email sending
-  EMAILJS_SERVICE_ID: z.string().optional(),
-  EMAILJS_PUBLIC_KEY: z.string().optional(),
-  EMAILJS_PRIVATE_KEY: z.string().optional(),
-  EMAILJS_TEMPLATE_RECEIPT_ID: z.string().optional(),
-  EMAILJS_TEMPLATE_RESET_PASSWORD_ID: z.string().optional(),
 
   // App configuration
   FRONTEND_URL: z.string().default("http://localhost:3000"),
