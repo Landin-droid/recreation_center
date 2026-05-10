@@ -10,9 +10,9 @@ declare module "axios" {
 }
 
 const authFreePaths = [
-  "/users/login",
-  "/users/register",
-  "/users/refresh",
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
 ];
 
 let refreshRequest: Promise<string | null> | null = null;
@@ -54,7 +54,7 @@ http.interceptors.response.use(
       // Запрос на обновление токенов. Сервер обновит куки в ответе.
       refreshRequest = axios
         .post<ApiEnvelope<unknown>>(
-          `${env.apiBaseUrl}/users/refresh`,
+          `${env.apiBaseUrl}/auth/refresh`,
           {}, // Тело пустое, так как refresh-токен в куках
           { withCredentials: true }
         )

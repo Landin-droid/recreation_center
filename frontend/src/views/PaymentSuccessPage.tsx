@@ -1,41 +1,8 @@
-import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppShell, Title, Panel } from "@shared/ui/kit";
 import { Link } from "react-router-dom";
-import { http } from "@shared/api/http";
-import { emailjsService } from "@shared/lib/emailjs";
 
 export function PaymentSuccessPage() {
-  const [searchParams] = useSearchParams();
-  const paymentId = searchParams.get("paymentId");
-
-  useEffect(() => {
-    if (paymentId) {
-      const sendReceiptEmail = async () => {
-        try {
-          console.log('PaymentSuccessPage: Starting receipt email process for paymentId:', paymentId);
-          const response = await http.get(`/payments/${paymentId}`);
-          console.log('PaymentSuccessPage: API response:', response.data);
-          const { receiptEmailData } = response.data.data;
-
-          if (receiptEmailData) {
-            console.log('PaymentSuccessPage: Sending receipt email with data:', receiptEmailData);
-            await emailjsService.sendPaymentReceipt(receiptEmailData);
-            console.log('PaymentSuccessPage: Receipt email sent successfully');
-          } else {
-            console.log('PaymentSuccessPage: No receiptEmailData found in response');
-          }
-        } catch (error) {
-          console.error("PaymentSuccessPage: Failed to send payment receipt email:", error);
-        }
-      };
-      sendReceiptEmail();
-    } else {
-      console.log('PaymentSuccessPage: No paymentId in URL params');
-    }
-  }, [paymentId]);
-
-
   return (
     <AppShell>
       <div className="max-w-xl mx-auto py-12 text-center space-y-8">

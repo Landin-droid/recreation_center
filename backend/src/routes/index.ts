@@ -1,4 +1,5 @@
 import { Router } from "express";
+import authRoutes from "../modules/auth/auth.routes";
 import bookableObjectRoutes from "../modules/bookable-object/bookable-object.routes";
 import userRoutes from "../modules/user/user.routes";
 import menuRoutes from "../modules/menu/menu.routes";
@@ -12,6 +13,7 @@ import {
 
 const router = Router();
 
+router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/bookable-objects", bookableObjectRoutes);
 router.use("/menu", menuRoutes);
