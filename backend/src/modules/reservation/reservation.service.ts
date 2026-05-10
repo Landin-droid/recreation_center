@@ -13,6 +13,7 @@ import {
   ReservationWithRelations,
 } from "./reservation.repository";
 import { buildReceiptSummary } from "../payment/payment.receipt";
+import { paymentService } from "../payment/payment.service";
 
 const formatReservation = (reservation: ReservationWithRelations) => ({
   reservationId: reservation.reservationId,
@@ -183,15 +184,61 @@ const buildReservationDerivedData = async (
   };
 };
 
+const syncMissingReceiptData = async (reservations: ReservationWithRelations[]) => {
+  const tasks: Array<Promise<unknown>> = [];
+
+  for (const reservation of reservations) {
+    const payment = reservation.payment;
+    if (!payment) {
+      continue;
+    }
+
+    if (
+      payment.status === "succeeded" &&
+      payment.kassaPaymentId &&
+      !payment.receipt
+    ) {
+      tasks.push(paymentService.syncPaymentReceiptForPayment(payment.paymentId));
+    }
+
+    if (
+      payment.refund?.status === "succeeded" &&
+      payment.refund.kassaRefundId &&
+      !payment.refund.receipt
+    ) {
+      tasks.push(paymentService.syncRefundReceiptForRefund(payment.refund.refundId));
+    }
+  }
+
+  if (tasks.length === 0) {
+    return false;
+  }
+
+  const results = await Promise.allSettled(tasks);
+  results.forEach((result) => {
+    if (result.status === "rejected") {
+      console.warn("Failed to sync missing receipt:", result.reason);
+    }
+  });
+
+  return true;
+};
+
 export const reservationService = {
   async listReservations(query: ListReservationsQuery) {
-    const reservations = await reservationRepository.findMany({
+    const where = {
       ...(query.userId ? { userId: query.userId } : {}),
       ...(query.bookableObjectId
         ? { bookableObjectId: query.bookableObjectId }
         : {}),
       ...(query.status ? { status: query.status } : {}),
-    });
+    };
+
+    let reservations = await reservationRepository.findMany(where);
+
+    if (await syncMissingReceiptData(reservations)) {
+      reservations = await reservationRepository.findMany(where);
+    }
 
     return reservations.map(formatReservation);
   },
@@ -200,6 +247,14 @@ export const reservationService = {
     const reservation = await reservationRepository.findById(reservationId);
     if (!reservation) {
       throw new AppError("Reservation not found", 404);
+    }
+
+    if (await syncMissingReceiptData([reservation])) {
+      const refreshed = await reservationRepository.findById(reservationId);
+      if (!refreshed) {
+        throw new AppError("Reservation not found", 404);
+      }
+      return formatReservation(refreshed);
     }
 
     return formatReservation(reservation);

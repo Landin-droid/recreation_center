@@ -308,7 +308,7 @@ export function ProfilePage() {
               </p>
             ) : null}
             <p className="break-all text-[color:var(--ink-soft)]">
-              ID чека YK: {receipt.receiptId}
+              ID чека ЮKassa: {receipt.receiptId}
             </p>
           </div>
 
@@ -335,13 +335,13 @@ export function ProfilePage() {
         receipt.fiscalAttribute ? (
           <div className="mt-3 grid gap-2 border-t border-[#efe4d6] pt-3 text-xs sm:grid-cols-3">
             <p className="break-all text-[color:var(--ink-soft)]">
-              ФД: {receipt.fiscalDocumentNumber || "—"}
+              Номер фискального документа: {receipt.fiscalDocumentNumber || "—"}
             </p>
             <p className="break-all text-[color:var(--ink-soft)]">
-              ФН: {receipt.fiscalStorageNumber || "—"}
+              Фискальный накопитель: {receipt.fiscalStorageNumber || "—"}
             </p>
             <p className="break-all text-[color:var(--ink-soft)]">
-              ФП: {receipt.fiscalAttribute || "—"}
+              Фискальный атрибут: {receipt.fiscalAttribute || "—"}
             </p>
           </div>
         ) : null}
@@ -673,7 +673,7 @@ export function ProfilePage() {
                                 </p>
                                 {res.payment.kassaPaymentId ? (
                                   <p className="text-[color:var(--ink-soft)] break-all">
-                                    Заказ YK: {res.payment.kassaPaymentId}
+                                    Заказ ЮKassa: {res.payment.kassaPaymentId}
                                   </p>
                                 ) : null}
                               </div>
@@ -712,7 +712,7 @@ export function ProfilePage() {
                             </p>
                             {res.payment.refund.kassaRefundId ? (
                               <p className="text-[color:var(--ink-soft)] break-all">
-                                ID возврата YK:{" "}
+                                ID возврата ЮKassa:{" "}
                                 {res.payment.refund.kassaRefundId}
                               </p>
                             ) : null}

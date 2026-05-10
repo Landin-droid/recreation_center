@@ -41,6 +41,19 @@ const getReceiptStatusLabel = (status?: string | null) => {
   }
 };
 
+const getCurrencySymbol = (currency: string) => {
+  switch (currency.toUpperCase()) {
+    case "RUB":
+      return "₽";
+    case "USD":
+      return "$";
+    case "EUR":
+      return "€";
+    default:
+      return currency.toUpperCase();
+  }
+}
+
 const formatReceiptDate = (date?: string | Date | null) =>
   date ? dayjs(date).format("DD.MM.YYYY HH:mm") : null;
 
@@ -157,25 +170,31 @@ export const generateReceiptPdf = (
       .font(regularFont)
       .fontSize(9)
       .fillColor("#6b7280")
-      .text("Копия файла сгенерирована из данных чека YooKassa", { align: "center" });
+      .text("Копия файла сгенерирована из данных чека ЮKassa", { align: "center" });
     doc.moveDown(1.5);
 
     doc.fillColor("#111827").font(regularFont).fontSize(11);
     const rows: Array<[string, unknown]> = [
-      ["Receipt ID", summary.receiptId],
-      ["Status", summary.statusLabel],
-      ["Type", summary.typeLabel],
-      ["Amount", `${pdfText(summary.amount)} ${summary.currency}`],
-      ["Registered at", summary.registeredAt],
-      ["Reservation ID", reservation.reservationId],
-      ["Object", reservation.objectName],
-      ["Reservation date", dayjs(reservation.reservationDate).format("DD.MM.YYYY HH:mm")],
-      ["Customer", reservation.customerName],
-      ["Customer email", reservation.customerEmail],
-      ["Fiscal document number", summary.fiscalDocumentNumber],
-      ["Fiscal storage number", summary.fiscalStorageNumber],
-      ["Fiscal attribute", summary.fiscalAttribute],
-      ["Fiscal provider ID", summary.fiscalProviderId],
+      ["ID чека", summary.receiptId],
+      ["Статус", summary.statusLabel],
+      ["Тип", summary.typeLabel],
+      [
+        "Сумма",
+        `${pdfText(summary.amount)} ${getCurrencySymbol(summary.currency)}`,
+      ],
+      ["Дата фиксализации", summary.registeredAt],
+      ["ID бронирования", reservation.reservationId],
+      ["Объект бронирования", reservation.objectName],
+      [
+        "Дата бронирования",
+        dayjs(reservation.reservationDate).format("DD.MM.YYYY"),
+      ],
+      ["Пользователь", reservation.customerName],
+      ["Email пользователя", reservation.customerEmail],
+      ["Номер фискального документа", summary.fiscalDocumentNumber],
+      ["Фискальный накопитель", summary.fiscalStorageNumber],
+      ["Фискальный атрибут", summary.fiscalAttribute],
+      ["ID фискального провайдера", summary.fiscalProviderId],
     ];
 
     rows.forEach(([label, value]) => {
@@ -184,7 +203,7 @@ export const generateReceiptPdf = (
     });
 
     doc.moveDown();
-    doc.font(boldFont).fontSize(13).text("Items");
+    doc.font(boldFont).fontSize(13).text("Позиции в чеке:");
     doc.moveDown(0.5);
     doc.font(regularFont).fontSize(10);
 
@@ -194,7 +213,7 @@ export const generateReceiptPdf = (
       summary.items.forEach((item, index) => {
         doc.text(
           toPdfSafeText(
-            `${index + 1}. ${item.description} | qty: ${item.quantity} | amount: ${item.amount} ${item.currency}`,
+            `${index + 1}. ${item.description} | количество: ${item.quantity} | сумма: ${item.amount} ${item.currency}`,
             !!fontPath,
           ),
         );
@@ -206,7 +225,7 @@ export const generateReceiptPdf = (
       .fontSize(9)
       .fillColor("#6b7280")
       .text(
-        "Этот документ является информационной копией для учетной записи пользователя. Фискальные данные зарегистрированы через YooKassa.",
+        "Этот документ является информационной копией для учетной записи пользователя. Фискальные данные зарегистрированы через ЮKassa.",
       );
 
     doc.end();

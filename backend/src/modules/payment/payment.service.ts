@@ -157,6 +157,26 @@ class PaymentService {
     }
   }
 
+  async syncPaymentReceiptForPayment(paymentId: number) {
+    const payment = await paymentRepository.findPaymentById(paymentId);
+    if (!payment?.kassaPaymentId || payment.status !== "succeeded") {
+      return payment;
+    }
+
+    await this.syncPaymentReceipt(payment.paymentId, payment.kassaPaymentId);
+    return paymentRepository.findPaymentById(payment.paymentId);
+  }
+
+  async syncRefundReceiptForRefund(refundId: number) {
+    const refund = await paymentRepository.findRefundById(refundId);
+    if (!refund?.kassaRefundId || refund.status !== "succeeded") {
+      return refund;
+    }
+
+    await this.syncRefundReceipt(refund.refundId, refund.kassaRefundId);
+    return paymentRepository.findRefundById(refund.refundId);
+  }
+
   async createPayment(reservationId: number) {
     const reservation = await prisma.reservation.findUnique({
       where: { reservationId },
@@ -513,9 +533,23 @@ class PaymentService {
   }
 
   async getRefund(refundId: number) {
-    const refund = await paymentRepository.findRefundById(refundId);
+    let refund = await paymentRepository.findRefundById(refundId);
     if (!refund) {
       throw new AppError("Refund not found", 404);
+    }
+
+    if (
+      refund.status === "succeeded" &&
+      !refund.receipt &&
+      refund.kassaRefundId
+    ) {
+      await this.syncRefundReceipt(refund.refundId, refund.kassaRefundId).catch(
+        (error) => console.warn("Failed to sync refund receipt:", error),
+      );
+      refund = await paymentRepository.findRefundById(refundId);
+      if (!refund) {
+        throw new AppError("Refund not found", 404);
+      }
     }
 
     let receiptEmailData: ReceiptEmailData | undefined = undefined;
