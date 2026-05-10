@@ -39,6 +39,26 @@ export const paymentController = {
     });
   }),
 
+  getReceiptPdf: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+
+    const receiptId = String(req.params.receiptId);
+    const { buffer, filename } = await paymentService.getReceiptPdf(
+      receiptId,
+      req.user.userId,
+    );
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${filename.replace(/"/g, "")}"`,
+    );
+    res.send(buffer);
+  }),
+
   createRefund: asyncHandler(async (req: Request, res: Response) => {
     const payload = createRefundSchema.parse(req.body);
     const refund = await paymentService.createRefund(

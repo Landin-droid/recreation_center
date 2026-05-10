@@ -11,6 +11,7 @@ import {
   KassaStatement,
   ReceiptEmailData,
 } from "./payment.types";
+import { buildReceiptSummary, generateReceiptPdf } from "./payment.receipt";
 
 const FULL_REFUND_WITHIN_HOURS_TYPES = new Set(["cottage", "gazebo"]);
 const ONE_DAY_REFUND_TYPES = new Set([
@@ -293,7 +294,7 @@ class PaymentService {
       method: payment.method,
       amount: payment.amount.toString(),
       kassaPaymentId: payment.kassaPaymentId,
-      receipt: payment.receipt,
+      receipt: buildReceiptSummary(payment.receipt),
       receiptEmailData,
       reservation: {
         reservationId: payment.reservation.reservationId,
@@ -457,13 +458,6 @@ class PaymentService {
       kassaClient.generateIdempotencyKey(),
       Math.round(refundAmount * 100),
       reason ?? "Возврат средств за бронирование",
-      this.buildReceipt({
-        user: payment.reservation.user,
-        objectName: payment.reservation.bookableObject.name,
-        reservationDate: payment.reservation.reservationDate,
-        amount: refundAmount,
-        descriptionPrefix: "Возврат за бронирование",
-      }),
     );
 
     const updated = await paymentRepository.updateRefundStatus(
@@ -550,7 +544,49 @@ class PaymentService {
 
     return {
       ...refund,
+      receipt: buildReceiptSummary(refund.receipt),
       receiptEmailData,
+    };
+  }
+
+  async getReceiptPdf(kassaReceiptId: string, userId: number) {
+    const receipt = await paymentRepository.findReceiptByKassaId(kassaReceiptId);
+    if (!receipt) {
+      throw new AppError("Receipt not found", 404);
+    }
+
+    const receiptStatus =
+      receipt.status ?? ((receipt.rawPayload as any)?.status as string | undefined);
+    if (receiptStatus !== "succeeded") {
+      throw new AppError("Receipt PDF is available only for succeeded receipts", 400);
+    }
+
+    const reservation =
+      receipt.payment?.reservation ?? receipt.refund?.payment.reservation;
+    if (!reservation) {
+      throw new AppError("Receipt reservation not found", 404);
+    }
+
+    if (reservation.userId !== userId) {
+      throw new AppError("Receipt is not available for this user", 403);
+    }
+
+    const summary = buildReceiptSummary(receipt);
+    if (!summary) {
+      throw new AppError("Receipt data is not available", 404);
+    }
+
+    const buffer = await generateReceiptPdf(summary, {
+      reservationId: reservation.reservationId,
+      objectName: reservation.bookableObject.name,
+      reservationDate: reservation.reservationDate,
+      customerName: reservation.user.fullName,
+      customerEmail: reservation.user.email,
+    });
+
+    return {
+      buffer,
+      filename: `${summary.type}-${summary.receiptId}.pdf`,
     };
   }
 

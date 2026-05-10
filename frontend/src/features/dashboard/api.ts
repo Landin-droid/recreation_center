@@ -44,6 +44,13 @@ export const dashboardApi = {
   getPaymentStatus(paymentId: number) {
     return unwrap<PaymentStatus>(http.patch(`/payments/${paymentId}`));
   },
+  getReceiptPdf(receiptId: string) {
+    return http
+      .get<Blob>(`/payments/receipts/${encodeURIComponent(receiptId)}/pdf`, {
+        responseType: "blob",
+      })
+      .then((response) => response.data);
+  },
   createRefund(paymentId: number, reason?: string) {
     return unwrap<{
       refundId: number;

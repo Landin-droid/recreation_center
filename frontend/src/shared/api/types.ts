@@ -104,8 +104,25 @@ export interface ReservationMenuItem {
 
 export interface ReservationReceipt {
   receiptId: string;
-  type: string;
-  status: string;
+  type: "payment" | "refund";
+  typeLabel: string;
+  status: string | null;
+  statusLabel: string;
+  amount: string | null;
+  currency: string;
+  registeredAt: string | null;
+  fiscalDocumentNumber: string | null;
+  fiscalStorageNumber: string | null;
+  fiscalAttribute: string | null;
+  fiscalProviderId: string | null;
+  items: Array<{
+    description: string;
+    quantity: number | string;
+    amount: string;
+    currency: string;
+  }>;
+  canOpenPdf: boolean;
+  pdfUrl: string | null;
 }
 
 export interface ReservationRefund {

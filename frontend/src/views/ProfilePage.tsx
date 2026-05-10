@@ -14,7 +14,7 @@ import {
 } from "@shared/ui/kit";
 import { dashboardApi } from "@features/dashboard/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
-import type { Reservation } from "@shared/api/types";
+import type { Reservation, ReservationReceipt } from "@shared/api/types";
 import { formatCurrency } from "@shared/lib/format";
 import {
   format,
@@ -241,6 +241,112 @@ export function ProfilePage() {
       default:
         return <Badge>{status}</Badge>;
     }
+  };
+
+  const formatReceiptAmount = (receipt: ReservationReceipt) => {
+    if (!receipt.amount) return "—";
+    const amount = Number(receipt.amount);
+    return Number.isFinite(amount)
+      ? formatCurrency(amount)
+      : `${receipt.amount} ${receipt.currency}`;
+  };
+
+  const handleOpenReceiptPdf = async (receipt: ReservationReceipt) => {
+    try {
+      const blob = await dashboardApi.getReceiptPdf(receipt.receiptId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setToast({
+        message: message || "Не удалось открыть PDF-файл чека",
+        type: "error",
+      });
+    }
+  };
+
+  const handleDownloadReceiptPdf = async (receipt: ReservationReceipt) => {
+    try {
+      const blob = await dashboardApi.getReceiptPdf(receipt.receiptId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${receipt.type}-${receipt.receiptId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setToast({
+        message: message || "Не удалось скачать PDF-файл чека",
+        type: "error",
+      });
+    }
+  };
+
+  const renderReceipt = (receipt: ReservationReceipt | null) => {
+    if (!receipt) return null;
+
+    return (
+      <div className="rounded-2xl border border-[#efe4d6] bg-white/75 p-4 text-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-black uppercase text-[#72543d]">
+              {receipt.typeLabel}
+            </p>
+            <p className="font-bold text-[#24170f]">
+              {receipt.statusLabel}
+            </p>
+            <p className="text-[color:var(--ink-soft)]">
+              Сумма: {formatReceiptAmount(receipt)}
+            </p>
+            {receipt.registeredAt ? (
+              <p className="text-[color:var(--ink-soft)]">
+                Дата регистрации: {receipt.registeredAt}
+              </p>
+            ) : null}
+            <p className="break-all text-[color:var(--ink-soft)]">
+              ID чека YK: {receipt.receiptId}
+            </p>
+          </div>
+
+          {receipt.canOpenPdf ? (
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                className="py-2 text-xs font-bold"
+                onClick={() => handleOpenReceiptPdf(receipt)}>
+                Посмотреть PDF
+              </Button>
+              <Button
+                variant="ghost"
+                className="py-2 text-xs font-bold"
+                onClick={() => handleDownloadReceiptPdf(receipt)}>
+                Скачать
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
+        {receipt.fiscalDocumentNumber ||
+        receipt.fiscalStorageNumber ||
+        receipt.fiscalAttribute ? (
+          <div className="mt-3 grid gap-2 border-t border-[#efe4d6] pt-3 text-xs sm:grid-cols-3">
+            <p className="break-all text-[color:var(--ink-soft)]">
+              ФД: {receipt.fiscalDocumentNumber || "—"}
+            </p>
+            <p className="break-all text-[color:var(--ink-soft)]">
+              ФН: {receipt.fiscalStorageNumber || "—"}
+            </p>
+            <p className="break-all text-[color:var(--ink-soft)]">
+              ФП: {receipt.fiscalAttribute || "—"}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    );
   };
 
   if (!user) return <Navigate to="/login" replace />;
@@ -578,6 +684,19 @@ export function ProfilePage() {
                             )}
                           </div>
                         </div>
+
+                        {(res.payment?.receipt ||
+                          res.payment?.refund?.receipt) && (
+                          <div className="space-y-3">
+                            <p className="text-xs font-black uppercase text-[#72543d]">
+                              Чеки
+                            </p>
+                            <div className="space-y-3">
+                              {renderReceipt(res.payment?.receipt ?? null)}
+                              {renderReceipt(res.payment?.refund?.receipt ?? null)}
+                            </div>
+                          </div>
+                        )}
 
                         {res.payment?.refund && (
                           <div className="rounded-2xl bg-[#f4f7ff] p-4 border border-[#e3e9ff] text-sm">

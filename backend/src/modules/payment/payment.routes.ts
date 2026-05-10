@@ -8,6 +8,11 @@ export const yookassaWebhookRouter = Router();
 
 paymentRouter.post("/webhook", paymentController.paymentWebhook);
 paymentRouter.post("/", authenticate, paymentController.createPayment);
+paymentRouter.get(
+  "/receipts/:receiptId/pdf",
+  authenticate,
+  paymentController.getReceiptPdf,
+);
 paymentRouter.get("/:paymentId", authenticate, paymentController.getPayment);
 paymentRouter.patch(
   "/:paymentId",

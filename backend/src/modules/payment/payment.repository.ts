@@ -125,6 +125,38 @@ class PaymentRepository {
     });
   }
 
+  findReceiptByKassaId(kassaReceiptId: string) {
+    return prisma.receipt.findUnique({
+      where: { kassaReceiptId },
+      include: {
+        payment: {
+          include: {
+            reservation: {
+              include: {
+                user: true,
+                bookableObject: true,
+              },
+            },
+          },
+        },
+        refund: {
+          include: {
+            payment: {
+              include: {
+                reservation: {
+                  include: {
+                    user: true,
+                    bookableObject: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   updateRefundStatus(
     refundId: number,
     data: {
