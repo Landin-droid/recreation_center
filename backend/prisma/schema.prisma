@@ -45,16 +45,16 @@ model RefreshToken {
 
 model BookableObject {
   bookableObjectId Int                @id @default(autoincrement()) @map("bookable_object_id")
-  name             String
-  capacity         Int
+  name             String             @map("name")
+  capacity         Int                @map("capacity")
   basePrice        Decimal            @map("base_price")
   isSeasonal       Boolean            @default(false) @map("is_seasonal")
   seasonStart      DateTime?          @map("season_start") @db.Date
   seasonEnd        DateTime?          @map("season_end") @db.Date
-  description      String?
+  description      String?            @map("description")
   isActive         Boolean            @default(true) @map("is_active")
   imageUrls        String[]           @default([]) @map("image_urls")
-  type             BookableObjectType
+  type             BookableObjectType @map("type")
   banquetHall      BanquetHall?
   cottage          Cottage?
   gazebo           Gazebo?
@@ -68,7 +68,7 @@ model BookableObject {
 
 model Cottage {
   bookableObjectId Int            @id @map("bookable_object_id")
-  amenities        String?
+  amenities        String?        @map("amenities")
   squareMeters     Int?           @map("square_meters")
   bookableObject   BookableObject @relation(fields: [bookableObjectId], references: [bookableObjectId], onDelete: Cascade)
 
@@ -77,7 +77,7 @@ model Cottage {
 
 model Gazebo {
   bookableObjectId Int            @id @map("bookable_object_id")
-  amenities        String?
+  amenities        String?        @map("amenities")
   bookableObject   BookableObject @relation(fields: [bookableObjectId], references: [bookableObjectId], onDelete: Cascade)
 
   @@map("gazebo")
@@ -114,7 +114,7 @@ model Reservation {
   creationDate         DateTime               @default(now()) @map("creation_date")
   guestsCount          Int                    @map("guests_count")
   totalSum             Decimal                @map("total_sum")
-  notes                String?
+  notes                String?                @map("notes")
   status               ReservationStatus      @default(pending)
   paymentDeadline      DateTime?              @map("payment_deadline")
   payment              Payment?
@@ -131,11 +131,11 @@ model Payment {
   paymentId         Int              @id @default(autoincrement()) @map("payment_id")
   reservationId     Int              @unique @map("reservation_id")
   paymentDate       DateTime         @default(now()) @map("payment_date")
-  amount            Decimal
+  amount            Decimal          @map("amount")
   kassaPaymentId    String?          @unique @map("kassa_payment_id")
   idempotencyKey    String           @unique @map("idempotency_key")
-  status            PaymentStatus    @default(pending)
-  method            PaymentMethod?
+  status            PaymentStatus    @default(pending) @map("status")
+  method            PaymentMethod?   @map("method")
   reservation       Reservation      @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
   refund            Refund?
   receipt           Receipt? 
@@ -149,7 +149,7 @@ model Refund {
   paymentId          Int                @unique @map("payment_id")
   originalAmount     Decimal            @map("original_amount")
   refundAmount       Decimal            @map("refund_amount")
-  reason             String?
+  reason             String?            @map("reason")
   cancellationParty  String?            @map("cancellation_party")
   cancellationReason String?            @map("cancellation_reason")
   kassaRefundId      String?            @unique @map("kassa_refund_id")
@@ -167,8 +167,8 @@ model Refund {
 model Receipt {
   receiptId       Int          @id @default(autoincrement()) @map("receipt_id")
   kassaReceiptId  String       @unique @map("kassa_receipt_id")
-  type            ReceiptType
-  status          String?
+  type            ReceiptType  @map("type")
+  status          String?      @map("status")
   paymentId       Int?         @unique @map("payment_id")
   refundId        Int?         @unique @map("refund_id")
   rawPayload      Json?        @map("raw_payload")
@@ -182,11 +182,12 @@ model Receipt {
 
 model MenuItem {
   menuItemId           Int                   @id @default(autoincrement()) @map("menu_item_id")
-  name                 String
-  price                Decimal
-  description          String?
+  name                 String                @map("name")
+  price                Decimal               @map("price")
+  description          String?               @map("description")
+  imageUrl             String?               @map("image_url")
   isAvailable          Boolean               @default(true) @map("is_available")
-  category             MenuCategory?
+  category             MenuCategory?         @map("category")
   objectMenuItems      ObjectMenuItem[]
   reservationMenuItems ReservationMenuItem[]
 
@@ -194,10 +195,10 @@ model MenuItem {
 }
 
 model ReservationMenuItem {
-  quantity      Int
+  quantity      Int         @map("quantity")
   itemCost      Decimal     @map("item_cost")
-  menuItemId    Int
-  reservationId Int
+  menuItemId    Int         @map("menu_item_id")
+  reservationId Int         @map("reservation_id")
   menuItem      MenuItem    @relation(fields: [menuItemId], references: [menuItemId])
   reservation   Reservation @relation(fields: [reservationId], references: [reservationId], onDelete: Cascade)
 
@@ -207,8 +208,8 @@ model ReservationMenuItem {
 
 model ObjectMenuItem {
   isAvailable      Boolean        @default(true) @map("is_available")
-  bookableObjectId Int
-  menuItemId       Int
+  bookableObjectId Int            @map("bookable_object_id")
+  menuItemId       Int            @map("menu_item_id")
   bookableObject   BookableObject @relation(fields: [bookableObjectId], references: [bookableObjectId], onDelete: Cascade)
   menuItem         MenuItem       @relation(fields: [menuItemId], references: [menuItemId], onDelete: Cascade)
 
@@ -219,14 +220,14 @@ model ObjectMenuItem {
 
 model RentalItem {
   rentalItemId Int               @id @default(autoincrement()) @map("rental_item_id")
-  name         String
-  description  String?
+  name         String            @map("name")
+  description  String?           @map("description")
   pricePerHour Decimal?          @map("price_per_hour")
   isSeasonal   Boolean           @default(false) @map("is_seasonal")
   maxCapacity  Int?              @map("max_capacity")
   imageUrl     String?           @map("image_url")
   isActive     Boolean           @default(true) @map("is_active")
-  category     RentalCategory
+  category     RentalCategory    @map("category")
   seasonType   RentalSeasonType? @map("season_type")
   priceRules   RentalPriceRule[]
 

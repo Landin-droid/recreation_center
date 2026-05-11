@@ -183,7 +183,7 @@ export function BookingPage() {
 
   const getObjectTypeName = (type: string) => {
     const types: Record<string, string> = {
-      COTTAGE: "Коттедж",
+      COTTAGE: "Домик",
       BANQUET_HALL: "Банкетный зал",
       GAZEBO: "Беседка",
       KARAOKE_BAR: "Караоке-бар",
@@ -232,10 +232,10 @@ export function BookingPage() {
     
     if (type === "COTTAGE") {
       const cottageAmenities = [
-        { name: "Холодильник", key: "холодильник", icon: "❄️" },
-        { name: "Микроволновка", key: "микроволновка", icon: "🔥" },
+        { name: "Холодильник", key: "холодильник", icon: "🗄️" },
+        { name: "Микроволновка", key: "микроволновка", icon: "♨️" },
         { name: "Чайник", key: "чайник", icon: "☕" },
-        { name: "Водоснабжение", key: "водоснабжение", icon: "🚰" },
+        { name: "Водоснабжение", key: "водоснабжение", icon: "💧" },
         { name: "Электричество", key: "электричество", icon: "⚡" },
         { name: "Санузел", key: "санузел", icon: "🚽" },
       ];
