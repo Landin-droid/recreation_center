@@ -37,7 +37,7 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
       <img
         src={images[currentIndex]}
         alt={`${name} - ${currentIndex + 1}`}
-        className="h-full w-full object-contain transition-opacity duration-500 rounded"
+        className="h-full w-full object-cover transition-opacity duration-500 rounded"
       />
       
       {images.length > 1 && (
