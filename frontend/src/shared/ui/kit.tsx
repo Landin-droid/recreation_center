@@ -21,14 +21,14 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-[#fffaf2]">
-      <header className="sticky top-0 z-20 border-b border-[color:var(--border)] bg-[rgba(255,250,242,0.85)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <header className="sticky top-0 z-[70] border-b border-[color:var(--border)] bg-[#fffaf2]/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Link
             to="/"
-            className="text-xl font-black tracking-tighter text-[#c96f2b]">
+            className="shrink-0 text-lg font-black tracking-tighter text-[#c96f2b] sm:text-xl">
             ПОБЕДА
           </Link>
-          <nav className="flex items-center gap-1 text-sm font-bold text-[color:var(--ink-soft)]">
+          <nav className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto whitespace-nowrap text-xs font-bold text-[color:var(--ink-soft)] [scrollbar-width:none] sm:text-sm [&::-webkit-scrollbar]:hidden">
             <NavItem to="/">Главная</NavItem>
             <NavItem to="/rentals">Прокат</NavItem>
             <NavItem to="/booking">Бронирование</NavItem>
@@ -49,7 +49,7 @@ export function AppShell({
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
       <footer className="border-t border-[color:var(--border)] py-12 text-center text-sm text-[color:var(--ink-soft)]">
         <div className="mx-auto max-w-7xl px-6">
           <p>
@@ -68,7 +68,7 @@ function NavItem({ to, children }: PropsWithChildren<{ to: string }>) {
       to={to}
       className={({ isActive }) =>
         clsx(
-          "rounded-full px-4 py-2 transition",
+          "rounded-full px-3 py-2 transition sm:px-4",
           isActive
             ? "bg-[color:var(--accent)] text-white"
             : "hover:bg-white/70",
@@ -86,7 +86,7 @@ export function Panel({
   return (
     <section
       className={clsx(
-        "rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur",
+        "rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow)] backdrop-blur sm:rounded-[28px] sm:p-6",
         className,
       )}>
       {children}
@@ -110,7 +110,7 @@ export function Title({
           {eyebrow}
         </p>
       ) : null}
-      <h1 className="text-3xl font-extrabold tracking-tight text-[#24170f] md:text-5xl">
+      <h1 className="text-3xl font-extrabold tracking-tight text-[#24170f] sm:text-4xl md:text-5xl">
         {heading}
       </h1>
       {description ? (
@@ -258,8 +258,8 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <Panel className="w-full max-w-md space-y-6 animate-in zoom-in duration-300">
+    <div className="fixed inset-x-0 bottom-0 top-[65px] z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 sm:top-[73px] sm:p-4">
+      <Panel className="my-auto w-full max-w-md space-y-6 animate-in zoom-in duration-300">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
           <button

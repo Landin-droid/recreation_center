@@ -9,7 +9,7 @@ const passwordSchema = z
 
 export const createUserSchema = z.object({
   fullName: z.string().min(2, "FullName must be at least 2 characters long"),
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
   password: passwordSchema,
   phoneNumber: z
     .string()
@@ -22,7 +22,7 @@ export const updateUserSchema = z.object({
     .string()
     .min(2, "FullName must be at least 2 characters long")
     .optional(),
-  email: z.string().email("Invalid email address").optional(),
+  email: z.email("Invalid email address").optional(),
   phoneNumber: z
     .string()
     .regex(/^\+?[0-9\s\-()]{10,20}$/, "Invalid phone number")
@@ -30,12 +30,12 @@ export const updateUserSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email(),
+  email: z.email("Invalid email address"),
 });
 
 export const resetPasswordSchema = z.object({

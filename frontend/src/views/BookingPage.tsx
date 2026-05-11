@@ -33,7 +33,7 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
   };
 
   return (
-    <div className="relative h-full w-full group overflow-hidden bg-gray-100">
+    <div className="group relative h-full w-full overflow-hidden bg-gray-100">
       <img
         src={images[currentIndex]}
         alt={`${name} - ${currentIndex + 1}`}
@@ -45,7 +45,7 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
           <button
             type="button"
             onClick={prev}
-            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60"
+            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white opacity-100 transition-opacity hover:bg-black/60 sm:opacity-0 sm:group-hover:opacity-100"
             aria-label="Previous image"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -55,7 +55,7 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
           <button
             type="button"
             onClick={next}
-            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60"
+            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white opacity-100 transition-opacity hover:bg-black/60 sm:opacity-0 sm:group-hover:opacity-100"
             aria-label="Next image"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -288,7 +288,7 @@ export function BookingPage() {
 
   return (
     <AppShell>
-      <div className="space-y-12">
+      <div className="space-y-8 sm:space-y-12">
         <Title
           eyebrow="Бронирование"
           heading="Выберите идеальное место"
@@ -296,12 +296,12 @@ export function BookingPage() {
         />
 
         {/* Filters and Sorting */}
-        <div className="flex flex-wrap gap-4 items-end">
+        <div className="grid gap-4 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-end">
           <Select 
             label="Тип объекта" 
             value={typeFilter} 
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full md:w-64"
+            className="w-full lg:w-64"
           >
             <option value="ALL">Все типы</option>
             <option value="COTTAGE">Домики</option>
@@ -315,7 +315,7 @@ export function BookingPage() {
             label="Сортировка по цене" 
             value={sortOrder} 
             onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
-            className="w-full md:w-64"
+            className="w-full lg:w-64"
           >
             <option value="asc">Сначала дешевле</option>
             <option value="desc">Сначала дороже</option>
@@ -329,21 +329,21 @@ export function BookingPage() {
         ) : filteredAndSortedObjects.length === 0 ? (
           <EmptyState title="Ничего не найдено" description="Попробуйте изменить параметры фильтрации." />
         ) : (
-          <div className="grid gap-8 grid-cols-1">
+          <div className="grid grid-cols-1 gap-5 sm:gap-8">
             {filteredAndSortedObjects.map((obj) => (
-              <Panel key={obj.bookableObjectId} className="flex flex-col md:flex-row overflow-hidden p-0 h-full">
-                <div className="md:w-2/5 relative bg-gray-200 aspect-video md:aspect-auto">
+              <Panel key={obj.bookableObjectId} className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
+                <div className="relative aspect-video w-full bg-gray-200 lg:w-[45%] lg:min-w-[360px]">
                   <ImageCarousel images={obj.imageUrls} name={obj.name} />
                 </div>
 
-                <div className="p-8 flex-1 flex flex-col">
-                  <div className="mb-4 flex items-center justify-between">
+                <div className="flex flex-1 flex-col p-5 sm:p-8">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <Badge tone="neutral">{getObjectTypeName(obj.type)}</Badge>
                     <span className="text-xl font-bold text-[#c96f2b]">
                       {formatCurrency(obj.basePrice)}
                     </span>
                   </div>
-                  <h3 className="mb-4 text-3xl font-black text-[#24170f]">{obj.name}</h3>
+                  <h3 className="mb-4 text-2xl font-black text-[#24170f] sm:text-3xl">{obj.name}</h3>
                   <p className="mb-6 text-base text-[color:var(--ink-soft)] leading-relaxed">
                     {obj.description || "Прекрасное место для вашего отдыха."}
                   </p>
@@ -358,8 +358,8 @@ export function BookingPage() {
                     {renderAmenities(obj)}
                   </div>
 
-                  <Button 
-                    className="mt-8 w-full text-base py-4" 
+                  <Button
+                    className="mt-8 w-full py-4 text-base"
                     onClick={() => handleOpenBooking(obj)}
                   >
                     Забронировать
@@ -372,11 +372,11 @@ export function BookingPage() {
 
         {/* Booking Modal */}
         {selectedObject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <Panel className="w-full max-w-2xl space-y-6 animate-in fade-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold">Бронирование: {selectedObject.name}</h3>
-                <button onClick={() => setSelectedObject(null)} className="text-[color:var(--ink-soft)] hover:text-black">
+          <div className="fixed inset-x-0 bottom-0 top-[65px] z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:top-[73px] sm:p-4">
+            <Panel className="my-auto max-h-full w-full max-w-2xl space-y-5 overflow-y-auto animate-in fade-in zoom-in duration-300 sm:space-y-6">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-lg font-bold leading-tight sm:text-xl">Бронирование: {selectedObject.name}</h3>
+                <button onClick={() => setSelectedObject(null)} className="shrink-0 text-[color:var(--ink-soft)] transition hover:text-black">
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -385,15 +385,15 @@ export function BookingPage() {
 
               {/* Tabs if menu is available */}
               {["BANQUET_HALL", "OUTDOOR_VENUE", "KARAOKE_BAR"].includes(selectedObject.type.toUpperCase()) && (
-                <div className="flex border-b">
+                <div className="flex overflow-x-auto border-b [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <button 
-                    className={`px-4 py-2 font-bold ${activeTab === "details" ? "border-b-2 border-[color:var(--accent)] text-[color:var(--accent)]" : "text-gray-500"}`}
+                    className={`shrink-0 px-4 py-2 font-bold ${activeTab === "details" ? "border-b-2 border-[color:var(--accent)] text-[color:var(--accent)]" : "text-gray-500"}`}
                     onClick={() => setActiveTab("details")}
                   >
                     Детали
                   </button>
                   <button 
-                    className={`px-4 py-2 font-bold ${activeTab === "menu" ? "border-b-2 border-[color:var(--accent)] text-[color:var(--accent)]" : "text-gray-500"}`}
+                    className={`shrink-0 px-4 py-2 font-bold ${activeTab === "menu" ? "border-b-2 border-[color:var(--accent)] text-[color:var(--accent)]" : "text-gray-500"}`}
                     onClick={() => setActiveTab("menu")}
                   >
                     Выбор меню
@@ -439,14 +439,14 @@ export function BookingPage() {
                   <p className="text-sm text-gray-500">Доступные позиции меню для {selectedObject.name}:</p>
                   <div className="grid gap-3">
                     {selectedObject.menuItems?.filter(m => m.isAvailable).map((item: any) => (
-                      <div key={item.menuItemId} className="flex items-center justify-between p-3 border rounded-xl">
-                        <div>
+                      <div key={item.menuItemId} className="flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
                           <p className="font-bold">{item.menuItem.name}</p>
                           <p className="text-xs text-gray-500">{formatCurrency(item.menuItem.price)}</p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                           {selectedMenuItems.find(i => i.menuItemId === item.menuItemId) ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <button onClick={() => updateMenuItemQuantity(item.menuItemId, -1)} className="w-8 h-8 rounded-full bg-gray-100">-</button>
                               <span className="w-4 text-center">{selectedMenuItems.find(i => i.menuItemId === item.menuItemId)?.quantity}</span>
                               <button onClick={() => updateMenuItemQuantity(item.menuItemId, 1)} className="w-8 h-8 rounded-full bg-gray-100">+</button>
@@ -465,7 +465,7 @@ export function BookingPage() {
                 </div>
               )}
 
-              <div className="pt-4 border-t border-[color:var(--border)]">
+              <div className="border-t border-[color:var(--border)] pt-4">
                 <div className="space-y-1 mb-4">
                   <div className="flex justify-between">
                     <span className="text-sm">Аренда объекта:</span>

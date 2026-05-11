@@ -32,7 +32,7 @@ export function RentalPage() {
 
   return (
     <AppShell>
-      <div className="space-y-12">
+      <div className="space-y-8 sm:space-y-12">
         <Title
           eyebrow="Прокат инвентаря"
           heading="Все для активного отдыха"
@@ -40,8 +40,8 @@ export function RentalPage() {
         />
 
         {/* Rules Block */}
-        <Panel className="bg-[#fef3e7] border-[#f5d9bd]">
-          <div className="flex gap-4">
+        <Panel className="border-[#f5d9bd] bg-[#fef3e7]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             <div className="flex-shrink-0 text-[#c96f2b]">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -67,15 +67,15 @@ export function RentalPage() {
         ) : items.length === 0 ? (
           <EmptyState title="Ничего не найдено" description="В данный момент прокат недоступен." />
         ) : (
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 sm:gap-8 xl:grid-cols-3">
             {items.map((item) => (
-              <Panel key={item.rentalItemId} className="flex flex-col overflow-hidden p-0 h-full">
+              <Panel key={item.rentalItemId} className="flex h-full flex-col overflow-hidden p-0">
                 <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
                   {item.imageUrl ? (
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="h-full w-full object-cover transition duration-500 hover:scale-110"
+                      className="h-full w-full object-contain p-3 transition duration-500 hover:scale-105 sm:p-4"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-gray-400">
@@ -85,8 +85,8 @@ export function RentalPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-1 flex-col p-6">
-                  <div className="mb-2 flex items-center justify-between">
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <Badge tone={item.isSeasonal ? "warning" : "neutral"}>
                       {getSeasonLabel(item)}
                     </Badge>
@@ -100,8 +100,8 @@ export function RentalPage() {
                   </p>
                   
                   {item.priceRules && item.priceRules.length > 0 && (
-                    <div className="mb-4 overflow-hidden border rounded-xl">
-                      <table className="w-full text-xs text-left">
+                    <div className="mb-4 overflow-x-auto rounded-xl border">
+                      <table className="w-full min-w-[320px] text-left text-xs">
                         <thead className="bg-gray-50 uppercase font-bold text-[color:var(--ink-soft)]">
                           <tr>
                             <th className="px-3 py-2">Тип</th>
