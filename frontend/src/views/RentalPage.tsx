@@ -75,7 +75,7 @@ export function RentalPage() {
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="h-full w-full object-contain p-3 transition duration-500 hover:scale-105 sm:p-4"
+                      className="h-full w-full object-cover transition duration-500 rounded border border-[color:var(--border)]"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-gray-400">
