@@ -13,7 +13,7 @@ import {
 import { dashboardApi } from "@features/dashboard/api";
 import type { BookableObject, Reservation } from "@shared/api/types";
 import { formatCurrency } from "@shared/lib/format";
-import { useLockBodyScroll } from "@shared/lib/hooks/useLockBodyScroll";
+import { useLockBodyScroll } from "@shared/lib/useLockBodyScroll";
 import { format, isSameDay, parseISO, isBefore, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useAuthStore } from "@features/auth/model/auth-store";
