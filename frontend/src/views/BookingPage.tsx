@@ -372,7 +372,8 @@ export function BookingPage() {
 
         {/* Booking Modal */}
         {selectedObject && (
-          <div className="fixed inset-0 z-[80] mt-0 flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4"
+          style={{ marginTop: "0px" }}>
             <Panel className="my-auto max-h-full w-full max-w-2xl space-y-5 overflow-y-auto animate-in fade-in zoom-in duration-300 sm:space-y-6">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-lg font-bold leading-tight sm:text-xl">Бронирование: {selectedObject.name}</h3>
