@@ -1,6 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import clsx from "clsx";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import type { PropsWithChildren, ReactNode } from "react";
 import { authApi } from "@features/auth/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
@@ -10,12 +10,14 @@ export function AppShell({
   actions,
 }: PropsWithChildren<{ actions?: ReactNode }>) {
   const { accessToken, clearSession } = useAuthStore();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
       await authApi.logout();
     } finally {
       clearSession();
+      setIsMenuOpen(false);
     }
   };
 
@@ -25,10 +27,11 @@ export function AppShell({
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Link
             to="/"
+            onClick={() => setIsMenuOpen(false)}
             className="shrink-0 text-lg font-black tracking-tighter text-[#c96f2b] sm:text-xl">
             ПОБЕДА
           </Link>
-          <nav className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto whitespace-nowrap text-xs font-bold text-[color:var(--ink-soft)] [scrollbar-width:none] sm:text-sm [&::-webkit-scrollbar]:hidden">
+          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 whitespace-nowrap text-sm font-bold text-[color:var(--ink-soft)] md:flex">
             <NavItem to="/">Главная</NavItem>
             <NavItem to="/rentals">Прокат</NavItem>
             <NavItem to="/booking">Бронирование</NavItem>
@@ -47,7 +50,44 @@ export function AppShell({
             )}
             {actions}
           </nav>
+          <button
+            type="button"
+            className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-white/75 text-[#3b2a1d] shadow-sm transition hover:bg-white md:hidden"
+            onClick={() => setIsMenuOpen((value) => !value)}
+            aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
+            aria-expanded={isMenuOpen}>
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
+              )}
+            </svg>
+          </button>
         </div>
+        {isMenuOpen ? (
+          <nav className="border-t border-[color:var(--border)] bg-[#fffaf2]/98 px-4 py-3 shadow-lg md:hidden">
+            <div className="mx-auto grid max-w-7xl gap-2 text-sm font-bold text-[color:var(--ink-soft)]">
+              <NavItem to="/" onClick={() => setIsMenuOpen(false)}>Главная</NavItem>
+              <NavItem to="/rentals" onClick={() => setIsMenuOpen(false)}>Прокат</NavItem>
+              <NavItem to="/booking" onClick={() => setIsMenuOpen(false)}>Бронирование</NavItem>
+              {accessToken ? (
+                <>
+                  <NavItem to="/profile" onClick={() => setIsMenuOpen(false)}>Кабинет</NavItem>
+                  <Button
+                    variant="ghost"
+                    className="justify-start px-3 py-2 text-sm"
+                    onClick={handleLogout}>
+                    Выйти
+                  </Button>
+                </>
+              ) : (
+                <NavItem to="/login" onClick={() => setIsMenuOpen(false)}>Войти</NavItem>
+              )}
+              {actions}
+            </div>
+          </nav>
+        ) : null}
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
       <footer className="border-t border-[color:var(--border)] py-12 text-center text-sm text-[color:var(--ink-soft)]">
@@ -62,10 +102,15 @@ export function AppShell({
   );
 }
 
-function NavItem({ to, children }: PropsWithChildren<{ to: string }>) {
+function NavItem({
+  to,
+  children,
+  onClick,
+}: PropsWithChildren<{ to: string; onClick?: () => void }>) {
   return (
     <NavLink
       to={to}
+      onClick={onClick}
       className={({ isActive }) =>
         clsx(
           "rounded-full px-3 py-2 transition sm:px-4",
@@ -194,18 +239,28 @@ export function TextArea({
 export function Select({
   label,
   children,
+  className,
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
 }) {
   return (
-    <label className="flex flex-col gap-2 text-sm font-medium text-[#3b2a1d]">
+    <label className={clsx("flex flex-col gap-2 text-sm font-medium text-[#3b2a1d]", className)}>
       <span>{label}</span>
-      <select
-        className="rounded-2xl border border-[color:var(--border)] bg-white/80 px-4 py-3 outline-none transition focus:border-[color:var(--accent)] focus:ring-4 focus:ring-[rgba(201,111,43,0.12)]"
-        {...props}>
-        {children}
-      </select>
+      <span className="relative">
+        <select
+          className="w-full appearance-none rounded-2xl border border-[color:var(--border)] bg-white/90 px-4 py-3 pr-11 text-[#2b1d13] shadow-sm outline-none transition hover:border-[rgba(201,111,43,0.38)] focus:border-[color:var(--accent)] focus:bg-white focus:ring-4 focus:ring-[rgba(201,111,43,0.12)]"
+          {...props}>
+          {children}
+        </select>
+        <svg
+          className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--accent)]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9l6 6 6-6" />
+        </svg>
+      </span>
     </label>
   );
 }
@@ -258,7 +313,7 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[65px] z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 sm:top-[73px] sm:p-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 sm:p-4">
       <Panel className="my-auto w-full max-w-md space-y-6 animate-in zoom-in duration-300">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>

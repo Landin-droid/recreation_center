@@ -70,15 +70,15 @@ export function RentalPage() {
           <div className="grid gap-5 sm:grid-cols-2 sm:gap-8 xl:grid-cols-3">
             {items.map((item) => (
               <Panel key={item.rentalItemId} className="flex h-full flex-col overflow-hidden p-0">
-                <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
+                <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100 p-2 sm:p-4">
                   {item.imageUrl ? (
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="h-full w-full object-contain p-3 transition duration-500 hover:scale-105 sm:p-4"
+                      className="h-full w-full rounded-lg object-contain transition duration-500 hover:scale-105 sm:rounded-xl"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-gray-400">
+                    <div className="flex h-full w-full items-center justify-center rounded-lg text-gray-400 sm:rounded-xl">
                       <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
