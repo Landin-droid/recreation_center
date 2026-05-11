@@ -33,11 +33,11 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
   };
 
   return (
-    <div className="group relative h-full w-full overflow-hidden bg-[#f2e6d7] p-2 sm:p-4">
+    <div className="group relative h-full w-full overflow-hidden bg-[#f2e6d7]">
       <img
         src={images[currentIndex]}
         alt={`${name} - ${currentIndex + 1}`}
-        className="h-full w-full rounded-lg object-contain transition-opacity duration-500 sm:rounded-xl"
+        className="h-full w-full object-contain transition-opacity duration-500"
       />
       
       {images.length > 1 && (
@@ -372,7 +372,7 @@ export function BookingPage() {
 
         {/* Booking Modal */}
         {selectedObject && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4 mt-68">
             <Panel className="my-auto max-h-full w-full max-w-2xl space-y-5 overflow-y-auto animate-in fade-in zoom-in duration-300 sm:space-y-6">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-lg font-bold leading-tight sm:text-xl">Бронирование: {selectedObject.name}</h3>
