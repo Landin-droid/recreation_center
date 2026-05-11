@@ -33,7 +33,7 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
   };
 
   return (
-    <div className="group relative h-full w-full overflow-hidden bg-[#f2e6d7]">
+<div className="group relative h-full w-full overflow-hidden bg-transparent">
       <img
         src={images[currentIndex]}
         alt={`${name} - ${currentIndex + 1}`}
@@ -63,7 +63,7 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
             </svg>
           </button>
           
-          <div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 flex items-center gap-2 rounded-full bg-black/30 px-3 py-1.5">
             {images.map((_, i) => (
               <button
                 key={i}
@@ -73,8 +73,8 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
                   setCurrentIndex(i);
                 }}
                 className={clsx(
-                  "h-1.5 rounded-full transition-all",
-                  i === currentIndex ? "bg-white w-4" : "bg-white/50 w-1.5"
+                  "rounded-full transition-all duration-200",
+                  i === currentIndex ? "bg-white w-4 h-2.5" : "bg-white/70 w-2.5 h-2.5"
                 )}
                 aria-label={`Go to image ${i + 1}`}
               />
@@ -332,7 +332,7 @@ export function BookingPage() {
           <div className="grid grid-cols-1 gap-4 sm:gap-6">
             {filteredAndSortedObjects.map((obj) => (
               <Panel key={obj.bookableObjectId} className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
-                <div className="relative aspect-video w-full bg-[#f2e6d7] lg:w-[43%] lg:min-w-[340px]">
+                <div className="relative aspect-video w-full bg-transparent lg:w-[60%] lg:min-w-[340px]">
                   <ImageCarousel images={obj.imageUrls} name={obj.name} />
                 </div>
 
@@ -372,7 +372,7 @@ export function BookingPage() {
 
         {/* Booking Modal */}
         {selectedObject && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4 mt-68">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm sm:p-4">
             <Panel className="my-auto max-h-full w-full max-w-2xl space-y-5 overflow-y-auto animate-in fade-in zoom-in duration-300 sm:space-y-6">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-lg font-bold leading-tight sm:text-xl">Бронирование: {selectedObject.name}</h3>
