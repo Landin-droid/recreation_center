@@ -127,13 +127,15 @@ function NavItem({
 export function Panel({
   className,
   children,
-}: PropsWithChildren<{ className?: string }>) {
+  ...props
+}: PropsWithChildren<{ className?: string }> & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
       className={clsx(
         "rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4 shadow-[var(--shadow)] backdrop-blur sm:rounded-[28px] sm:p-6",
         className,
-      )}>
+      )}
+      {...props}>
       {children}
     </section>
   );
