@@ -34,6 +34,7 @@ export interface BookableObjectMenuItem {
     name: string;
     price: number;
     description: string | null;
+    imageUrl: string | null;
     isAvailable: boolean;
     category: string | null;
   };
@@ -60,6 +61,7 @@ export interface MenuItem {
   name: string;
   price: number;
   description: string | null;
+  imageUrl: string | null;
   isAvailable: boolean;
   category: string | null;
   availableIn: Array<{

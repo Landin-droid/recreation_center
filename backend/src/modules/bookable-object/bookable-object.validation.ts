@@ -2,6 +2,7 @@ import { BookableObjectType } from "../../generated/prisma/client";
 import { z } from "zod";
 import {
   decimalSchema,
+  imageUrlSchema,
   optionalDateStringSchema,
   positiveIntSchema,
 } from "../../common/validation";
@@ -26,7 +27,7 @@ const bookableObjectBaseSchema = z.object({
   seasonEnd: optionalDateStringSchema,
   description: z.string().trim().optional(),
   isActive: z.boolean().optional(),
-  imageUrls: z.array(z.string().url()).default([]),
+  imageUrls: z.array(imageUrlSchema).default([]),
   type: z.nativeEnum(BookableObjectType),
   details: subtypeDetailsSchema,
 });
