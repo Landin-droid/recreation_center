@@ -176,6 +176,25 @@ export function BookingPage() {
     const type = obj.type.toUpperCase();
     const amenitiesStr = (obj as any).details?.amenities || "";
 
+    const Item = ({ name, icon, isPresent }: { name: string; icon: string; isPresent: boolean }) => (
+      <div className={clsx(
+        "flex items-center gap-2 text-sm transition-opacity",
+        isPresent ? "opacity-100" : "opacity-40"
+      )}>
+        <span className="text-base">{icon}</span>
+        <span className="flex-1 font-medium">{name}</span>
+        {isPresent ? (
+          <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="h-4 w-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+      </div>
+    );
+
     if (type === "COTTAGE") {
       const cottageAmenities = [
         { name: "Холодильник", key: "холодильник", icon: "🗄️" },
@@ -187,20 +206,19 @@ export function BookingPage() {
       ];
 
       return (
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
-          {cottageAmenities.map((am) => (
-            <div
-              key={am.key}
-              className="flex items-center gap-2 text-sm sm:text-base">
-              <span>{am.icon}</span>
-              <span className="flex-1">{am.name}</span>
-              <span>
-                {amenitiesStr.toLowerCase().includes(am.key) ? "✅" : "❌"}
-              </span>
-            </div>
-          ))}
-          <div className="mt-1 text-sm font-medium sm:col-span-2 sm:mt-2 sm:text-base">
-            Площадь: {(obj as any).details?.squareMeters || 0} м²
+        <div className="mt-4 rounded-2xl bg-gray-50/50 p-4 border border-gray-100">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            {cottageAmenities.map((am) => (
+              <Item 
+                key={am.key} 
+                name={am.name} 
+                icon={am.icon} 
+                isPresent={amenitiesStr.toLowerCase().includes(am.key)} 
+              />
+            ))}
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-200/60 text-sm font-bold text-[#72543d]">
+            📏 Площадь: {(obj as any).details?.squareMeters || 0} м²
           </div>
         </div>
       );
@@ -213,29 +231,25 @@ export function BookingPage() {
       ];
 
       return (
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
-          {gazeboAmenities.map((am) => (
-            <div
-              key={am.key}
-              className="flex items-center gap-2 text-sm sm:text-base">
-              <span>{am.icon}</span>
-              <span className="flex-1">{am.name}</span>
-              <span>
-                {amenitiesStr.toLowerCase().includes(am.key) ? "✅" : "❌"}
-              </span>
-            </div>
-          ))}
+        <div className="mt-4 rounded-2xl bg-gray-50/50 p-4 border border-gray-100">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            {gazeboAmenities.map((am) => (
+              <Item 
+                key={am.key} 
+                name={am.name} 
+                icon={am.icon} 
+                isPresent={amenitiesStr.toLowerCase().includes(am.key)} 
+              />
+            ))}
+          </div>
         </div>
       );
     }
 
     if (type === "BANQUET_HALL" || type === "KARAOKE_BAR") {
       return (
-        <div className="mt-3 text-sm font-medium sm:text-base">
-          Количество столов:{" "}
-          {(obj as any).details?.maxTables ||
-            (obj as any).details?.tablesAmount ||
-            0}
+        <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-orange-50 px-4 py-2 text-sm font-bold text-orange-700 border border-orange-100">
+          🪑 Количество столов: {(obj as any).details?.maxTables || (obj as any).details?.tablesAmount || 0}
         </div>
       );
     }
@@ -297,11 +311,11 @@ export function BookingPage() {
               <Panel
                 key={obj.bookableObjectId}
                 className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
-                <div className="relative aspect-video w-full bg-transparent lg:w-[45%] lg:min-w-[340px]">
+                <div className="relative aspect-[4/3] w-full bg-gray-50 lg:w-[40%] lg:min-w-[360px]">
                   <ImageCarousel images={obj.imageUrls} name={obj.name} />
                 </div>
 
-                <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-7">
+                <div className="flex flex-1 flex-col p-5 sm:p-6 lg:p-8">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <Badge tone="neutral">{getObjectTypeName(obj.type)}</Badge>
                     <span className="text-lg font-bold text-[#c96f2b] sm:text-xl">
