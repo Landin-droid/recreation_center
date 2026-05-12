@@ -12,6 +12,7 @@ import {
   bookableObjectRepository,
   BookableObjectWithRelations,
   bookableObjectInclude,
+  BookableObjectRepository,
 } from "./bookable-object.repository";
 import {
   CreateBookableObjectInput,

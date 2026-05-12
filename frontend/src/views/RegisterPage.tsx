@@ -8,7 +8,7 @@ import { AppShell, Button, Field, Panel, Title } from "@shared/ui/kit";
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { accessToken, setSession } = useAuthStore();
+  const { user, setSession } = useAuthStore();
   const [formState, setFormState] = useState({
     fullName: "",
     email: "",
@@ -61,8 +61,6 @@ export function RegisterPage() {
     onSuccess: (user) => {
       setSession({
         user,
-        accessToken: "cookie-based",
-        refreshToken: "cookie-based",
       });
       navigate("/profile");
     },
@@ -71,7 +69,7 @@ export function RegisterPage() {
     },
   });
 
-  if (accessToken) {
+  if (user) {
     return <Navigate to="/profile" replace />;
   }
 

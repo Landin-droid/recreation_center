@@ -8,7 +8,7 @@ import { AppShell, Button, Field, Panel, Title } from "@shared/ui/kit";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { accessToken, setSession } = useAuthStore();
+  const { user, setSession } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -33,8 +33,6 @@ export function LoginPage() {
     onSuccess: (user) => {
       setSession({
         user,
-        accessToken: "cookie-based",
-        refreshToken: "cookie-based",
       });
       navigate("/profile");
     },
@@ -43,7 +41,7 @@ export function LoginPage() {
     },
   });
 
-  if (accessToken) {
+  if (user) {
     return <Navigate to="/profile" replace />;
   }
 

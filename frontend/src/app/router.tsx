@@ -14,13 +14,13 @@ import { PasswordResetPage } from "@views/PasswordResetPage";
 import { ForgotPasswordPage } from "@views/ForgotPasswordPage";
 
 function ProtectedLayout() {
-  const { accessToken, isBootstrapping } = useAuthStore();
+  const { user, isBootstrapping } = useAuthStore();
 
   if (isBootstrapping) {
     return <Loader label="Проверка сессии..." />;
   }
 
-  if (!accessToken) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 

@@ -279,7 +279,7 @@ export function BookingPage() {
 
         {isLoading ? (
           <div className="flex justify-center py-20">
-            <Loader size="lg" />
+            <Loader label="Загружаем объекты..." />
           </div>
         ) : error ? (
           <EmptyState
@@ -305,7 +305,7 @@ export function BookingPage() {
                     <h3 className="text-lg font-bold text-[#24170f]">
                       {obj.name}
                     </h3>
-                    <Badge variant="secondary">
+                    <Badge tone="neutral">
                       {getObjectTypeName(obj.type)}
                     </Badge>
                   </div>
