@@ -202,9 +202,22 @@ function StatCard({ label, value, icon }: { label: string; value: string | numbe
 
 function AdminUsers({ setToast }: { setToast: (t: any) => void }) {
   const queryClient = useQueryClient();
+  const [editingUser, setEditingUser] = useState<any>(null);
+
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin", "users"],
     queryFn: adminApi.listUsers,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { userId: number; role: string }) =>
+      adminApi.updateUser(data.userId, { role: data.role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      setEditingUser(null);
+      setToast({ message: "Роль обновлена", type: "success" });
+    },
+    onError: () => setToast({ message: "Ошибка при обновлении", type: "error" }),
   });
 
   const deleteMutation = useMutation({
@@ -231,7 +244,7 @@ function AdminUsers({ setToast }: { setToast: (t: any) => void }) {
                 <th className="pb-3 font-bold">Email</th>
                 <th className="pb-3 font-bold">Роль</th>
                 <th className="pb-3 font-bold">Регистрация</th>
-                <th className="pb-3 font-bold">Действия</th>
+                <th className="pb-3 font-bold text-right">Действия</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -241,12 +254,31 @@ function AdminUsers({ setToast }: { setToast: (t: any) => void }) {
                   <td className="py-3 font-medium">{u.fullName}</td>
                   <td className="py-3">{u.email}</td>
                   <td className="py-3">
-                    <Badge tone={u.role === "admin" ? "danger" : u.role === "staff" ? "warning" : "neutral"}>
-                      {u.role}
-                    </Badge>
+                    {editingUser?.userId === u.userId ? (
+                      <select
+                        defaultValue={u.role}
+                        onChange={(e) => updateMutation.mutate({ userId: u.userId, role: e.target.value })}
+                        className="rounded border p-1 text-xs"
+                      >
+                        <option value="user">User</option>
+                        <option value="staff">Staff</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    ) : (
+                      <Badge tone={u.role === "admin" ? "danger" : u.role === "staff" ? "warning" : "neutral"}>
+                        {u.role}
+                      </Badge>
+                    )}
                   </td>
                   <td className="py-3">{formatDate(u.registrationDate)}</td>
-                  <td className="py-3">
+                  <td className="py-3 text-right space-x-2">
+                    <Button
+                      variant="ghost"
+                      className="text-blue-500 hover:bg-blue-50"
+                      onClick={() => setEditingUser(editingUser?.userId === u.userId ? null : u)}
+                    >
+                      {editingUser?.userId === u.userId ? "💾" : "✏️"}
+                    </Button>
                     <Button
                       variant="ghost"
                       className="text-red-500 hover:bg-red-50"
@@ -292,6 +324,14 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: adminApi.deleteObject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "objects"] });
+      setToast({ message: "Объект удален", type: "success" });
+    },
+  });
+
   if (isLoading) return <Loader label="Загрузка объектов..." />;
 
   return (
@@ -322,6 +362,15 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
                 <Button variant="secondary" className="px-3 py-2 text-xs" onClick={() => { setEditingObject(obj); setIsModalOpen(true); }}>
                   ✏️
                 </Button>
+                <Button
+                  variant="ghost"
+                  className="px-3 py-2 text-xs text-red-500 hover:bg-red-50"
+                  onClick={() => {
+                    if (confirm(`Удалить объект "${obj.name}"?`)) deleteMutation.mutate(obj.bookableObjectId);
+                  }}
+                >
+                  🗑️
+                </Button>
               </div>
             </div>
           </Panel>
@@ -348,11 +397,11 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
         }}>
           <Field label="Название" name="name" defaultValue={editingObject?.name} required />
           <Select label="Тип" name="type" defaultValue={editingObject?.type}>
-            <option value="cottage">Домик</option>
-            <option value="gazebo">Беседка</option>
-            <option value="banquet_hall">Банкетный зал</option>
-            <option value="karaoke_bar">Караоке-бар</option>
-            <option value="outdoor_venue">Открытая площадка</option>
+            <option value="COTTAGE">Домик</option>
+            <option value="GAZEBO">Беседка</option>
+            <option value="BANQUET_HALL">Банкетный зал</option>
+            <option value="KARAOKE_BAR">Караоке-бар</option>
+            <option value="OUTDOOR_VENUE">Открытая площадка</option>
           </Select>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Цена" name="basePrice" type="number" defaultValue={editingObject?.basePrice} required />
@@ -376,31 +425,107 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
 
 function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
   const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+
   const { data: menu, isLoading } = useQuery({
     queryKey: ["admin", "menu"],
     queryFn: adminApi.listMenuItems,
+  });
+
+  const upsertMutation = useMutation({
+    mutationFn: (data: any) => 
+      editingItem 
+        ? adminApi.updateMenuItem(editingItem.menuItemId, data)
+        : adminApi.createMenuItem(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "menu"] });
+      setIsModalOpen(false);
+      setEditingItem(null);
+      setToast({ message: "Блюдо сохранено", type: "success" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: adminApi.deleteMenuItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "menu"] });
+      setToast({ message: "Блюдо удалено", type: "success" });
+    },
   });
 
   if (isLoading) return <Loader label="Загрузка меню..." />;
 
   return (
     <div className="space-y-6">
-      <Title heading="Меню" description="Управление блюдами и напитками" />
+      <div className="flex items-center justify-between">
+        <Title heading="Меню" description="Управление блюдами и напитками" />
+        <Button onClick={() => { setEditingItem(null); setIsModalOpen(true); }}>
+          Добавить блюдо
+        </Button>
+      </div>
+
       <Panel>
-        <div className="grid gap-3">
+        <div className="grid gap-4">
           {menu?.map((item) => (
             <div key={item.menuItemId} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
-              <div>
-                <p className="font-bold">{item.name}</p>
-                <p className="text-xs text-[color:var(--ink-soft)]">{item.category} • {formatCurrency(item.price)}</p>
+              <div className="flex items-center gap-4">
+                {item.imageUrl && (
+                  <img src={item.imageUrl} alt={item.name} className="h-12 w-12 rounded-lg object-cover" />
+                )}
+                <div>
+                  <p className="font-bold">{item.name}</p>
+                  <p className="text-xs text-[color:var(--ink-soft)]">{item.category} • {formatCurrency(item.price)}</p>
+                </div>
               </div>
-              <Badge tone={item.isAvailable ? "success" : "neutral"}>
-                {item.isAvailable ? "В наличии" : "Нет"}
-              </Badge>
+              <div className="flex items-center gap-3">
+                <Badge tone={item.isAvailable ? "success" : "neutral"}>
+                  {item.isAvailable ? "В наличии" : "Нет"}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>✏️</Button>
+                <Button variant="ghost" size="sm" className="text-red-500" onClick={() => {
+                  if (confirm(`Удалить "${item.name}"?`)) deleteMutation.mutate(item.menuItemId);
+                }}>🗑️</Button>
+              </div>
             </div>
           ))}
         </div>
       </Panel>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingItem ? "Редактировать блюдо" : "Новое блюдо"}
+      >
+        <form className="space-y-4" onSubmit={(e) => {
+          e.preventDefault();
+          const fd = new FormData(e.currentTarget);
+          upsertMutation.mutate({
+            name: fd.get("name"),
+            category: fd.get("category"),
+            price: Number(fd.get("price")),
+            isAvailable: fd.get("isAvailable") === "on",
+            description: fd.get("description"),
+            imageUrl: fd.get("imageUrl"),
+          });
+        }}>
+          <Field label="Название" name="name" defaultValue={editingItem?.name} required />
+          <Select label="Категория" name="category" defaultValue={editingItem?.category}>
+            <option value="SNACK">Закуски</option>
+            <option value="MAIN">Горячее</option>
+            <option value="DRINK">Напитки</option>
+            <option value="DESSERT">Десерты</option>
+          </Select>
+          <Field label="Цена" name="price" type="number" defaultValue={editingItem?.price} required />
+          <Field label="URL изображения" name="imageUrl" defaultValue={editingItem?.imageUrl} />
+          <TextArea label="Описание" name="description" defaultValue={editingItem?.description} />
+          <label className="flex items-center gap-2 text-sm font-bold">
+            <input type="checkbox" name="isAvailable" defaultChecked={editingItem?.isAvailable ?? true} />
+            В наличии
+          </label>
+          <Button className="w-full" type="submit" disabled={upsertMutation.isPending}>Сохранить</Button>
+        </form>
+      </Modal>
     </div>
   );
 }
@@ -408,29 +533,101 @@ function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
 // --- Rentals ---
 
 function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
+  const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+
   const { data: rentals, isLoading } = useQuery({
     queryKey: ["admin", "rentals"],
     queryFn: adminApi.listRentalItems,
+  });
+
+  const upsertMutation = useMutation({
+    mutationFn: (data: any) => 
+      editingItem 
+        ? adminApi.updateRentalItem(editingItem.rentalItemId, data)
+        : adminApi.createRentalItem(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "rentals"] });
+      setIsModalOpen(false);
+      setEditingItem(null);
+      setToast({ message: "Предмет сохранен", type: "success" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: adminApi.deleteRentalItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "rentals"] });
+      setToast({ message: "Предмет удален", type: "success" });
+    },
   });
 
   if (isLoading) return <Loader label="Загрузка проката..." />;
 
   return (
     <div className="space-y-6">
-      <Title heading="Прокат" description="Управление инвентарем" />
+      <div className="flex items-center justify-between">
+        <Title heading="Прокат" description="Управление инвентарем" />
+        <Button onClick={() => { setEditingItem(null); setIsModalOpen(true); }}>
+          Добавить предмет
+        </Button>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         {rentals?.map((item) => (
           <Panel key={item.rentalItemId} className="flex justify-between items-center">
-             <div>
-                <p className="font-bold">{item.name}</p>
-                <p className="text-xs text-[color:var(--ink-soft)]">{item.category}</p>
+             <div className="flex items-center gap-4">
+                {item.imageUrl && <img src={item.imageUrl} className="h-10 w-10 rounded object-cover" />}
+                <div>
+                  <p className="font-bold">{item.name}</p>
+                  <p className="text-xs text-[color:var(--ink-soft)]">{item.category}</p>
+                </div>
               </div>
-              <Badge tone={item.isActive ? "success" : "neutral"}>
-                {item.isActive ? "Активен" : "Скрыт"}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge tone={item.isActive ? "success" : "neutral"}>
+                  {item.isActive ? "Активен" : "Скрыт"}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>✏️</Button>
+                <Button variant="ghost" size="sm" className="text-red-500" onClick={() => {
+                  if (confirm(`Удалить "${item.name}"?`)) deleteMutation.mutate(item.rentalItemId);
+                }}>🗑️</Button>
+              </div>
           </Panel>
         ))}
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingItem ? "Редактировать предмет" : "Новый предмет"}
+      >
+        <form className="space-y-4" onSubmit={(e) => {
+          e.preventDefault();
+          const fd = new FormData(e.currentTarget);
+          upsertMutation.mutate({
+            name: fd.get("name"),
+            category: fd.get("category"),
+            isActive: fd.get("isActive") === "on",
+            description: fd.get("description"),
+            imageUrl: fd.get("imageUrl"),
+          });
+        }}>
+          <Field label="Название" name="name" defaultValue={editingItem?.name} required />
+          <Select label="Категория" name="category" defaultValue={editingItem?.category}>
+            <option value="WINTER">Зимний</option>
+            <option value="SUMMER">Летний</option>
+            <option value="EQUIPMENT">Снаряжение</option>
+          </Select>
+          <Field label="URL изображения" name="imageUrl" defaultValue={editingItem?.imageUrl} />
+          <TextArea label="Описание" name="description" defaultValue={editingItem?.description} />
+          <label className="flex items-center gap-2 text-sm font-bold">
+            <input type="checkbox" name="isActive" defaultChecked={editingItem?.isActive ?? true} />
+            Активен
+          </label>
+          <Button className="w-full" type="submit" disabled={upsertMutation.isPending}>Сохранить</Button>
+        </form>
+      </Modal>
     </div>
   );
 }
