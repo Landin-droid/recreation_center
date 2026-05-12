@@ -1,110 +1,68 @@
 import { Request, Response } from "express";
 import { asyncHandler, parseIdParam } from "../../common/http";
 import { paymentService } from "./payment.service";
-import { kassaClient } from "./payment.kassa";
 import {
-  initiatePaymentSchema,
-  refundPaymentSchema,
+  createPaymentSchema,
+  createRefundSchema,
   webhookPayloadSchema,
-  paymentStatusQuerySchema,
 } from "./payment.validation";
 
 export const paymentController = {
-  /**
-   * Инициировать платёж - создать объект Payment и получить URL редиректа
-   * POST /payment/initiate
-   */
-  initiate: asyncHandler(async (req: Request, res: Response) => {
-    const payload = initiatePaymentSchema.parse(req.body);
-
-    const result = await paymentService.initiatePayment(payload.reservationId);
+  createPayment: asyncHandler(async (req: Request, res: Response) => {
+    const payload = createPaymentSchema.parse(req.body);
+    const result = await paymentService.createPayment(payload.reservationId);
 
     res.status(201).json({
       success: true,
-      data: {
-        paymentId: result.paymentId,
-        confirmationUrl: result.confirmationUrl,
-        paymentDeadline: result.paymentDeadline,
-      },
+      data: result,
     });
   }),
 
-  /**
-   * Получить статус платежа
-   * GET /payment/:paymentId/status
-   */
-  getStatus: asyncHandler(async (req: Request, res: Response) => {
+  getPayment: asyncHandler(async (req: Request, res: Response) => {
     const paymentId = parseIdParam(String(req.params.paymentId), "payment");
-
-    const status = await paymentService.getPaymentStatus(paymentId);
+    const payment = await paymentService.getPayment(paymentId);
 
     res.json({
       success: true,
-      data: status,
+      data: payment,
     });
   }),
 
-  /**
-   * Вебхук от ЮKassa (без аутентификации!)
-   * POST /payment/webhook
-   */
-  webhook: asyncHandler(async (req: Request, res: Response) => {
-    const payload = req.body;
+  refreshPayment: asyncHandler(async (req: Request, res: Response) => {
+    const paymentId = parseIdParam(String(req.params.paymentId), "payment");
+    await paymentService.refreshPaymentStatus(paymentId);
+    const payment = await paymentService.getPayment(paymentId);
 
-    // 1. Логировать и парсить
-    console.log(
-      "Received webhook from ЮKassa:",
-      JSON.stringify(payload, null, 2),
-    );
-
-    // 2. Валидировать payload
-    const validatedPayload = webhookPayloadSchema.parse(payload);
-
-    // 3. Проверить подпись (если настроена)
-    const signature = req.headers["x-yookassa-server-request-id"] as string;
-    if (
-      signature &&
-      !kassaClient.verifyWebhookSignature(JSON.stringify(payload), signature)
-    ) {
-      console.warn("Invalid webhook signature");
-      // В production отклонить, в dev - пропустить проверку
-      if (process.env.NODE_ENV === "production") {
-        return res
-          .status(401)
-          .json({ success: false, error: "Invalid signature" });
-      }
-    }
-
-    // 4. Обработать вебхук
-    try {
-      if (validatedPayload.event.startsWith("payment.")) {
-        await paymentService.handleWebhook(validatedPayload);
-      } else if (validatedPayload.event.startsWith("refund.")) {
-        await paymentService.handleRefundWebhook(validatedPayload);
-      } else {
-        console.log(`Ignored unhandled webhook event: ${validatedPayload.event}`);
-      }
-
-      // 5. ЮKassa требует ответа 200 OK
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Webhook processing failed:", error);
-      // Всё равно вернуть 200, чтобы ЮKassa не перепосылала
-      res.json({ success: true, error: String(error) });
-    }
+    res.json({
+      success: true,
+      data: payment,
+    });
   }),
 
-  /**
-   * Запросить возврат платежа
-   * POST /payment/:paymentId/refund
-   */
-  refund: asyncHandler(async (req: Request, res: Response) => {
-    const paymentId = parseIdParam(String(req.params.paymentId), "payment");
-    const payload = refundPaymentSchema.parse(req.body);
+  getReceiptPdf: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
 
-    const refund = await paymentService.refundPayment(
-      paymentId,
-      payload.amount,
+    const receiptId = String(req.params.receiptId);
+    const { buffer, filename } = await paymentService.getReceiptPdf(
+      receiptId,
+      req.user.userId,
+    );
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${filename.replace(/"/g, "")}"`,
+    );
+    res.send(buffer);
+  }),
+
+  createRefund: asyncHandler(async (req: Request, res: Response) => {
+    const payload = createRefundSchema.parse(req.body);
+    const refund = await paymentService.createRefund(
+      payload.paymentId,
       payload.reason,
     );
 
@@ -112,9 +70,55 @@ export const paymentController = {
       success: true,
       data: {
         refundId: refund.refundId,
+        paymentId: refund.paymentId,
         status: refund.status,
         amount: refund.refundAmount.toString(),
+        kassaRefundId: refund.kassaRefundId,
       },
     });
+  }),
+
+  getRefund: asyncHandler(async (req: Request, res: Response) => {
+    const refundId = parseIdParam(String(req.params.refundId), "refund");
+    const refund = await paymentService.getRefund(refundId);
+
+    res.json({
+      success: true,
+      data: refund,
+    });
+  }),
+
+  paymentWebhook: asyncHandler(async (req: Request, res: Response) => {
+    const payload = webhookPayloadSchema.parse(req.body);
+
+    if (payload.event.startsWith("payment.")) {
+      await paymentService.handlePaymentWebhook(payload);
+    }
+
+    res.json({ success: true });
+  }),
+
+  refundWebhook: asyncHandler(async (req: Request, res: Response) => {
+    const payload = webhookPayloadSchema.parse(req.body);
+
+    if (payload.event.startsWith("refund.")) {
+      await paymentService.handleRefundWebhook(payload);
+    }
+
+    res.json({ success: true });
+  }),
+
+  yookassaWebhook: asyncHandler(async (req: Request, res: Response) => {
+    const payload = webhookPayloadSchema.parse(req.body);
+
+    if (payload.event.startsWith("payment.")) {
+      await paymentService.handlePaymentWebhook(payload);
+    }
+
+    if (payload.event.startsWith("refund.")) {
+      await paymentService.handleRefundWebhook(payload);
+    }
+
+    res.json({ success: true });
   }),
 };

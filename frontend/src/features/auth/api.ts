@@ -8,21 +8,21 @@ import type {
 
 export const authApi = {
   login(payload: LoginPayload) {
-    return unwrap<User>(http.post("/users/login", payload));
+    return unwrap<User>(http.post("/auth/login", payload));
   },
   register(payload: RegisterPayload) {
-    return unwrap<User>(http.post("/users/register", payload));
+    return unwrap<User>(http.post("/auth/register", payload));
   },
   profile() {
     return unwrap<User>(http.get("/users/profile"));
   },
   logout() {
-    return unwrap<{ message?: string }>(http.post("/users/logout"));
+    return unwrap<{ message?: string }>(http.post("/auth/logout"));
   },
   forgotPassword(email: string) {
-    return unwrap<{ resetToken?: string }>(http.post("/users/forgot-password", { email }));
+    return unwrap<{ resetToken?: string }>(http.post("/auth/forgot-password", { email }));
   },
   resetPassword(payload: { token: string; password?: string }) {
-    return unwrap<{ message: string }>(http.post("/users/reset-password", payload));
+    return unwrap<{ message: string }>(http.post("/auth/reset-password", payload));
   },
 };

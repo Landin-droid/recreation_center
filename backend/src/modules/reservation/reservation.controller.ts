@@ -49,35 +49,10 @@ export const reservationController = {
     res.status(204).send();
   }),
 
-  initiatePayment: asyncHandler(async (req: Request, res: Response) => {
-    const id = parseIdParam(String(req.params.id), "reservation");
-    const result = await paymentService.initiatePayment(id);
-    res.status(201).json({
-      success: true,
-      data: {
-        paymentId: result.paymentId,
-        confirmationUrl: result.confirmationUrl,
-        paymentDeadline: result.paymentDeadline,
-      },
-    });
-  }),
-
   cancel: asyncHandler(async (req: Request, res: Response) => {
     const id = parseIdParam(String(req.params.id), "reservation");
     const { reason } = req.body;
-    const reservation = await reservationService.cancelReservation(id, reason);
-    res.json({ success: true, data: reservation });
-  }),
-
-  getPayment: asyncHandler(async (req: Request, res: Response) => {
-    const id = parseIdParam(String(req.params.id), "reservation");
-    const reservation = await reservationService.getReservationById(id);
-    if (!reservation.payment) {
-      return res.json({
-        success: true,
-        data: { message: "No payment found for this reservation", payment: null },
-      });
-    }
-    res.json({ success: true, data: { payment: reservation.payment } });
+    const result = await paymentService.cancelOrRefundReservation(id, reason);
+    res.json({ success: true, data: result });
   }),
 };

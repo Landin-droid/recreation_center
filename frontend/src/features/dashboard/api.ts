@@ -1,6 +1,7 @@
 import { http, unwrap } from "@shared/api/http";
 import type {
   BookableObject,
+  CancelReservationResult,
   MenuItem,
   PaymentInitiation,
   PaymentStatus,
@@ -31,17 +32,33 @@ export const dashboardApi = {
     return unwrap<Reservation>(http.post("/reservations", payload));
   },
   cancelReservation(reservationId: number, reason?: string) {
-    return unwrap<Reservation>(
-      http.post(`/reservations/${reservationId}/cancel`, { reason }),
+    return unwrap<CancelReservationResult>(
+      http.patch(`/reservations/${reservationId}`, { reason }),
     );
   },
   initiatePayment(reservationId: number) {
     return unwrap<PaymentInitiation>(
-      http.post(`/reservations/${reservationId}/payment/initiate`),
+      http.post("/payments", { reservationId }),
     );
   },
   getPaymentStatus(paymentId: number) {
-    return unwrap<PaymentStatus>(http.get(`/payments/${paymentId}/status`));
+    return unwrap<PaymentStatus>(http.patch(`/payments/${paymentId}`));
+  },
+  getReceiptPdf(receiptId: string) {
+    return http
+      .get<Blob>(`/payments/receipts/${encodeURIComponent(receiptId)}/pdf`, {
+        responseType: "blob",
+      })
+      .then((response) => response.data);
+  },
+  createRefund(paymentId: number, reason?: string) {
+    return unwrap<{
+      refundId: number;
+      paymentId: number;
+      status: string;
+      amount: string;
+      kassaRefundId: string | null;
+    }>(http.post("/refunds", { paymentId, reason }));
   },
   updateProfile(userId: number, data: { fullName?: string; email?: string; phoneNumber?: string }) {
     return unwrap<User>(http.put(`/users/${userId}`, data));

@@ -9,7 +9,16 @@ export const reservationInclude = {
       menuItem: true,
     },
   },
-  payment: true,
+  payment: {
+    include: {
+      receipt: true,
+      refund: {
+        include: {
+          receipt: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.ReservationInclude;
 
 export type ReservationWithRelations = Prisma.ReservationGetPayload<{
@@ -58,7 +67,7 @@ export const reservationRepository = {
         bookableObjectId,
         reservationDate,
         status: {
-          notIn: ["cancelled", "expired"],
+          notIn: ["canceled", "expired", "refunded"],
         },
         ...(reservationIdToExclude
           ? { reservationId: { not: reservationIdToExclude } }

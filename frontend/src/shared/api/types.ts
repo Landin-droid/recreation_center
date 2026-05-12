@@ -34,6 +34,7 @@ export interface BookableObjectMenuItem {
     name: string;
     price: number;
     description: string | null;
+    imageUrl: string | null;
     isAvailable: boolean;
     category: string | null;
   };
@@ -60,6 +61,7 @@ export interface MenuItem {
   name: string;
   price: number;
   description: string | null;
+  imageUrl: string | null;
   isAvailable: boolean;
   category: string | null;
   availableIn: Array<{
@@ -102,11 +104,45 @@ export interface ReservationMenuItem {
   };
 }
 
+export interface ReservationReceipt {
+  receiptId: string;
+  type: "payment" | "refund";
+  typeLabel: string;
+  status: string | null;
+  statusLabel: string;
+  amount: string | null;
+  currency: string;
+  registeredAt: string | null;
+  fiscalDocumentNumber: string | null;
+  fiscalStorageNumber: string | null;
+  fiscalAttribute: string | null;
+  fiscalProviderId: string | null;
+  items: Array<{
+    description: string;
+    quantity: number | string;
+    amount: string;
+    currency: string;
+  }>;
+  canOpenPdf: boolean;
+  pdfUrl: string | null;
+}
+
+export interface ReservationRefund {
+  refundId: number;
+  refundAmount: number;
+  status: string;
+  kassaRefundId: string | null;
+  receipt: ReservationReceipt | null;
+}
+
 export interface ReservationPayment {
   paymentId: number;
   amount: number;
   status: string;
   method: string | null;
+  kassaPaymentId: string | null;
+  receipt: ReservationReceipt | null;
+  refund: ReservationRefund | null;
 }
 
 export interface Reservation {
@@ -117,7 +153,7 @@ export interface Reservation {
   totalSum: number;
   notes: string | null;
   status: string;
-  cancellationReason: string | null;
+  paymentDeadline: string | null;
   user: {
     userId: number;
     fullName: string;
@@ -134,6 +170,19 @@ export interface Reservation {
   payment: ReservationPayment | null;
 }
 
+export interface CancelReservationResult {
+  action: "canceled" | "refund_started" | "refunded";
+  reservation: Reservation;
+  refund: null | {
+    refundId: number;
+    paymentId: number;
+    refundAmount: string | number;
+    status: string;
+    kassaRefundId: string | null;
+    kassaStatus?: string;
+  };
+}
+
 export interface PaymentInitiation {
   paymentId: number;
   confirmationUrl: string;
@@ -148,7 +197,6 @@ export interface PaymentStatus {
   reservation: {
     reservationId: number;
     status: string;
-    cancellationReason: string | null;
   };
 }
 

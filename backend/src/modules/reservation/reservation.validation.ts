@@ -13,8 +13,6 @@ export const reservationSchema = z.object({
   reservationDate: dateStringSchema,
   guestsCount: positiveIntSchema,
   notes: z.string().trim().optional(),
-  status: z.nativeEnum(ReservationStatus).optional(),
-  cancellationReason: z.string().trim().optional(),
   menuItems: z.array(reservationMenuItemSchema).optional().default([]),
 });
 
@@ -24,8 +22,6 @@ export const updateReservationSchema = z.object({
   reservationDate: dateStringSchema.optional(),
   guestsCount: positiveIntSchema.optional(),
   notes: z.string().trim().optional(),
-  status: z.nativeEnum(ReservationStatus).optional(),
-  cancellationReason: z.string().trim().optional(),
   menuItems: z.array(reservationMenuItemSchema).optional(),
 });
 

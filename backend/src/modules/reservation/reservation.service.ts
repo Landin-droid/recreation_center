@@ -12,6 +12,8 @@ import {
   reservationRepository,
   ReservationWithRelations,
 } from "./reservation.repository";
+import { buildReceiptSummary } from "../payment/payment.receipt";
+import { paymentService } from "../payment/payment.service";
 
 const formatReservation = (reservation: ReservationWithRelations) => ({
   reservationId: reservation.reservationId,
@@ -21,7 +23,6 @@ const formatReservation = (reservation: ReservationWithRelations) => ({
   totalSum: Number(reservation.totalSum),
   notes: reservation.notes,
   status: reservation.status,
-  cancellationReason: reservation.cancellationReason,
   user: {
     userId: reservation.user.userId,
     fullName: reservation.user.fullName,
@@ -43,12 +44,24 @@ const formatReservation = (reservation: ReservationWithRelations) => ({
       price: Number(item.menuItem.price),
     },
   })),
+  paymentDeadline: reservation.paymentDeadline?.toISOString() ?? null,
   payment: reservation.payment
     ? {
         paymentId: reservation.payment.paymentId,
         amount: Number(reservation.payment.amount),
         status: reservation.payment.status,
         method: reservation.payment.method,
+        kassaPaymentId: reservation.payment.kassaPaymentId,
+        receipt: buildReceiptSummary(reservation.payment.receipt),
+        refund: reservation.payment.refund
+          ? {
+              refundId: reservation.payment.refund.refundId,
+              refundAmount: Number(reservation.payment.refund.refundAmount),
+              status: reservation.payment.refund.status,
+              kassaRefundId: reservation.payment.refund.kassaRefundId,
+              receipt: buildReceiptSummary(reservation.payment.refund.receipt),
+            }
+          : null,
       }
     : null,
 });
@@ -171,15 +184,61 @@ const buildReservationDerivedData = async (
   };
 };
 
+const syncMissingReceiptData = async (reservations: ReservationWithRelations[]) => {
+  const tasks: Array<Promise<unknown>> = [];
+
+  for (const reservation of reservations) {
+    const payment = reservation.payment;
+    if (!payment) {
+      continue;
+    }
+
+    if (
+      payment.status === "succeeded" &&
+      payment.kassaPaymentId &&
+      !payment.receipt
+    ) {
+      tasks.push(paymentService.syncPaymentReceiptForPayment(payment.paymentId));
+    }
+
+    if (
+      payment.refund?.status === "succeeded" &&
+      payment.refund.kassaRefundId &&
+      !payment.refund.receipt
+    ) {
+      tasks.push(paymentService.syncRefundReceiptForRefund(payment.refund.refundId));
+    }
+  }
+
+  if (tasks.length === 0) {
+    return false;
+  }
+
+  const results = await Promise.allSettled(tasks);
+  results.forEach((result) => {
+    if (result.status === "rejected") {
+      console.warn("Failed to sync missing receipt:", result.reason);
+    }
+  });
+
+  return true;
+};
+
 export const reservationService = {
   async listReservations(query: ListReservationsQuery) {
-    const reservations = await reservationRepository.findMany({
+    const where = {
       ...(query.userId ? { userId: query.userId } : {}),
       ...(query.bookableObjectId
         ? { bookableObjectId: query.bookableObjectId }
         : {}),
       ...(query.status ? { status: query.status } : {}),
-    });
+    };
+
+    let reservations = await reservationRepository.findMany(where);
+
+    if (await syncMissingReceiptData(reservations)) {
+      reservations = await reservationRepository.findMany(where);
+    }
 
     return reservations.map(formatReservation);
   },
@@ -188,6 +247,14 @@ export const reservationService = {
     const reservation = await reservationRepository.findById(reservationId);
     if (!reservation) {
       throw new AppError("Reservation not found", 404);
+    }
+
+    if (await syncMissingReceiptData([reservation])) {
+      const refreshed = await reservationRepository.findById(reservationId);
+      if (!refreshed) {
+        throw new AppError("Reservation not found", 404);
+      }
+      return formatReservation(refreshed);
     }
 
     return formatReservation(reservation);
@@ -206,8 +273,7 @@ export const reservationService = {
       reservationDate: derived.reservationDate,
       guestsCount: data.guestsCount,
       notes: data.notes,
-      status: data.status ?? ReservationStatus.pending,
-      cancellationReason: data.cancellationReason,
+      status: ReservationStatus.pending,
       totalSum: derived.totalSum,
       reservationMenuItems: {
         create: derived.reservationMenuItemsCreate,
@@ -230,9 +296,6 @@ export const reservationService = {
         data.reservationDate ?? existing.reservationDate.toISOString(),
       guestsCount: data.guestsCount ?? existing.guestsCount,
       notes: data.notes ?? existing.notes ?? undefined,
-      status: data.status ?? existing.status,
-      cancellationReason:
-        data.cancellationReason ?? existing.cancellationReason ?? undefined,
       menuItems:
         data.menuItems ??
         existing.reservationMenuItems.map((item) => ({
@@ -260,8 +323,6 @@ export const reservationService = {
             reservationDate: derived.reservationDate,
             guestsCount: normalizedPayload.guestsCount,
             notes: normalizedPayload.notes,
-            status: normalizedPayload.status ?? existing.status,
-            cancellationReason: normalizedPayload.cancellationReason,
             totalSum: derived.totalSum,
             reservationMenuItems: {
               create: derived.reservationMenuItemsCreate,
@@ -294,8 +355,8 @@ export const reservationService = {
       throw new AppError("Reservation not found", 404);
     }
 
-    if (existing.status === "cancelled") {
-      throw new AppError("Reservation is already cancelled", 400);
+    if (["canceled", "expired", "refunded"].includes(existing.status)) {
+      throw new AppError("Reservation is already final", 400);
     }
 
     if (existing.status === "paid") {
@@ -306,8 +367,7 @@ export const reservationService = {
       tx.reservation.update({
         where: { reservationId },
         data: {
-          status: "cancelled",
-          cancellationReason: reason ?? null,
+          status: "canceled",
         },
         include: reservationInclude,
       }),

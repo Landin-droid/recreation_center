@@ -6,6 +6,7 @@ import {
 import { z } from "zod";
 import {
   decimalSchema,
+  imageUrlSchema,
   positiveDecimalSchema,
   positiveIntSchema,
 } from "../../common/validation";
@@ -16,7 +17,7 @@ export const rentalItemSchema = z.object({
   pricePerHour: decimalSchema.optional().nullable(),
   isSeasonal: z.boolean().optional(),
   maxCapacity: positiveIntSchema.optional().nullable(),
-  imageUrl: z.string().trim().url().optional(),
+  imageUrl: imageUrlSchema.optional().nullable(),
   isActive: z.boolean().optional(),
   category: z.nativeEnum(RentalCategory),
   seasonType: z.nativeEnum(RentalSeasonType).optional().nullable(),

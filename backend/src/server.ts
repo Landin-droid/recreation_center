@@ -2,7 +2,6 @@ import "dotenv/config";
 import app from "./app";
 import { env } from "./config/env";
 import prisma from "./lib/prisma";
-import { emailService } from "./lib/email";
 
 const PORT = parseInt(env.PORT) || 5000;
 
@@ -14,9 +13,6 @@ async function startServer() {
     const server = app.listen(PORT, async () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${env.NODE_ENV}`);
-
-      // Проверка подключения к почте при запуске
-      await emailService.verifyConnection();
     });
 
     // Graceful shutdown

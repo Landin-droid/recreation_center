@@ -17,7 +17,7 @@ function ProtectedLayout() {
   const { accessToken, isBootstrapping } = useAuthStore();
 
   if (isBootstrapping) {
-    return <Loader label="Проверяем сессию..." />;
+    return <Loader label="Проверка сессии..." />;
   }
 
   if (!accessToken) {

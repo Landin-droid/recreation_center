@@ -6,6 +6,8 @@ import {
   KassaPaymentResponse,
   KassaRefundResponse,
   KassaErrorResponse,
+  KassaReceipt,
+  KassaReceiptResponse,
 } from "./payment.types";
 
 /**
@@ -22,14 +24,12 @@ class YookassaClient {
   private axiosInstance: AxiosInstance;
   private shopId: string;
   private apiKey: string;
-  private webhookSecret: string;
   private readonly baseURL = "https://api.yookassa.ru/v3";
   private readonly API_TIMEOUT = 30000; // 30 сек по документации
 
   constructor() {
     this.shopId = env.YOOKASSA_SHOP_ID || "";
     this.apiKey = env.YOOKASSA_API_KEY || "";
-    this.webhookSecret = env.YOOKASSA_WEBHOOK_SECRET || "";
 
     // Базовая конфигурация axios с HTTP Basic Auth
     this.axiosInstance = axios.create({
@@ -113,10 +113,10 @@ class YookassaClient {
   ): Promise<KassaPaymentResponse> {
     try {
       // Валидация необходимых параметров
-      if (!request.amount || request.amount <= 0) {
-        throw new Error("Invalid amount: must be greater than 0");
+      if (!request.amount.value || Number(request.amount.value) <= 0) {
+        throw new Error("Invalid amount value: must be greater than 0");
       }
-      if (!request.currency) {
+      if (!request.amount.currency) {
         throw new Error("Currency is required (e.g., 'RUB')");
       }
       if (!request.confirmation?.return_url) {
@@ -126,16 +126,18 @@ class YookassaClient {
       // Формирование запроса согласно документации
       const paymentPayload = {
         amount: {
-          value: (request.amount / 100).toFixed(2), // Преобразование из копеек в рубли
-          currency: request.currency,
+          value: (Number(request.amount.value) / 100).toFixed(2), // Преобразование из копеек в рубли
+          currency: request.amount.currency,
         },
         confirmation: {
           type: request.confirmation.type || "redirect",
           return_url: request.confirmation.return_url,
         },
-        capture: request.capture !== false, // По умолчанию true (один этап)
+        capture: true,
         description: request.description || "Payment",
         metadata: request.metadata || {},
+        ...(request.receipt && { receipt: request.receipt }),
+        ...(request.statements && { statements: request.statements }),
       };
 
       const response = await this.axiosInstance.post<KassaPaymentResponse>(
@@ -272,27 +274,36 @@ class YookassaClient {
   async createRefund(
     paymentId: string,
     idempotencyKey: string,
-    amount?: number,
+    amount: number,
     description?: string,
+    receipt?: KassaReceipt,
   ): Promise<KassaRefundResponse> {
     try {
       if (!paymentId) {
         throw new Error("Payment ID is required");
       }
 
+      if (!amount || amount <= 0) {
+        throw new Error("Refund amount must be greater than 0");
+      }
+
       const refundPayload: any = {
         payment_id: paymentId,
-      };
-
-      if (amount && amount > 0) {
-        refundPayload.amount = {
+        amount: {
           value: (amount / 100).toFixed(2),
           currency: "RUB",
-        };
-      }
+        },
+        metadata: {
+          paymentId,
+        },
+      };
 
       if (description) {
         refundPayload.description = description;
+      }
+
+      if (receipt) {
+        refundPayload.receipt = receipt;
       }
 
       const response = await this.axiosInstance.post<KassaRefundResponse>(
@@ -333,6 +344,23 @@ class YookassaClient {
     }
   }
 
+  async listReceipts(params: {
+    paymentId?: string;
+    refundId?: string;
+  }): Promise<{ items: KassaReceiptResponse[] }> {
+    const response = await this.axiosInstance.get<{ items: KassaReceiptResponse[] }>(
+      "/receipts",
+      {
+        params: {
+          payment_id: params.paymentId,
+          refund_id: params.refundId,
+        },
+      },
+    );
+
+    return response.data;
+  }
+
   /**
    * Проверить подпись вебхука для безопасности
    *
@@ -342,7 +370,7 @@ class YookassaClient {
    */
   verifyWebhookSignature(body: string, signature: string): boolean {
     try {
-      if (!signature || !this.webhookSecret) {
+      if (!signature) {
         return false;
       }
 
@@ -353,7 +381,7 @@ class YookassaClient {
       }
 
       const expectedHash = crypto
-        .createHmac("sha256", this.webhookSecret)
+        .createHmac("sha256", env.JWT_SECRET)
         .update(body)
         .digest("hex");
 

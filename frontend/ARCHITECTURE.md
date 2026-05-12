@@ -199,8 +199,8 @@ Page Component
 
 ```
 api/
-├── login (POST /users/login)
-├── register (POST /users/register)
+├── login (POST /auth/login)
+├── register (POST /auth/register)
 ├── getCurrentUser (GET /users/me)
 ├── getBookableObjects (GET /bookable-objects)
 ├── getReservations (GET /reservations)

@@ -13,6 +13,7 @@ const formatMenuItem = (item: MenuItemWithRelations) => ({
   name: item.name,
   price: Number(item.price),
   description: item.description,
+  imageUrl: item.imageUrl,
   isAvailable: item.isAvailable,
   category: item.category,
   availableIn: item.objectMenuItems.map((entry) => ({
@@ -61,6 +62,7 @@ export const menuService = {
       name: data.name,
       price: data.price,
       description: data.description,
+      imageUrl: data.imageUrl ?? null,
       isAvailable: data.isAvailable ?? true,
       category: data.category ?? null,
     });
@@ -78,6 +80,7 @@ export const menuService = {
       ...(data.name !== undefined ? { name: data.name } : {}),
       ...(data.price !== undefined ? { price: data.price } : {}),
       ...(data.description !== undefined ? { description: data.description } : {}),
+      ...(data.imageUrl !== undefined ? { imageUrl: data.imageUrl } : {}),
       ...(data.isAvailable !== undefined ? { isAvailable: data.isAvailable } : {}),
       ...(data.category !== undefined ? { category: data.category } : {}),
     });
@@ -112,6 +115,7 @@ export const menuService = {
         menuItemId: assignment.menuItem.menuItemId,
         name: assignment.menuItem.name,
         price: Number(assignment.menuItem.price),
+        imageUrl: assignment.menuItem.imageUrl,
       },
     }));
   },
@@ -136,6 +140,7 @@ export const menuService = {
       menuItem: {
         name: assignment.menuItem.name,
         price: Number(assignment.menuItem.price),
+        imageUrl: assignment.menuItem.imageUrl,
       },
     };
   },

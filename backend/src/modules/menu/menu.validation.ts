@@ -1,11 +1,12 @@
 import { MenuCategory } from "../../generated/prisma/client";
 import { z } from "zod";
-import { decimalSchema } from "../../common/validation";
+import { decimalSchema, imageUrlSchema } from "../../common/validation";
 
 export const menuItemSchema = z.object({
   name: z.string().trim().min(2),
   price: decimalSchema,
   description: z.string().trim().optional(),
+  imageUrl: imageUrlSchema.optional().nullable(),
   isAvailable: z.boolean().optional(),
   category: z.nativeEnum(MenuCategory).optional().nullable(),
 });
