@@ -200,27 +200,29 @@ const formatBookableObject = (object: BookableObjectWithRelations) => ({
   })),
 });
 
-export const bookableObjectService = {
+export class BookableObjectService {
+  constructor(private readonly bookableObjectRepository: BookableObjectRepository) {}
+
   async listBookableObjects(query: ListBookableObjectsQuery) {
-    const objects = await bookableObjectRepository.findMany({
+    const objects = await this.bookableObjectRepository.findMany({
       ...(query.type ? { type: query.type } : {}),
       ...(typeof query.isActive === "boolean" ? { isActive: query.isActive } : {}),
     });
 
     return objects.map(formatBookableObject);
-  },
+  }
 
   async getBookableObjectById(bookableObjectId: number) {
-    const object = await bookableObjectRepository.findById(bookableObjectId);
+    const object = await this.bookableObjectRepository.findById(bookableObjectId);
     if (!object) {
       throw new AppError("Bookable object not found", 404);
     }
 
     return formatBookableObject(object);
-  },
+  }
 
   async createBookableObject(data: CreateBookableObjectInput) {
-    const created = await bookableObjectRepository.create({
+    const created = await this.bookableObjectRepository.create({
       name: data.name,
       capacity: data.capacity,
       basePrice: data.basePrice,
@@ -235,10 +237,10 @@ export const bookableObjectService = {
     });
 
     return formatBookableObject(created);
-  },
+  }
 
   async updateBookableObject(bookableObjectId: number, data: UpdateBookableObjectInput) {
-    const existing = await bookableObjectRepository.findBaseById(bookableObjectId);
+    const existing = await this.bookableObjectRepository.findBaseById(bookableObjectId);
     if (!existing) {
       throw new AppError("Bookable object not found", 404);
     }
@@ -254,7 +256,7 @@ export const bookableObjectService = {
       throw new AppError("Season start date is required when the object is seasonal", 400);
     }
 
-    const updated = await bookableObjectRepository.runInTransaction(async (tx) => {
+    const updated = await this.bookableObjectRepository.runInTransaction(async (tx) => {
       if (nextType !== existing.type) {
         await clearOtherSubtypeRelations(tx, nextType, bookableObjectId);
       }
@@ -287,14 +289,16 @@ export const bookableObjectService = {
     });
 
     return formatBookableObject(updated);
-  },
+  }
 
   async deleteBookableObject(bookableObjectId: number) {
-    const existing = await bookableObjectRepository.findBaseById(bookableObjectId);
+    const existing = await this.bookableObjectRepository.findBaseById(bookableObjectId);
     if (!existing) {
       throw new AppError("Bookable object not found", 404);
     }
 
-    return bookableObjectRepository.delete(bookableObjectId);
-  },
-};
+    return this.bookableObjectRepository.delete(bookableObjectId);
+  }
+}
+
+export const bookableObjectService = new BookableObjectService(bookableObjectRepository);

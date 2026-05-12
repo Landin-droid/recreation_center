@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AppShell,
   Title,
@@ -10,124 +11,28 @@ import {
   Select,
   Field,
 } from "@shared/ui/kit";
+import { ImageCarousel } from "@shared/ui/ImageCarousel";
 import { dashboardApi } from "@features/dashboard/api";
 import type { BookableObject, Reservation } from "@shared/api/types";
 import { formatCurrency } from "@shared/lib/format";
 import { useLockBodyScroll } from "@shared/lib/useLockBodyScroll";
+import { getObjectTypeName, getPersonString } from "@shared/lib/utils";
 import { format, isSameDay, parseISO, isBefore, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 
-function ImageCarousel({ images, name }: { images: string[]; name: string }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  if (!images || images.length === 0) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-gray-400">
-        <svg
-          className="h-12 w-12"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </svg>
-      </div>
-    );
-  }
-
-  const next = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const prev = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  return (
-    <div className="group relative h-full w-full overflow-hidden bg-transparent">
-      <img
-        src={images[currentIndex]}
-        alt={`${name} - ${currentIndex + 1}`}
-        className="h-full w-full object-cover transition-opacity duration-500 rounded"
-      />
-
-      {images.length > 1 && (
-        <>
-          <button
-            type="button"
-            onClick={prev}
-            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white opacity-100 transition-opacity hover:bg-black/60 sm:opacity-0 sm:group-hover:opacity-100"
-            aria-label="Previous image">
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={next}
-            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white opacity-100 transition-opacity hover:bg-black/60 sm:opacity-0 sm:group-hover:opacity-100"
-            aria-label="Next image">
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-
-          <div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 flex items-center gap-2 rounded-full bg-black/30 px-3 py-1.5">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentIndex(i);
-                }}
-                className={clsx(
-                  "rounded-full transition-all duration-200",
-                  i === currentIndex
-                    ? "bg-white w-4 h-2.5"
-                    : "bg-white/70 w-2.5 h-2.5",
-                )}
-                aria-label={`Go to image ${i + 1}`}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 export function BookingPage() {
-  const [objects, setObjects] = useState<BookableObject[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: objects = [], isLoading, error } = useQuery({
+    queryKey: ["bookable-objects"],
+    queryFn: () => dashboardApi.listObjects(),
+  });
+
+  const { data: reservations = [] } = useQuery({
+    queryKey: ["reservations"],
+    queryFn: () => dashboardApi.listReservations(),
+  });
 
   // Filtering and Sorting state
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -158,14 +63,6 @@ export function BookingPage() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [selectedObject]);
 
-  useEffect(() => {
-    dashboardApi
-      .listObjects()
-      .then(setObjects)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
-
   const filteredAndSortedObjects = useMemo(() => {
     let result = [...objects];
 
@@ -189,20 +86,15 @@ export function BookingPage() {
     setGuestsCount(1);
     setSelectedMenuItems([]);
 
-    try {
-      const reservations = await dashboardApi.listReservations();
-      // Filter reservations for this object that still block the date
-      const busy = reservations
-        .filter(
-          (r) =>
-            r.bookableObject.bookableObjectId === obj.bookableObjectId &&
-            !["canceled", "expired", "refunded"].includes(r.status),
-        )
-        .map((r) => parseISO(r.reservationDate));
-      setBusyDates(busy);
-    } catch (err) {
-      console.error("Failed to fetch busy dates", err);
-    }
+    // Filter reservations for this object that still block the date
+    const busy = reservations
+      .filter(
+        (r) =>
+          r.bookableObject.bookableObjectId === obj.bookableObjectId &&
+          !["canceled", "expired", "refunded"].includes(r.status),
+      )
+      .map((r) => parseISO(r.reservationDate));
+    setBusyDates(busy);
   };
 
   const handleCreateReservation = async () => {
@@ -237,22 +129,6 @@ export function BookingPage() {
       busyDates.some((busyDate) => isSameDay(busyDate, date)) ||
       isBefore(date, startOfDay(new Date()))
     );
-  };
-
-  const getObjectTypeName = (type: string) => {
-    const types: Record<string, string> = {
-      COTTAGE: "Домик",
-      BANQUET_HALL: "Банкетный зал",
-      GAZEBO: "Беседка",
-      KARAOKE_BAR: "Караоке-бар",
-      OUTDOOR_VENUE: "Открытая площадка",
-    };
-    return types[type.toUpperCase()] || type;
-  };
-
-  const getPersonString = (count: number) => {
-    if (count % 10 === 1 && count % 100 !== 11) return "человека";
-    return "человек";
   };
 
   const [selectedMenuItems, setSelectedMenuItems] = useState<
@@ -401,66 +277,54 @@ export function BookingPage() {
           </Select>
         </div>
 
-        {loading ? (
-          <Loader label="Загружаем объекты..." />
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <Loader size="lg" />
+          </div>
         ) : error ? (
-          <EmptyState title="Ошибка" description={error} />
+          <EmptyState
+            title="Ошибка"
+            description="Не удалось загрузить объекты. Пожалуйста, попробуйте позже."
+          />
         ) : filteredAndSortedObjects.length === 0 ? (
           <EmptyState
             title="Ничего не найдено"
             description="Попробуйте изменить параметры фильтрации."
           />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:gap-6">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredAndSortedObjects.map((obj) => (
               <Panel
                 key={obj.bookableObjectId}
-                className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
-                <div className="relative aspect-video w-full bg-transparent lg:w-[60%] lg:min-w-[340px]">
+                className="group flex flex-col overflow-hidden !p-0 transition-transform hover:scale-[1.02]">
+                <div className="relative aspect-[4/3] w-full">
                   <ImageCarousel images={obj.imageUrls} name={obj.name} />
                 </div>
-
-                <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-7">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <Badge tone="neutral">{getObjectTypeName(obj.type)}</Badge>
-                    <span className="text-lg font-bold text-[#c96f2b] sm:text-xl">
-                      {formatCurrency(obj.basePrice)}
-                    </span>
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <h3 className="text-lg font-bold text-[#24170f]">
+                      {obj.name}
+                    </h3>
+                    <Badge variant="secondary">
+                      {getObjectTypeName(obj.type)}
+                    </Badge>
                   </div>
-                  <h3 className="mb-2 text-2xl font-black text-[#24170f] sm:mb-3 sm:text-3xl">
-                    {obj.name}
-                  </h3>
-                  <p className="mb-4 text-sm leading-6 text-[color:var(--ink-soft)] sm:text-base sm:leading-relaxed">
-                    {obj.description || "Прекрасное место для вашего отдыха."}
+                  <p className="mb-6 line-clamp-2 flex-1 text-sm text-[color:var(--ink-soft)]">
+                    {obj.description || "Нет описания"}
                   </p>
-
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-medium sm:gap-3 sm:text-base">
-                      <svg
-                        className="h-5 w-5 shrink-0 text-[#c96f2b] sm:h-6 sm:w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
-                      <span>
-                        Вместимость: до {obj.capacity}{" "}
-                        {getPersonString(obj.capacity)}
-                      </span>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium uppercase tracking-wider text-[color:var(--ink-soft)]">
+                        От
+                      </p>
+                      <p className="text-xl font-black text-[#c96f2b]">
+                        {formatCurrency(Number(obj.basePrice))}
+                      </p>
                     </div>
-                    {renderAmenities(obj)}
+                    <Button onClick={() => handleOpenBooking(obj)}>
+                      Забронировать
+                    </Button>
                   </div>
-
-                  <Button
-                    className="mt-5 w-full py-3 text-base sm:mt-7 sm:py-4"
-                    onClick={() => handleOpenBooking(obj)}>
-                    Забронировать
-                  </Button>
                 </div>
               </Panel>
             ))}

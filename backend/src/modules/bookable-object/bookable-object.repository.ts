@@ -18,36 +18,44 @@ export type BookableObjectWithRelations = Prisma.BookableObjectGetPayload<{
   include: typeof bookableObjectInclude;
 }>;
 
-export const bookableObjectRepository = {
-  findMany: (where: Prisma.BookableObjectWhereInput) =>
-    prisma.bookableObject.findMany({
+export class BookableObjectRepository {
+  findMany(where: Prisma.BookableObjectWhereInput) {
+    return prisma.bookableObject.findMany({
       where,
       include: bookableObjectInclude,
       orderBy: [{ type: "asc" }, { name: "asc" }],
-    }),
+    });
+  }
 
-  findById: (bookableObjectId: number) =>
-    prisma.bookableObject.findUnique({
+  findById(bookableObjectId: number) {
+    return prisma.bookableObject.findUnique({
       where: { bookableObjectId },
       include: bookableObjectInclude,
-    }),
+    });
+  }
 
-  findBaseById: (bookableObjectId: number) =>
-    prisma.bookableObject.findUnique({
+  findBaseById(bookableObjectId: number) {
+    return prisma.bookableObject.findUnique({
       where: { bookableObjectId },
-    }),
+    });
+  }
 
-  create: (data: Prisma.BookableObjectCreateInput) =>
-    prisma.bookableObject.create({
+  create(data: Prisma.BookableObjectCreateInput) {
+    return prisma.bookableObject.create({
       data,
       include: bookableObjectInclude,
-    }),
+    });
+  }
 
-  delete: (bookableObjectId: number) =>
-    prisma.bookableObject.delete({
+  delete(bookableObjectId: number) {
+    return prisma.bookableObject.delete({
       where: { bookableObjectId },
-    }),
+    });
+  }
 
-  runInTransaction: <T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) =>
-    prisma.$transaction(callback),
-};
+  runInTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) {
+    return prisma.$transaction(callback);
+  }
+}
+
+export const bookableObjectRepository = new BookableObjectRepository();

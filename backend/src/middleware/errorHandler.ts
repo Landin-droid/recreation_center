@@ -1,6 +1,7 @@
 import { Prisma } from "../generated/prisma/client";
 import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
+import { logger } from "../lib/logger";
 
 export class AppError extends Error {
   statusCode: number;
@@ -53,7 +54,11 @@ export const errorHandler = (
     }
   }
 
-  console.error("Unexpected error:", err);
+  logger.error("Unexpected error", err, {
+    path: _req.path,
+    method: _req.method,
+  });
+
   return res.status(500).json({
     success: false,
     error:

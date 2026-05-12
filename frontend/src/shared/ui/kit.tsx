@@ -9,7 +9,7 @@ export function AppShell({
   children,
   actions,
 }: PropsWithChildren<{ actions?: ReactNode }>) {
-  const { accessToken, clearSession } = useAuthStore();
+  const { user, clearSession } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -35,7 +35,7 @@ export function AppShell({
             <NavItem to="/">Главная</NavItem>
             <NavItem to="/rentals">Прокат</NavItem>
             <NavItem to="/booking">Бронирование</NavItem>
-            {accessToken ? (
+            {user ? (
               <>
                 <NavItem to="/profile">Кабинет</NavItem>
                 <Button
@@ -71,7 +71,7 @@ export function AppShell({
               <NavItem to="/" onClick={() => setIsMenuOpen(false)}>Главная</NavItem>
               <NavItem to="/rentals" onClick={() => setIsMenuOpen(false)}>Прокат</NavItem>
               <NavItem to="/booking" onClick={() => setIsMenuOpen(false)}>Бронирование</NavItem>
-              {accessToken ? (
+              {user ? (
                 <>
                   <NavItem to="/profile" onClick={() => setIsMenuOpen(false)}>Кабинет</NavItem>
                   <Button

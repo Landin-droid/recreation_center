@@ -4,16 +4,9 @@ import type { User } from "@shared/api/types";
 
 interface AuthStore {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isBootstrapping: boolean;
-  setSession: (payload: {
-    user: User;
-    accessToken: string;
-    refreshToken: string;
-  }) => void;
+  setSession: (payload: { user: User }) => void;
   updateUser: (user: User) => void;
-  setTokens: (accessToken: string, refreshToken: string) => void;
   clearSession: () => void;
   setBootstrapping: (value: boolean) => void;
 }
@@ -22,34 +15,24 @@ export const useAuthStore = create<AuthStore>()(
   persist(
     (set) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
       isBootstrapping: true,
-      setSession: ({ user, accessToken, refreshToken }) =>
+      setSession: ({ user }) =>
         set({
           user,
-          accessToken,
-          refreshToken,
           isBootstrapping: false,
         }),
       updateUser: (user) => set({ user }),
-      setTokens: (accessToken, refreshToken) =>
-        set({ accessToken, refreshToken }),
       clearSession: () =>
         set({
           user: null,
-          accessToken: null,
-          refreshToken: null,
           isBootstrapping: false,
         }),
       setBootstrapping: (value) => set({ isBootstrapping: value }),
     }),
     {
       name: "pobeda-auth",
-      partialize: ({ user, accessToken, refreshToken }) => ({
+      partialize: ({ user }) => ({
         user,
-        accessToken,
-        refreshToken,
       }),
     },
   ),

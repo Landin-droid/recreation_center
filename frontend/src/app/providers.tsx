@@ -42,8 +42,6 @@ export function AppProviders({ children }: PropsWithChildren) {
         if (isMounted) {
           setSession({
             user,
-            accessToken: "cookie-based",
-            refreshToken: "cookie-based",
           });
         }
       } catch (error) {

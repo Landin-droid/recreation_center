@@ -3,8 +3,8 @@ import crypto, { createHash, randomBytes } from "crypto";
 import jwt from "jsonwebtoken";
 import { env, jwtSecret } from "../../config/env";
 import { AppError } from "../../middleware/errorHandler";
-import { userRepository } from "../user/user.repository";
-import { userService } from "../user/user.service";
+import { UserRepository, userRepository } from "../user/user.repository";
+import { UserService, userService } from "../user/user.service";
 import { CreateUserInput } from "../user/user.validation";
 
 const generateRefreshTokenString = (): string => {
@@ -33,20 +33,25 @@ const generateAuthTokens = (
   return { accessToken, refreshToken };
 };
 
-export const authService = {
+export class AuthService {
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly userService: UserService,
+  ) {}
+
   async register(data: CreateUserInput) {
-    const user = await userService.registerUser(data);
+    const user = await this.userService.registerUser(data);
     const tokens = await this.createAuthTokens(user.userId, user.email);
 
     return { user, ...tokens };
-  },
+  }
 
   async login(email: string, password: string) {
-    const user = await userService.verifyPassword(email, password);
+    const user = await this.userService.verifyPassword(email, password);
     const tokens = await this.createAuthTokens(user.userId, user.email);
 
     return { user, ...tokens };
-  },
+  }
 
   async createAuthTokens(userId: number, email: string) {
     const { accessToken, refreshToken } = generateAuthTokens(userId, email);
@@ -55,19 +60,21 @@ export const authService = {
     expiresAt.setDate(expiresAt.getDate() + 7);
     const encryptedRefreshToken = encryptRefreshToken(refreshToken);
 
-    await userRepository.storeRefreshToken(
+    await this.userRepository.storeRefreshToken(
       userId,
       encryptedRefreshToken,
       expiresAt,
     );
 
     return { accessToken, refreshToken };
-  },
+  }
 
   async validateRefreshToken(refreshToken: string) {
     const tokenHash = encryptRefreshToken(refreshToken);
 
-    const storedToken = await userRepository.findRefreshTokenByHash(tokenHash);
+    const storedToken = await this.userRepository.findRefreshTokenByHash(
+      tokenHash,
+    );
 
     if (!storedToken) {
       throw new AppError("Refresh token not found", 401);
@@ -82,23 +89,23 @@ export const authService = {
     }
 
     return storedToken.user;
-  },
+  }
 
   async refreshTokens(refreshToken: string) {
     const user = await this.validateRefreshToken(refreshToken);
 
     const oldTokenHash = encryptRefreshToken(refreshToken);
-    await userRepository.revokeRefreshToken(oldTokenHash);
+    await this.userRepository.revokeRefreshToken(oldTokenHash);
 
     return this.createAuthTokens(user.userId, user.email);
-  },
+  }
 
   async logout(userId: number) {
-    await userRepository.revokeAllUserTokens(userId);
-  },
+    await this.userRepository.revokeAllUserTokens(userId);
+  }
 
   async forgotPassword(email: string) {
-    const user = await userRepository.findByEmail(email);
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
       return null;
     }
@@ -107,17 +114,17 @@ export const authService = {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
 
-    await userRepository.updateResetToken(
+    await this.userRepository.updateResetToken(
       email,
       hashPasswordResetToken(resetToken),
       expiresAt,
     );
 
     return resetToken;
-  },
+  }
 
   async resetPassword(token: string, newPassword: string) {
-    const user = await userRepository.findByResetToken(
+    const user = await this.userRepository.findByResetToken(
       hashPasswordResetToken(token),
     );
     if (!user) {
@@ -126,8 +133,10 @@ export const authService = {
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
-    await userRepository.update(user.userId, { passwordHash });
-    await userRepository.clearResetToken(user.userId);
-    await userRepository.revokeAllUserTokens(user.userId);
-  },
-};
+    await this.userRepository.update(user.userId, { passwordHash });
+    await this.userRepository.clearResetToken(user.userId);
+    await this.userRepository.revokeAllUserTokens(user.userId);
+  }
+}
+
+export const authService = new AuthService(userRepository, userService);
