@@ -297,7 +297,7 @@ export function BookingPage() {
               <Panel
                 key={obj.bookableObjectId}
                 className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
-                <div className="relative aspect-video w-full bg-transparent lg:w-[45%] lg:min-w-[340px]">
+                <div className="relative aspect-video w-full bg-transparent lg:w-[60%] lg:min-w-[340px]">
                   <ImageCarousel images={obj.imageUrls} name={obj.name} />
                 </div>
 
