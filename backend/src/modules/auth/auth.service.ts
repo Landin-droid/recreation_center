@@ -25,8 +25,9 @@ const hashPasswordResetToken = (token: string): string => {
 const generateAuthTokens = (
   userId: number,
   email: string,
+  role: string,
 ): { accessToken: string; refreshToken: string } => {
-  const accessToken = jwt.sign({ userId, email }, jwtSecret, {
+  const accessToken = jwt.sign({ userId, email, role }, jwtSecret, {
     expiresIn: "15m",
   });
   const refreshToken = generateRefreshTokenString();
@@ -41,20 +42,20 @@ export class AuthService {
 
   async register(data: CreateUserInput) {
     const user = await this.userService.registerUser(data);
-    const tokens = await this.createAuthTokens(user.userId, user.email);
+    const tokens = await this.createAuthTokens(user.userId, user.email, user.role);
 
     return { user, ...tokens };
   }
 
   async login(email: string, password: string) {
     const user = await this.userService.verifyPassword(email, password);
-    const tokens = await this.createAuthTokens(user.userId, user.email);
+    const tokens = await this.createAuthTokens(user.userId, user.email, user.role);
 
     return { user, ...tokens };
   }
 
-  async createAuthTokens(userId: number, email: string) {
-    const { accessToken, refreshToken } = generateAuthTokens(userId, email);
+  async createAuthTokens(userId: number, email: string, role: string) {
+    const { accessToken, refreshToken } = generateAuthTokens(userId, email, role);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -97,7 +98,7 @@ export class AuthService {
     const oldTokenHash = encryptRefreshToken(refreshToken);
     await this.userRepository.revokeRefreshToken(oldTokenHash);
 
-    return this.createAuthTokens(user.userId, user.email);
+    return this.createAuthTokens(user.userId, user.email, user.role);
   }
 
   async logout(userId: number) {

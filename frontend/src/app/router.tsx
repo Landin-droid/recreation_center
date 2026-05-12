@@ -12,6 +12,7 @@ import { PaymentSuccessPage } from "@views/PaymentSuccessPage";
 import { PaymentFailurePage } from "@views/PaymentFailurePage";
 import { PasswordResetPage } from "@views/PasswordResetPage";
 import { ForgotPasswordPage } from "@views/ForgotPasswordPage";
+import { AdminPage } from "@views/AdminPage";
 
 function ProtectedLayout() {
   const { user, isBootstrapping } = useAuthStore();
@@ -74,6 +75,9 @@ const router = createBrowserRouter([
       {
         path: "/profile",
         element: <ProfilePage />,
+      },      {
+        path: "/admin",
+        element: <AdminPage />,
       },
     ],
   },

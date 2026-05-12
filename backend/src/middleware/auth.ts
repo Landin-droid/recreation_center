@@ -6,6 +6,7 @@ import { AppError } from "./errorHandler";
 export interface AuthPayload {
   userId: number;
   email: string;
+  role: string;
 }
 
 function isAuthPayload(payload: unknown): payload is AuthPayload {
@@ -14,8 +15,10 @@ function isAuthPayload(payload: unknown): payload is AuthPayload {
     payload !== null &&
     "userId" in payload &&
     "email" in payload &&
+    "role" in payload &&
     typeof (payload as AuthPayload).userId === "number" &&
-    typeof (payload as AuthPayload).email === "string"
+    typeof (payload as AuthPayload).email === "string" &&
+    typeof (payload as AuthPayload).role === "string"
   );
 }
 
@@ -68,3 +71,19 @@ export const authenticate = (
     }
   }
 };
+
+export const authorize = (roles: string[]) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("Authentication required", 401));
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError("Access denied", 403));
+    }
+
+    next();
+  };
+};
+
+export const isAdmin = authorize(["admin", "staff"]);

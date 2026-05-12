@@ -374,4 +374,23 @@ export const reservationService = {
     );
     return formatReservation(updated);
   },
+
+  async getStats() {
+    const [totalReservations, totalUsers, totalPayments, recentReservations] =
+      await Promise.all([
+        reservationRepository.count(),
+        reservationRepository.countUsers(),
+        reservationRepository.aggregatePayments({ status: "succeeded" }),
+        reservationRepository.findRecent(5),
+      ]);
+
+    return {
+      totalReservations,
+      totalUsers,
+      totalRevenue: totalPayments._sum.amount
+        ? Number(totalPayments._sum.amount)
+        : 0,
+      recentReservations: recentReservations.map(formatReservation),
+    };
+  },
 };

@@ -87,6 +87,7 @@ export class UserService {
       ...(data.phoneNumber !== undefined
         ? { phoneNumber: data.phoneNumber }
         : {}),
+      ...(data.role !== undefined ? { role: data.role } : {}),
     };
 
     const updated = await this.userRepository.update(id, prismaData);

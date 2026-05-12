@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authenticate, isAdmin } from "../../middleware/auth";
 import { bookableObjectController } from "./bookable-object.controller";
 
 const router = Router();
@@ -137,8 +138,10 @@ router.get("/:id", bookableObjectController.getById);
  *                   type: boolean
  *                 data:
  *                   $ref: '#/components/schemas/BookableObject'
+ *     security:
+ *       - bearerAuth: []
  */
-router.post("/", bookableObjectController.create);
+router.post("/", authenticate, isAdmin, bookableObjectController.create);
 
 /**
  * @swagger
@@ -201,8 +204,10 @@ router.post("/", bookableObjectController.create);
  *                   type: boolean
  *                 data:
  *                   $ref: '#/components/schemas/BookableObject'
+ *     security:
+ *       - bearerAuth: []
  */
-router.put("/:id", bookableObjectController.update);
+router.put("/:id", authenticate, isAdmin, bookableObjectController.update);
 
 /**
  * @swagger
@@ -220,7 +225,9 @@ router.put("/:id", bookableObjectController.update);
  *     responses:
  *       200:
  *         description: Объект успешно удален
+ *     security:
+ *       - bearerAuth: []
  */
-router.delete("/:id", bookableObjectController.delete);
+router.delete("/:id", authenticate, isAdmin, bookableObjectController.delete);
 
 export default router;

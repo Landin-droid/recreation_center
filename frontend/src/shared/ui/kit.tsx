@@ -37,6 +37,9 @@ export function AppShell({
             <NavItem to="/booking">Бронирование</NavItem>
             {user ? (
               <>
+                {["admin", "staff"].includes(user.role) && (
+                  <NavItem to="/admin">Админ</NavItem>
+                )}
                 <NavItem to="/profile">Кабинет</NavItem>
                 <Button
                   variant="ghost"
@@ -73,6 +76,9 @@ export function AppShell({
               <NavItem to="/booking" onClick={() => setIsMenuOpen(false)}>Бронирование</NavItem>
               {user ? (
                 <>
+                  {["admin", "staff"].includes(user.role) && (
+                    <NavItem to="/admin" onClick={() => setIsMenuOpen(false)}>Админ</NavItem>
+                  )}
                   <NavItem to="/profile" onClick={() => setIsMenuOpen(false)}>Кабинет</NavItem>
                   <Button
                     variant="ghost"
