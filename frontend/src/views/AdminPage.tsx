@@ -482,8 +482,8 @@ function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
                 <Badge tone={item.isAvailable ? "success" : "neutral"}>
                   {item.isAvailable ? "В наличии" : "Нет"}
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>✏️</Button>
-                <Button variant="ghost" size="sm" className="text-red-500" onClick={() => {
+                <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>✏️</Button>
+                <Button variant="ghost" className="px-2 py-1 text-xs text-red-500 cursor-pointer" onClick={() => {
                   if (confirm(`Удалить "${item.name}"?`)) deleteMutation.mutate(item.menuItemId);
                 }}>🗑️</Button>
               </div>
@@ -588,8 +588,8 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
                 <Badge tone={item.isActive ? "success" : "neutral"}>
                   {item.isActive ? "Активен" : "Скрыт"}
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>✏️</Button>
-                <Button variant="ghost" size="sm" className="text-red-500" onClick={() => {
+                <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>✏️</Button>
+                <Button variant="ghost" className="px-2 py-1 text-xs text-red-500 cursor-pointer" onClick={() => {
                   if (confirm(`Удалить "${item.name}"?`)) deleteMutation.mutate(item.rentalItemId);
                 }}>🗑️</Button>
               </div>
