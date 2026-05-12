@@ -292,39 +292,56 @@ export function BookingPage() {
             description="Попробуйте изменить параметры фильтрации."
           />
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6">
             {filteredAndSortedObjects.map((obj) => (
               <Panel
                 key={obj.bookableObjectId}
-                className="group flex flex-col overflow-hidden !p-0 transition-transform hover:scale-[1.02]">
-                <div className="relative aspect-[4/3] w-full">
+                className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
+                <div className="relative aspect-video w-full bg-transparent lg:w-[45%] lg:min-w-[340px]">
                   <ImageCarousel images={obj.imageUrls} name={obj.name} />
                 </div>
-                <div className="flex flex-1 flex-col p-5 sm:p-6">
-                  <div className="mb-3 flex items-start justify-between gap-2">
-                    <h3 className="text-lg font-bold text-[#24170f]">
-                      {obj.name}
-                    </h3>
-                    <Badge tone="neutral">
-                      {getObjectTypeName(obj.type)}
-                    </Badge>
+
+                <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-7">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <Badge tone="neutral">{getObjectTypeName(obj.type)}</Badge>
+                    <span className="text-lg font-bold text-[#c96f2b] sm:text-xl">
+                      {formatCurrency(obj.basePrice)}
+                    </span>
                   </div>
-                  <p className="mb-6 line-clamp-2 flex-1 text-sm text-[color:var(--ink-soft)]">
-                    {obj.description || "Нет описания"}
+                  <h3 className="mb-2 text-2xl font-black text-[#24170f] sm:mb-3 sm:text-3xl">
+                    {obj.name}
+                  </h3>
+                  <p className="mb-4 text-sm leading-6 text-[color:var(--ink-soft)] sm:text-base sm:leading-relaxed">
+                    {obj.description || "Прекрасное место для вашего отдыха."}
                   </p>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-[color:var(--ink-soft)]">
-                        От
-                      </p>
-                      <p className="text-xl font-black text-[#c96f2b]">
-                        {formatCurrency(Number(obj.basePrice))}
-                      </p>
+
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium sm:gap-3 sm:text-base">
+                      <svg
+                        className="h-5 w-5 shrink-0 text-[#c96f2b] sm:h-6 sm:w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
+                      </svg>
+                      <span>
+                        Вместимость: до {obj.capacity}{" "}
+                        {getPersonString(obj.capacity)}
+                      </span>
                     </div>
-                    <Button onClick={() => handleOpenBooking(obj)}>
-                      Забронировать
-                    </Button>
+                    {renderAmenities(obj)}
                   </div>
+
+                  <Button
+                    className="mt-5 w-full py-3 text-base sm:mt-7 sm:py-4"
+                    onClick={() => handleOpenBooking(obj)}>
+                    Забронировать
+                  </Button>
                 </div>
               </Panel>
             ))}
