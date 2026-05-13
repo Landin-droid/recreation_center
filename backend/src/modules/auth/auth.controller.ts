@@ -54,7 +54,11 @@ export const authController = {
 
     res.status(201).json({
       success: true,
-      data: formatUserResponse(user),
+      data: {
+        ...formatUserResponse(user),
+        accessToken,
+        refreshToken,
+      },
     });
   }),
 
@@ -69,7 +73,11 @@ export const authController = {
 
     res.json({
       success: true,
-      data: formatUserResponse(user),
+      data: {
+        ...formatUserResponse(user),
+        accessToken,
+        refreshToken,
+      },
     });
   }),
 

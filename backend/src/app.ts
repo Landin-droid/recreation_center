@@ -17,7 +17,23 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: "https://recreation-center.onrender.com",
+    origin: (origin, callback) => {
+      // Разрешаем запросы без origin (например, мобильные приложения или curl)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        "https://recreation-center.onrender.com",
+        env.FRONTEND_URL,
+        "http://localhost:3000",
+        "http://localhost:5173",
+      ];
+      
+      if (allowedOrigins.includes(origin) || origin.startsWith("http://192.168.")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );

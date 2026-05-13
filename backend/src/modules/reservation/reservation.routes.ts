@@ -78,14 +78,14 @@ router.delete("/:id", authenticate, isAdmin, reservationController.delete);
 
 /**
  * @swagger
- * /api/reservations/{id}/cancel:
- *   post:
+ * /api/reservations/{id}:
+ *   patch:
  *     summary: Отменить бронирование
  *     tags:
  *       - Reservations
  *     security:
  *       - bearerAuth: []
  */
-router.post("/:id/cancel", authenticate, reservationController.cancel);
+router.patch("/:id", authenticate, reservationController.cancel);
 
 export default router;
