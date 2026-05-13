@@ -304,6 +304,7 @@ export function BookingPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:gap-6">
             {filteredAndSortedObjects.map((obj) => (
+              obj.isActive && (
               <Panel
                 key={obj.bookableObjectId}
                 className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
@@ -354,7 +355,7 @@ export function BookingPage() {
                   </Button>
                 </div>
               </Panel>
-            ))}
+            )))}
           </div>
         )}
 
