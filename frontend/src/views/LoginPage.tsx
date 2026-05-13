@@ -30,9 +30,11 @@ export function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (user) => {
+    onSuccess: (data: any) => {
       setSession({
-        user,
+        user: data,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
       });
       navigate("/profile");
     },

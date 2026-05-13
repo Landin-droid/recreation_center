@@ -29,17 +29,21 @@ const setTokenCookies = (
   accessToken: string,
   refreshToken: string,
 ) => {
+  const isProd = process.env.NODE_ENV === "production";
+  
+  // Если фронтенд и бэкенд на одном домене (как на Render при проксировании),
+  // то 'lax' — самый надежный вариант. 'none' нужен только если домены разные.
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: isProd,
+    sameSite: isProd ? "lax" : "lax", // Меняем на lax для надежности на мобильных
     maxAge: 15 * 60 * 1000,
   });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: isProd,
+    sameSite: isProd ? "lax" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };

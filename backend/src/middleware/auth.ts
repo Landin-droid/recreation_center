@@ -50,25 +50,28 @@ export const authenticate = (
     }
 
     if (!token) {
-      throw new AppError("Authentication required", 401);
+      console.warn(`[Auth] Missing token for ${req.method} ${req.originalUrl}. Cookies: ${JSON.stringify(Object.keys(req.cookies || {}))}, AuthHeader: ${authHeader ? 'present' : 'missing'}`);
+      throw new AppError("Authentication required (token missing)", 401);
     }
 
-    const payload = jwt.verify(token, jwtSecret);
+    try {
+      const payload = jwt.verify(token, jwtSecret);
 
-    if (!isAuthPayload(payload)) {
-      throw new AppError("Invalid token payload", 401);
+      if (!isAuthPayload(payload)) {
+        console.error(`[Auth] Invalid token payload: ${JSON.stringify(payload)}`);
+        throw new AppError("Invalid token payload", 401);
+      }
+
+      req.user = payload;
+      next();
+    } catch (jwtError) {
+      if (jwtError instanceof jwt.TokenExpiredError) {
+        throw new AppError("Token has expired", 401);
+      }
+      throw new AppError("Invalid token", 401);
     }
-
-    req.user = payload;
-    next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      next(new AppError("Invalid token", 401));
-    } else if (error instanceof jwt.TokenExpiredError) {
-      next(new AppError("Token has expired", 401));
-    } else {
-      next(error);
-    }
+    next(error);
   }
 };
 

@@ -58,9 +58,11 @@ export function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (user) => {
+    onSuccess: (data: any) => {
       setSession({
-        user,
+        user: data,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
       });
       navigate("/profile");
     },

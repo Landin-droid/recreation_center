@@ -26,8 +26,12 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  // При использовании HttpOnly кук, нам не нужно вручную добавлять заголовок Authorization.
-  // Браузер сам прикрепит куки к запросу благодаря withCredentials: true.
+  const { accessToken } = useAuthStore.getState();
+  
+  if (accessToken && config.headers) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  
   return config;
 });
 
@@ -46,20 +50,26 @@ http.interceptors.response.use(
       throw error;
     }
 
-    const { clearSession } = useAuthStore.getState();
+    const { clearSession, refreshToken: storedRefreshToken, setSession } = useAuthStore.getState();
 
     originalRequest._retry = true;
 
     if (!refreshRequest) {
-      // Запрос на обновление токенов. Сервер обновит куки в ответе.
+      // Запрос на обновление токенов. 
       refreshRequest = axios
-        .post<ApiEnvelope<unknown>>(
+        .post<ApiEnvelope<{ accessToken: string; refreshToken: string }>>(
           `${env.apiBaseUrl}/auth/refresh`,
-          {}, // Тело пустое, так как refresh-токен в куках
+          { refreshToken: storedRefreshToken }, // Передаем явно на случай если куки не работают
           { withCredentials: true }
         )
-        .then(() => {
-          return "ok";
+        .then((res) => {
+          const { accessToken, refreshToken } = res.data.data;
+          // Обновляем токены в сторе
+          const user = useAuthStore.getState().user;
+          if (user) {
+            setSession({ user, accessToken, refreshToken });
+          }
+          return accessToken;
         })
         .catch(() => {
           clearSession();
@@ -70,13 +80,16 @@ http.interceptors.response.use(
         });
     }
 
-    const refreshStatus = await refreshRequest;
+    const newAccessToken = await refreshRequest;
 
-    if (!refreshStatus) {
+    if (!newAccessToken) {
       throw error;
     }
 
-    // Повторяем оригинальный запрос, куки прикрепятся автоматически
+    // Повторяем оригинальный запрос с новым токеном
+    if (originalRequest.headers) {
+      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+    }
     return http(originalRequest);
   },
 );
