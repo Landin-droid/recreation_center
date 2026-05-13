@@ -22,7 +22,7 @@ export function AppShell({
   };
 
   return (
-    <div className="min-h-screen bg-[#fffaf2]">
+    <div className="flex min-h-screen flex-col bg-[#fffaf2]">
       <header className="sticky top-0 z-[70] border-b border-[color:var(--border)] bg-[#fffaf2]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Link
@@ -95,7 +95,9 @@ export function AppShell({
           </nav>
         ) : null}
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        {children}
+      </main>
       <footer className="border-t border-[color:var(--border)] py-12 text-center text-sm text-[color:var(--ink-soft)]">
         <div className="mx-auto max-w-7xl px-6">
           <p>

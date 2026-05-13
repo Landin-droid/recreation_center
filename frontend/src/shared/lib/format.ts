@@ -43,5 +43,54 @@ export function prettifyEnum(value: string | null | undefined) {
     return "—";
   }
 
-  return value.replace(/_/g, " ");
+  const translations: Record<string, string> = {
+    // Roles
+    admin: "Администратор",
+    staff: "Персонал",
+    user: "Пользователь",
+
+    // Reservation Statuses
+    pending: "Ожидает оплаты",
+    paid: "Оплачено",
+    canceled: "Отменено",
+    expired: "Истекло",
+    refunded: "Возврат",
+
+    // Object Types
+    cottage: "Домик",
+    gazebo: "Беседка",
+    banquet_hall: "Банкетный зал",
+    outdoor_venue: "Открытая площадка",
+    karaoke_bar: "Караоке-бар",
+    COTTAGE: "Домик",
+    GAZEBO: "Беседка",
+    BANQUET_HALL: "Банкетный зал",
+    OUTDOOR_VENUE: "Открытая площадка",
+    KARAOKE_BAR: "Караоке-бар",
+
+    // Payment Statuses
+    succeeded: "Успешно",
+    
+    // Menu Categories
+    food: "Еда",
+    drink: "Напитки",
+    snack: "Закуски",
+    dessert: "Десерты",
+    FOOD: "Еда",
+    DRINK: "Напитки",
+    SNACK: "Закуски",
+    DESSERT: "Десерты",
+    MAIN: "Основное блюдо",
+
+    // Rental Categories
+    ski: "Лыжи",
+    tube: "Тюбинг",
+    snowmobile: "Снегоход",
+    skates: "Коньки",
+    WINTER: "Зимний",
+    SUMMER: "Летний",
+    EQUIPMENT: "Снаряжение",
+  };
+
+  return translations[value] || translations[value.toLowerCase()] || value.replace(/_/g, " ");
 }

@@ -15,7 +15,7 @@ import {
   Toast,
 } from "@shared/ui/kit";
 import { adminApi } from "@features/admin/api";
-import { formatCurrency, formatDate, formatDateTime } from "@shared/lib/format";
+import { formatCurrency, formatDate, formatDateTime, prettifyEnum } from "@shared/lib/format";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { Navigate } from "react-router-dom";
 import clsx from "clsx";
@@ -169,7 +169,7 @@ function AdminDashboard() {
                   <td className="py-3 font-bold">{formatCurrency(res.totalSum)}</td>
                   <td className="py-3">
                     <Badge tone={res.status === "paid" ? "success" : res.status === "pending" ? "warning" : "danger"}>
-                      {res.status}
+                      {prettifyEnum(res.status)}
                     </Badge>
                   </td>
                 </tr>
@@ -260,13 +260,13 @@ function AdminUsers({ setToast }: { setToast: (t: any) => void }) {
                         onChange={(e) => updateMutation.mutate({ userId: u.userId, role: e.target.value })}
                         className="rounded border p-1 text-xs"
                       >
-                        <option value="user">User</option>
-                        <option value="staff">Staff</option>
-                        <option value="admin">Admin</option>
+                        <option value="user">Пользователь</option>
+                        <option value="staff">Персонал</option>
+                        <option value="admin">Администратор</option>
                       </select>
                     ) : (
                       <Badge tone={u.role === "admin" ? "danger" : u.role === "staff" ? "warning" : "neutral"}>
-                        {u.role}
+                        {prettifyEnum(u.role)}
                       </Badge>
                     )}
                   </td>
@@ -349,7 +349,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             <div className="flex items-start justify-between">
               <div>
                 <h4 className="font-bold">{obj.name}</h4>
-                <p className="text-xs text-[color:var(--ink-soft)]">{obj.type}</p>
+                <p className="text-xs text-[color:var(--ink-soft)]">{prettifyEnum(obj.type)}</p>
               </div>
               <Badge tone={obj.isActive ? "success" : "neutral"}>
                 {obj.isActive ? "Активен" : "Скрыт"}
@@ -475,7 +475,7 @@ function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
                 )}
                 <div>
                   <p className="font-bold">{item.name}</p>
-                  <p className="text-xs text-[color:var(--ink-soft)]">{item.category} • {formatCurrency(item.price)}</p>
+                  <p className="text-xs text-[color:var(--ink-soft)]">{prettifyEnum(item.category)} • {formatCurrency(item.price)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -581,7 +581,7 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
                 {item.imageUrl && <img src={item.imageUrl} className="h-10 w-10 rounded object-cover" />}
                 <div>
                   <p className="font-bold">{item.name}</p>
-                  <p className="text-xs text-[color:var(--ink-soft)]">{item.category}</p>
+                  <p className="text-xs text-[color:var(--ink-soft)]">{prettifyEnum(item.category)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -670,7 +670,7 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                   <td className="py-3">{formatDate(res.reservationDate)}</td>
                   <td className="py-3">
                     <Badge tone={res.status === "paid" ? "success" : res.status === "pending" ? "warning" : "danger"}>
-                      {res.status}
+                      {prettifyEnum(res.status)}
                     </Badge>
                   </td>
                   <td className="py-3 font-bold">{formatCurrency(res.totalSum)}</td>
