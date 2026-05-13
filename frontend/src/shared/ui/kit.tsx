@@ -98,12 +98,60 @@ export function AppShell({
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </main>
-      <footer className="border-t border-[color:var(--border)] py-12 text-center text-sm text-[color:var(--ink-soft)]">
+      <footer className="border-t border-[color:var(--border)] py-8 text-sm text-[color:var(--ink-soft)]">
         <div className="mx-auto max-w-7xl px-6">
-          <p>
-            © {new Date().getFullYear()} База отдыха «Победа». Все права
-            защищены.
-          </p>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 text-left">
+            {/* Адрес и условия */}
+            <div className="space-y-2">
+              <h4 className="font-bold text-[#24170f] text-lg">Наш адрес</h4>
+              <a href="https://yandex.ru/maps/-/CPgJu095" target="_blank" rel="noopener noreferrer"
+                className="hover:underline text-[color:var(--accent)]">
+                <p className="leading-snug text-md">
+                  Кемеровская область, г. Анжеро-Судженск,<br />
+                  ул. Хвойная, 1А
+                </p>
+              </a>
+              <a href="#" className="inline-block text-[color:var(--accent)] hover:underline text-md">
+                Условия бронирования
+              </a>
+            </div>
+
+            {/* Контакты */}
+            <div className="space-y-1">
+              <h4 className="font-bold text-[#24170f] text-lg">Контакты</h4>
+              <div className="space-y-1">
+                <p>
+                  Тел: <a href="tel:+71234567890" className="text-[color:var(--accent)] hover:underline transition-colors">+7 123 456 78 90</a>
+                </p>
+                <p>
+                  Почта: <a href="mailto:support@pobeda.ru" className="text-[color:var(--accent)] hover:underline transition-colors">support@pobeda.ru</a>
+                </p>
+              </div>
+            </div>
+
+            {/* Соцсети */}
+            <div className="space-y-2">
+              <h4 className="font-bold text-[#24170f] text-lg">Мы в соцсетях</h4>
+              <div className="flex gap-3">
+                <a href="https://vk.com/b.pobeda" target="_blank" rel="noopener noreferrer" className="hover:text-[#4c75a3] transition-colors" title="ВКонтакте">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M21.579 6.855c.14-.465 0-.806-.662-.806h-2.193c-.558 0-.813.295-.953.619c0 0-1.115 2.719-2.695 4.482c-.51.513-.743.675-1.021.675c-.139 0-.341-.162-.341-.627V6.855c0-.558-.161-.806-.626-.806H9.642c-.348 0-.558.258-.558.504c0 .528.79.65.871 2.138v3.228c0 .707-.127.836-.407.836c-.743 0-2.551-2.729-3.624-5.853c-.209-.607-.42-.852-.98-.852H2.752c-.627 0-.752.295-.752.619c0 .582.743 3.462 3.461 7.271c1.812 2.601 4.363 4.011 6.687 4.011c1.393 0 1.565-.313 1.565-.853v-1.966c0-.626.133-.752.574-.752c.324 0 .882.164 2.183 1.417c1.486 1.486 1.732 2.153 2.567 2.153h2.192c.626 0 .939-.313.759-.931c-.197-.615-.907-1.51-1.849-2.569c-.512-.604-1.277-1.254-1.51-1.579c-.325-.419-.231-.604 0-.976c.001.001 2.672-3.761 2.95-5.04"/>
+                  </svg>
+                </a>
+                <a href="https://ok.ru/profile/572263020828" target="_blank" rel="noopener noreferrer" className="hover:text-[#ee8208] transition-colors" title="Одноклассники">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M11.986 12.341c-2.825 0-5.173-2.346-5.173-5.122C6.813 4.347 9.161 2 11.987 2c2.922 0 5.173 2.346 5.173 5.219a5.142 5.142 0 0 1-5.157 5.123zm0-7.324c-1.196 0-2.106 1.005-2.106 2.203c0 1.196.91 2.106 2.107 2.106c1.245 0 2.107-.91 2.107-2.106c.001-1.199-.862-2.203-2.108-2.203m2.06 11.586l2.923 2.825c.575.621.575 1.531 0 2.106c-.622.621-1.581.621-2.06 0l-2.922-2.873l-2.826 2.873c-.287.287-.671.43-1.103.43c-.335 0-.718-.144-1.054-.43c-.575-.575-.575-1.485 0-2.107l2.97-2.825a13.49 13.49 0 0 1-3.063-1.339c-.719-.383-.862-1.34-.479-2.059c.479-.718 1.341-.909 2.108-.43a6.62 6.62 0 0 0 6.897 0c.767-.479 1.676-.288 2.107.43c.432.719.239 1.675-.432 2.059c-.909.575-1.963 1.006-3.065 1.341z"/>
+                </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-[color:var(--border)] text-center text-sm">
+            <p>
+              © {new Date().getFullYear()} База отдыха «Победа». Все права защищены.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
