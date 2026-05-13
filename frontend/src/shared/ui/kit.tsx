@@ -192,8 +192,8 @@ export function Button({
         variant === "primary" &&
           "bg-[color:var(--accent)] text-white hover:bg-[color:var(--accent-dark)]",
         variant === "secondary" &&
-          "border border-[color:var(--border)] bg-white/70 text-[#2b1d13] hover:bg-white",
-        variant === "ghost" && "text-[color:var(--ink-soft)] hover:bg-white/70",
+          "border border-[color:var(--border)] bg-orange-200 text-[#2b1d13] hover:bg-orange-200/40",
+        variant === "ghost" && "text-[color:var(--ink-soft)] hover:bg-orange-200/30",
         variant === "danger" &&
           "bg-[color:var(--danger)] text-white hover:opacity-90",
         className,
@@ -409,7 +409,7 @@ export function Loader({ label = "Загрузка..." }: { label?: string }) {
 
 export function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-[color:var(--border)] bg-white/70 p-5">
+    <div className="rounded-[24px] border border-[color:var(--border)] bg-orange-200/50 p-5">
       <p className="text-sm text-[color:var(--ink-soft)]">{label}</p>
       <p className="mt-2 text-2xl font-extrabold tracking-tight">{value}</p>
     </div>

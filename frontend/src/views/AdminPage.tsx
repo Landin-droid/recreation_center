@@ -16,6 +16,7 @@ import {
   Checkbox,
 } from "@shared/ui/kit";
 import { adminApi } from "@features/admin/api";
+import { dashboardApi } from "@features/dashboard/api";
 import { formatCurrency, formatDate, formatDateTime, prettifyEnum } from "@shared/lib/format";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { Navigate } from "react-router-dom";
@@ -117,7 +118,7 @@ function SidebarItem({
         "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition",
         active
           ? "bg-[color:var(--accent)] text-white shadow-lg shadow-orange-200"
-          : "text-[color:var(--ink-soft)] hover:bg-white/70",
+          : "text-[color:var(--ink-soft)] hover:bg-orange-200/50",
       )}>
       <span className="text-lg">{icon}</span>
       {label}
@@ -940,6 +941,52 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
     },
   });
 
+  const handleOpenReceiptPdf = async (receiptId: string) => {
+    try {
+      const blob = await dashboardApi.getReceiptPdf(receiptId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setToast({ message: message || "Не удалось открыть PDF чека", type: "error" });
+    }
+  };
+
+  const renderAdminReceipt = (receipt: any) => {
+    if (!receipt) return null;
+    return (
+      <div className="bg-white/60 p-2 rounded-lg border border-blue-100 space-y-1">
+        <div className="flex justify-between items-center">
+          <span className="font-bold text-[10px] uppercase text-blue-800">
+            {receipt.typeLabel || (receipt.type === "payment" ? "Платежный чек" : "Чек возврата")}
+          </span>
+          <Button 
+            variant="ghost" 
+            className="h-6 px-2 py-0 text-[10px]" 
+            onClick={() => handleOpenReceiptPdf(receipt.receiptId)}
+          >
+            📄 PDF
+          </Button>
+        </div>
+        <div className="flex justify-between text-[10px]">
+          <span className="text-[color:var(--ink-soft)]">ID чека:</span>
+          <span className="font-mono">{receipt.receiptId}</span>
+        </div>
+        <div className="flex justify-between text-[10px]">
+          <span className="text-[color:var(--ink-soft)]">Статус:</span>
+          <span className="font-bold">{receipt.statusLabel || prettifyEnum(receipt.status)}</span>
+        </div>
+        {receipt.registeredAt && (
+          <div className="flex justify-between text-[10px]">
+            <span className="text-[color:var(--ink-soft)]">Дата:</span>
+            <span>{receipt.registeredAt}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (isLoading) return <Loader label="Загрузка бронирований..." />;
 
   return (
@@ -1062,19 +1109,11 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                 )}
                 
                 {/* Receipt Info */}
-                {editingRes.payment.receipt && (
-                  <div className="border-t mt-2 pt-2">
-                    <p className="font-bold mb-1">Чек:</p>
-                    <div className="flex justify-between opacity-70">
-                      <span>ID Чека:</span>
-                      <span className="font-mono text-[10px]">{editingRes.payment.receipt.kassaReceiptId}</span>
-                    </div>
-                  </div>
-                )}
+                {renderAdminReceipt(editingRes.payment.receipt)}
 
                 {/* Refund Info */}
                 {editingRes.payment.refund && (
-                  <div className="border-t border-red-100 mt-2 pt-2 text-red-700">
+                  <div className="border-t border-red-100 mt-2 pt-2 text-red-700 space-y-2">
                     <p className="font-bold mb-1">Возврат:</p>
                     <div className="flex justify-between">
                       <span>Сумма возврата:</span>
@@ -1084,6 +1123,8 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                       <span>Статус возврата:</span>
                       <span className="font-bold">{prettifyEnum(editingRes.payment.refund.status)}</span>
                     </div>
+                    {/* Refund Receipt */}
+                    {renderAdminReceipt(editingRes.payment.refund.receipt)}
                   </div>
                 )}
               </div>

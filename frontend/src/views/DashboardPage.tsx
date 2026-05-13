@@ -222,7 +222,7 @@ export function DashboardPage() {
     <AppShell
       actions={
         <>
-          <span className="hidden rounded-full bg-white/70 px-4 py-2 text-sm font-semibold md:inline-flex">
+          <span className="hidden rounded-full bg-orange-200/40 px-4 py-2 text-sm font-semibold md:inline-flex">
             {user?.fullName}
           </span>
           <Button variant="secondary" onClick={() => logoutMutation.mutate()}>

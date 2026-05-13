@@ -70,6 +70,8 @@ export function prettifyEnum(value: string | null | undefined) {
 
     // Payment Statuses
     succeeded: "Успешно",
+    failed: "Ошибка",
+    waiting_for_capture: "Ожидает подтверждения",
     
     // Menu Categories
     food: "Еда",
