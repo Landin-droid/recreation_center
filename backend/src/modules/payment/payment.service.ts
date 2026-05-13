@@ -159,7 +159,51 @@ class PaymentService {
     }
 
     if (reservation.payment) {
-      throw new AppError("Payment already exists for this reservation", 409);
+      if (reservation.payment.status === "pending") {
+        if (!kassaClient.isReady()) {
+          return {
+            paymentId: reservation.payment.paymentId,
+            confirmationUrl: `${env.PAYMENT_SUCCESS_REDIRECT}?paymentId=${reservation.payment.paymentId}`,
+            paymentDeadline: reservation.paymentDeadline,
+          };
+        }
+
+        if (reservation.payment.kassaPaymentId) {
+          try {
+            const kassaPayment = await kassaClient.getPaymentStatus(
+              reservation.payment.kassaPaymentId,
+            );
+
+            if (
+              kassaPayment.status === "pending" &&
+              kassaPayment.confirmation?.confirmation_url
+            ) {
+              return {
+                paymentId: reservation.payment.paymentId,
+                confirmationUrl: kassaPayment.confirmation.confirmation_url,
+                paymentDeadline: reservation.paymentDeadline,
+              };
+            }
+
+            // Синхронизируем статус, если он изменился
+            await this.applyPaymentStatus(kassaPayment.id, kassaPayment);
+
+            if (kassaPayment.status === "succeeded") {
+              throw new AppError("Бронирование уже оплачено", 400);
+            }
+            if (kassaPayment.status === "canceled") {
+              throw new AppError(
+                "Предыдущий платеж был отменен. Пожалуйста, создайте новое бронирование.",
+                400,
+              );
+            }
+          } catch (error) {
+            if (error instanceof AppError) throw error;
+            console.error("Failed to fetch existing payment status:", error);
+          }
+        }
+      }
+      throw new AppError("Для этого бронирования уже создан платеж", 409);
     }
 
     if (reservation.totalSum.toNumber() <= 0) {

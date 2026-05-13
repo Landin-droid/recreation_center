@@ -519,11 +519,13 @@ export function DashboardPage() {
                             )
                           }
                           disabled={initiatePaymentMutation.isPending}>
-                          Инициировать оплату
+                          {reservation.payment
+                            ? "Продолжить оплату"
+                            : "Инициировать оплату"}
                         </Button>
                       ) : null}
 
-                      {reservation.payment ? (
+                      {reservation.payment && reservation.status === "pending" ? (
                         <Button
                           variant="secondary"
                           onClick={() =>
@@ -532,7 +534,7 @@ export function DashboardPage() {
                             )
                           }
                           disabled={checkPaymentMutation.isPending}>
-                          Проверить платёж
+                          Обновить статус
                         </Button>
                       ) : null}
 

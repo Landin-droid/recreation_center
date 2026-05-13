@@ -536,7 +536,7 @@ export function ProfilePage() {
                               : "Детали"}
                           </Button>
 
-                          {res.status === "pending" && !res.payment && (
+                          {res.status === "pending" && (
                             <Button
                               className="text-xs font-bold py-1.5"
                               onClick={() => {
@@ -544,27 +544,40 @@ export function ProfilePage() {
                                   .initiatePayment(res.reservationId)
                                   .then((data) => {
                                     window.location.href = data.confirmationUrl;
+                                  })
+                                  .catch((err) => {
+                                    setToast({
+                                      message: err.message || "Ошибка при оплате",
+                                      type: "error",
+                                    });
                                   });
                               }}>
-                              Оплатить
+                              {res.payment ? "Продолжить оплату" : "Оплатить"}
                             </Button>
                           )}
 
                           {res.status === "pending" &&
                             res.payment?.status === "pending" && (
                               <Button
+                                variant="secondary"
                                 className="text-xs font-bold py-1.5"
                                 onClick={() => {
                                   dashboardApi
                                     .getPaymentStatus(res.payment!.paymentId)
                                     .then((data) => {
                                       setToast({
-                                        message: `Статус платежа: ${data.status}`,
+                                        message: `Статус платежа: ${translatePaymentStatus(data.status)}`,
                                         type: "info",
                                       });
+                                      // Обновляем список бронирований, чтобы увидеть актуальный статус
+                                      if (user) {
+                                        dashboardApi
+                                          .listReservations(user.userId)
+                                          .then(setReservations);
+                                      }
                                     });
                                 }}>
-                                Проверить платёж
+                                Обновить статус
                               </Button>
                             )}
 

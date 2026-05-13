@@ -33,7 +33,7 @@ export const dashboardApi = {
   },
   cancelReservation(reservationId: number, reason?: string) {
     return unwrap<CancelReservationResult>(
-      http.patch(`/reservations/${reservationId}`, { reason }),
+      http.post(`/reservations/${reservationId}/cancel`, { reason }),
     );
   },
   initiatePayment(reservationId: number) {
