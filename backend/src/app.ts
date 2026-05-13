@@ -23,7 +23,6 @@ app.use(
       
       const allowedOrigins = [
         "https://recreation-center.onrender.com",
-        env.FRONTEND_URL,
         "http://localhost:3000",
         "http://localhost:5173",
       ];
