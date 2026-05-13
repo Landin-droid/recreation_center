@@ -445,6 +445,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             capacity: Number(fd.get("capacity")),
             description: fd.get("description"),
             isActive: fd.get("isActive") === "on",
+            imageUrls: fd.get("imageUrls") ? (fd.get("imageUrls") as string).split(",").map(s => s.trim()).filter(Boolean) : [],
             details
           };
           upsertMutation.mutate(data);
@@ -481,6 +482,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             <Field label="Кол-во столов" name="tablesAmount" type="number" defaultValue={(editingObject?.details as any)?.tablesAmount} />
           )}
 
+          <Field label="URL изображений (через запятую)" name="imageUrls" defaultValue={editingObject?.imageUrls?.join(", ")} />
           <TextArea label="Описание" name="description" defaultValue={editingObject?.description} />
           <Checkbox label="Активен" name="isActive" defaultChecked={editingObject?.isActive ?? true} />
           <Button className="w-full" type="submit" disabled={upsertMutation.isPending}>
@@ -937,7 +939,7 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                       className="text-blue-500"
                       onClick={() => setEditingRes(res)}
                     >
-                      �️
+                      ✏️
                     </Button>
                   </td>
                 </tr>
@@ -995,7 +997,7 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                 </div>
                 <div className="flex justify-between">
                   <span>Метод оплаты:</span>
-                  <span className="font-bold">{editingRes.payment.method || "—"}</span>
+                  <span className="font-bold">{prettifyEnum(editingRes.payment.method)}</span>
                 </div>
                 {editingRes.payment.kassaPaymentId && (
                   <div className="flex justify-between">
@@ -1025,7 +1027,7 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                     </div>
                     <div className="flex justify-between">
                       <span>Статус возврата:</span>
-                      <span className="font-bold">{editingRes.payment.refund.status}</span>
+                      <span className="font-bold">{prettifyEnum(editingRes.payment.refund.status)}</span>
                     </div>
                   </div>
                 )}

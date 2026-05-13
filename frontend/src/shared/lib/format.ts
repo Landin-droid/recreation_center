@@ -82,6 +82,15 @@ export function prettifyEnum(value: string | null | undefined) {
     DESSERT: "Десерты",
     MAIN: "Основное блюдо",
 
+    // Payment Methods
+    bank_card: "Банковская карта",
+    yoo_money: "ЮMoney",
+    sberbank: "Сбербанк",
+    alfa_pay: "Альфа-Пэй",
+    tinkoff_bank: "Т-Банк",
+    sbp: "СБП",
+    cash: "Наличные",
+
     // Rental Categories
     ski: "Лыжи",
     tube: "Тюбинг",
