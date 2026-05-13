@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, type PropsWithChildren } from "react";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { authApi } from "@features/auth/api";
+import axios from "axios";
 import type { User } from "@shared/api/types";
 
 const queryClient = new QueryClient({
@@ -27,27 +28,31 @@ function bootstrapSession() {
 }
 
 export function AppProviders({ children }: PropsWithChildren) {
-  const { setSession, setBootstrapping, clearSession } = useAuthStore();
+  const { setSession, setBootstrapping, clearSession, user: storedUser } = useAuthStore();
 
   useEffect(() => {
     let isMounted = true;
 
     const bootstrap = async () => {
+      // Если у нас уже есть данные пользователя в localStorage, мы можем
+      // пропустить стадию блокирующего лоадера, если хотим. 
+      // Но для надежности оставим проверку.
       setBootstrapping(true);
 
       try {
         const user = await bootstrapSession();
-        // Если запрос прошел, значит у нас есть валидная сессия в куках
-        // Мы можем обновить данные пользователя в сторе
         if (isMounted) {
-          setSession({
-            user,
-          });
+          setSession({ user });
         }
       } catch (error) {
-        if (isMounted) {
+        if (!isMounted) return;
+
+        // Если это ошибка авторизации (401) и refresh не помог, тогда чистим сессию
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
           clearSession();
-        }
+        } 
+        // Если это сетевая ошибка, мы НЕ чистим сессию, чтобы пользователь 
+        // не разлогинился при плохом интернете.
       } finally {
         if (isMounted) {
           setBootstrapping(false);

@@ -4,6 +4,7 @@ import type {
   BookableObject,
   MenuItem,
   RentalItem,
+  RentalPriceRule,
   Reservation,
   User,
 } from "@shared/api/types";
@@ -76,6 +77,20 @@ export const adminApi = {
   },
   deleteRentalItem(id: number) {
     return http.delete(`/rentals/items/${id}`);
+  },
+
+  // Rental Price Rules
+  listPriceRules(rentalItemId?: number) {
+    return unwrap<RentalPriceRule[]>(http.get("/rentals/price-rules", { params: { rentalItemId } }));
+  },
+  createPriceRule(data: any) {
+    return unwrap<RentalPriceRule>(http.post("/rentals/price-rules", data));
+  },
+  updatePriceRule(id: number, data: any) {
+    return unwrap<RentalPriceRule>(http.put(`/rentals/price-rules/${id}`, data));
+  },
+  deletePriceRule(id: number) {
+    return http.delete(`/rentals/price-rules/${id}`);
   },
 
   // Reservations

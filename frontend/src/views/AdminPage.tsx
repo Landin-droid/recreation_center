@@ -395,9 +395,11 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             <div className="flex items-center justify-between border-t pt-4">
               <span className="font-bold text-orange-600">{formatCurrency(obj.basePrice)}</span>
               <div className="flex gap-2">
-                <Button variant="secondary" className="px-3 py-2 text-xs" title="Меню" onClick={() => { setEditingObject(obj); setIsMenuModalOpen(true); }}>
-                  🍽️
-                </Button>
+                {["banquet_hall", "outdoor_venue", "karaoke_bar"].includes(obj.type) && (
+                  <Button variant="secondary" className="px-3 py-2 text-xs" title="Меню" onClick={() => { setEditingObject(obj); setIsMenuModalOpen(true); }}>
+                    🍽️
+                  </Button>
+                )}
                 <Button variant="secondary" className="px-3 py-2 text-xs" onClick={() => { setEditingObject(obj); setSelectedType(obj.type); setIsModalOpen(true); }}>
                   ✏️
                 </Button>
@@ -661,11 +663,19 @@ function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
 function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingRule, setEditingRule] = useState<any>(null);
 
   const { data: rentals, isLoading } = useQuery({
     queryKey: ["admin", "rentals"],
     queryFn: adminApi.listRentalItems,
+  });
+
+  const { data: priceRules } = useQuery({
+    queryKey: ["admin", "price-rules", editingItem?.rentalItemId],
+    queryFn: () => adminApi.listPriceRules(editingItem?.rentalItemId),
+    enabled: !!editingItem && isRulesModalOpen,
   });
 
   const upsertMutation = useMutation({
@@ -678,6 +688,26 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
       setIsModalOpen(false);
       setEditingItem(null);
       setToast({ message: "Предмет сохранен", type: "success" });
+    },
+  });
+
+  const ruleMutation = useMutation({
+    mutationFn: (data: any) => 
+      editingRule 
+        ? adminApi.updatePriceRule(editingRule.ruleId, data)
+        : adminApi.createPriceRule({ ...data, rentalItemId: editingItem.rentalItemId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "price-rules", editingItem?.rentalItemId] });
+      setEditingRule(null);
+      setToast({ message: "Правило сохранено", type: "success" });
+    },
+  });
+
+  const deleteRuleMutation = useMutation({
+    mutationFn: adminApi.deletePriceRule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "price-rules", editingItem?.rentalItemId] });
+      setToast({ message: "Правило удалено", type: "success" });
     },
   });
 
@@ -702,27 +732,39 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {rentals?.map((item) => (
-          <Panel key={item.rentalItemId} className="flex justify-between items-center">
-             <div className="flex items-center gap-4">
-                {item.imageUrl && <img src={item.imageUrl} className="h-10 w-10 rounded object-cover" />}
-                <div>
-                  <p className="font-bold">{item.name}</p>
-                  <p className="text-xs text-[color:var(--ink-soft)]">{prettifyEnum(item.category)}</p>
+          <Panel key={item.rentalItemId} className="flex flex-col gap-4">
+             <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  {item.imageUrl && <img src={item.imageUrl} className="h-10 w-10 rounded object-cover" />}
+                  <div>
+                    <p className="font-bold">{item.name}</p>
+                    <p className="text-xs text-[color:var(--ink-soft)]">{prettifyEnum(item.category)}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
                 <Badge tone={item.isActive ? "success" : "neutral"}>
                   {item.isActive ? "Активен" : "Скрыт"}
                 </Badge>
-                <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>✏️</Button>
-                <Button variant="ghost" className="px-2 py-1 text-xs text-red-500 cursor-pointer" onClick={() => {
-                  if (confirm(`Удалить "${item.name}"?`)) deleteMutation.mutate(item.rentalItemId);
-                }}>🗑️</Button>
+              </div>
+              
+              <div className="flex items-center justify-between border-t pt-4">
+                <span className="text-sm font-bold text-orange-600">
+                  {item.pricePerHour ? `${formatCurrency(item.pricePerHour)}/ч` : "По правилам"}
+                </span>
+                <div className="flex gap-2">
+                  <Button variant="secondary" className="px-3 py-2 text-xs" title="Правила цены" onClick={() => { setEditingItem(item); setIsRulesModalOpen(true); }}>
+                    💰
+                  </Button>
+                  <Button variant="secondary" className="px-3 py-2 text-xs" onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>✏️</Button>
+                  <Button variant="ghost" className="px-3 py-2 text-xs text-red-500 cursor-pointer" onClick={() => {
+                    if (confirm(`Удалить "${item.name}"?`)) deleteMutation.mutate(item.rentalItemId);
+                  }}>🗑️</Button>
+                </div>
               </div>
           </Panel>
         ))}
       </div>
 
+      {/* Item Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -734,7 +776,7 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
           upsertMutation.mutate({
             name: fd.get("name"),
             category: fd.get("category"),
-            pricePerHour: Number(fd.get("pricePerHour")),
+            pricePerHour: fd.get("pricePerHour") ? Number(fd.get("pricePerHour")) : null,
             isActive: fd.get("isActive") === "on",
             description: fd.get("description"),
             imageUrl: fd.get("imageUrl") || null,
@@ -747,15 +789,74 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
             <option value="snowmobile">Снегоходы</option>
             <option value="skates">Коньки</option>
           </Select>
-          <Field label="Цена в час" name="pricePerHour" type="number" defaultValue={editingItem?.pricePerHour} required />
+          <Field label="Цена в час (если фиксированная)" name="pricePerHour" type="number" defaultValue={editingItem?.pricePerHour} />
           <Field label="URL изображения" name="imageUrl" defaultValue={editingItem?.imageUrl} />
           <TextArea label="Описание" name="description" defaultValue={editingItem?.description} />
-          <label className="flex items-center gap-2 text-sm font-bold">
-            <input type="checkbox" name="isActive" defaultChecked={editingItem?.isActive ?? true} />
-            Активен
-          </label>
+          <Checkbox label="Активен" name="isActive" defaultChecked={editingItem?.isActive ?? true} />
           <Button className="w-full" type="submit" disabled={upsertMutation.isPending}>Сохранить</Button>
         </form>
+      </Modal>
+
+      {/* Rules Modal */}
+      <Modal
+        isOpen={isRulesModalOpen}
+        onClose={() => { setIsRulesModalOpen(false); setEditingRule(null); }}
+        title={`Правила цены: ${editingItem?.name}`}
+      >
+        <div className="space-y-6">
+          <form className="bg-orange-50/50 p-4 rounded-2xl space-y-4 border border-orange-100" onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            ruleMutation.mutate({
+              passengerType: fd.get("passengerType"),
+              pricePerKm: Number(fd.get("pricePerKm")),
+              minKm: Number(fd.get("minKm")),
+              maxKm: fd.get("maxKm") ? Number(fd.get("maxKm")) : null,
+            });
+            e.currentTarget.reset();
+          }}>
+            <p className="font-bold text-xs uppercase text-orange-800">{editingRule ? "Редактировать правило" : "Добавить правило"}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Select label="Тип" name="passengerType" defaultValue={editingRule?.passengerType} required>
+                <option value="adult">Взрослый</option>
+                <option value="child">Ребенок</option>
+              </Select>
+              <Field label="Цена за км" name="pricePerKm" type="number" step="0.01" defaultValue={editingRule?.pricePerKm} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Мин. км" name="minKm" type="number" defaultValue={editingRule?.minKm || 1} required />
+              <Field label="Макс. км" name="maxKm" type="number" defaultValue={editingRule?.maxKm} />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1 py-2" disabled={ruleMutation.isPending}>
+                {editingRule ? "Обновить" : "Добавить"}
+              </Button>
+              {editingRule && <Button type="button" variant="secondary" onClick={() => setEditingRule(null)}>Отмена</Button>}
+            </div>
+          </form>
+
+          <div className="space-y-3">
+            {priceRules?.map((rule) => (
+              <div key={rule.ruleId} className="flex items-center justify-between p-3 rounded-xl border border-[color:var(--border)]">
+                <div>
+                  <p className="font-bold text-sm">{rule.passengerType === "adult" ? "👨 Взрослый" : "👶 Ребенок"}</p>
+                  <p className="text-xs text-[color:var(--ink-soft)]">
+                    {formatCurrency(rule.pricePerKm)}/км ({rule.minKm}{rule.maxKm ? ` - ${rule.maxKm}` : "+"} км)
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => setEditingRule(rule)}>✏️</Button>
+                  <Button variant="ghost" className="px-2 py-1 text-xs text-red-500" onClick={() => {
+                    if (confirm("Удалить правило?")) deleteRuleMutation.mutate(rule.ruleId);
+                  }}>🗑️</Button>
+                </div>
+              </div>
+            ))}
+            {priceRules?.length === 0 && <p className="text-center text-xs text-[color:var(--ink-soft)] py-4">Правил пока нет</p>}
+          </div>
+          
+          <Button variant="secondary" className="w-full" onClick={() => setIsRulesModalOpen(false)}>Готово</Button>
+        </div>
       </Modal>
     </div>
   );
@@ -795,7 +896,8 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                 <th className="pb-3 font-bold">ID</th>
                 <th className="pb-3 font-bold">Клиент</th>
                 <th className="pb-3 font-bold">Объект</th>
-                <th className="pb-3 font-bold">Дата</th>
+                <th className="pb-3 font-bold">Дата брони</th>
+                <th className="pb-3 font-bold">Создано</th>
                 <th className="pb-3 font-bold">Статус</th>
                 <th className="pb-3 font-bold">Сумма</th>
                 <th className="pb-3 font-bold text-right">Действия</th>
@@ -811,36 +913,31 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                   </td>
                   <td className="py-3">{res.bookableObject.name}</td>
                   <td className="py-3">{formatDate(res.reservationDate)}</td>
+                  <td className="py-3 text-xs text-[color:var(--ink-soft)]">{formatDateTime(res.creationDate)}</td>
                   <td className="py-3">
-                    {editingRes?.reservationId === res.reservationId ? (
-                      <select
-                        defaultValue={res.status}
-                        onChange={(e) => updateMutation.mutate({ 
-                          id: res.reservationId, 
-                          payload: { status: e.target.value } 
-                        })}
-                        className="rounded border p-1 text-xs"
-                      >
-                        <option value="pending">Ожидает оплаты</option>
-                        <option value="paid">Оплачено</option>
-                        <option value="canceled">Отменено</option>
-                        <option value="refunded">Возврат</option>
-                        <option value="expired">Истекло</option>
-                      </select>
-                    ) : (
-                      <Badge tone={res.status === "paid" ? "success" : res.status === "pending" ? "warning" : "danger"}>
-                        {prettifyEnum(res.status)}
-                      </Badge>
-                    )}
+                    <select
+                      defaultValue={res.status}
+                      onChange={(e) => updateMutation.mutate({ 
+                        id: res.reservationId, 
+                        payload: { status: e.target.value } 
+                      })}
+                      className="rounded border p-1 text-xs"
+                    >
+                      <option value="pending">Ожидает оплаты</option>
+                      <option value="paid">Оплачено</option>
+                      <option value="canceled">Отменено</option>
+                      <option value="refunded">Возврат</option>
+                      <option value="expired">Истекло</option>
+                    </select>
                   </td>
                   <td className="py-3 font-bold">{formatCurrency(res.totalSum)}</td>
                   <td className="py-3 text-right">
                     <Button 
                       variant="ghost" 
                       className="text-blue-500"
-                      onClick={() => setEditingRes(editingRes?.reservationId === res.reservationId ? null : res)}
+                      onClick={() => setEditingRes(res)}
                     >
-                      {editingRes?.reservationId === res.reservationId ? "💾" : "✏️"}
+                      �️
                     </Button>
                   </td>
                 </tr>
@@ -867,6 +964,17 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
               <p className="font-bold">{editingRes?.user.phoneNumber || "—"}</p>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-[color:var(--ink-soft)] uppercase font-bold">Дата создания</p>
+              <p className="font-bold">{editingRes?.creationDate ? formatDateTime(editingRes.creationDate) : "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[color:var(--ink-soft)] uppercase font-bold">Дата бронирования</p>
+              <p className="font-bold">{editingRes?.reservationDate ? formatDate(editingRes.reservationDate) : "—"}</p>
+            </div>
+          </div>
+
           <Field 
             label="Заметки администратора" 
             defaultValue={editingRes?.notes || ""} 
@@ -875,7 +983,59 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
               payload: { notes: e.target.value } 
             })}
           />
-          <div className="space-y-2">
+
+          {/* Payment Info */}
+          <div className="space-y-2 border-t pt-4">
+            <p className="text-xs text-[color:var(--ink-soft)] uppercase font-bold">Информация о платеже</p>
+            {editingRes?.payment ? (
+              <div className="bg-blue-50/50 p-3 rounded-xl text-xs space-y-2">
+                <div className="flex justify-between">
+                  <span>Статус платежа:</span>
+                  <span className="font-bold">{prettifyEnum(editingRes.payment.status)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Метод оплаты:</span>
+                  <span className="font-bold">{editingRes.payment.method || "—"}</span>
+                </div>
+                {editingRes.payment.kassaPaymentId && (
+                  <div className="flex justify-between">
+                    <span>ID ЮKassa:</span>
+                    <span className="font-mono text-[10px]">{editingRes.payment.kassaPaymentId}</span>
+                  </div>
+                )}
+                
+                {/* Receipt Info */}
+                {editingRes.payment.receipt && (
+                  <div className="border-t mt-2 pt-2">
+                    <p className="font-bold mb-1">Чек:</p>
+                    <div className="flex justify-between opacity-70">
+                      <span>ID Чека:</span>
+                      <span className="font-mono text-[10px]">{editingRes.payment.receipt.kassaReceiptId}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Refund Info */}
+                {editingRes.payment.refund && (
+                  <div className="border-t border-red-100 mt-2 pt-2 text-red-700">
+                    <p className="font-bold mb-1">Возврат:</p>
+                    <div className="flex justify-between">
+                      <span>Сумма возврата:</span>
+                      <span className="font-bold">{formatCurrency(editingRes.payment.refund.refundAmount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Статус возврата:</span>
+                      <span className="font-bold">{editingRes.payment.refund.status}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-[color:var(--ink-soft)] italic">Платеж еще не инициирован</p>
+            )}
+          </div>
+
+          <div className="space-y-2 border-t pt-4">
             <p className="text-xs text-[color:var(--ink-soft)] uppercase font-bold">Состав заказа</p>
             <div className="bg-orange-50/50 p-3 rounded-xl text-sm space-y-1">
               <div className="flex justify-between">
