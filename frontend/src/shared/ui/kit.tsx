@@ -323,7 +323,8 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 sm:p-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 sm:p-4"
+    style={{ marginTop: '0px' }}>
       <Panel className="my-auto w-full max-w-md space-y-6 animate-in zoom-in duration-300">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
