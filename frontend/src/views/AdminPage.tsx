@@ -397,11 +397,11 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
         }}>
           <Field label="Название" name="name" defaultValue={editingObject?.name} required />
           <Select label="Тип" name="type" defaultValue={editingObject?.type}>
-            <option value="COTTAGE">Домик</option>
-            <option value="GAZEBO">Беседка</option>
-            <option value="BANQUET_HALL">Банкетный зал</option>
-            <option value="KARAOKE_BAR">Караоке-бар</option>
-            <option value="OUTDOOR_VENUE">Открытая площадка</option>
+            <option value="cottage">Домик</option>
+            <option value="gazebo">Беседка</option>
+            <option value="banquet_hall">Банкетный зал</option>
+            <option value="karaoke_bar">Караоке-бар</option>
+            <option value="outdoor_venue">Открытая площадка</option>
           </Select>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Цена" name="basePrice" type="number" defaultValue={editingObject?.basePrice} required />
@@ -506,15 +506,15 @@ function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
             price: Number(fd.get("price")),
             isAvailable: fd.get("isAvailable") === "on",
             description: fd.get("description"),
-            imageUrl: fd.get("imageUrl"),
+            imageUrl: fd.get("imageUrl") || null,
           });
         }}>
           <Field label="Название" name="name" defaultValue={editingItem?.name} required />
           <Select label="Категория" name="category" defaultValue={editingItem?.category}>
-            <option value="SNACK">Закуски</option>
-            <option value="MAIN">Горячее</option>
-            <option value="DRINK">Напитки</option>
-            <option value="DESSERT">Десерты</option>
+            <option value="snack">Закуски</option>
+            <option value="food">Еда</option>
+            <option value="drink">Напитки</option>
+            <option value="dessert">Десерты</option>
           </Select>
           <Field label="Цена" name="price" type="number" defaultValue={editingItem?.price} required />
           <Field label="URL изображения" name="imageUrl" defaultValue={editingItem?.imageUrl} />
@@ -608,17 +608,20 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
           upsertMutation.mutate({
             name: fd.get("name"),
             category: fd.get("category"),
+            pricePerHour: Number(fd.get("pricePerHour")),
             isActive: fd.get("isActive") === "on",
             description: fd.get("description"),
-            imageUrl: fd.get("imageUrl"),
+            imageUrl: fd.get("imageUrl") || null,
           });
         }}>
           <Field label="Название" name="name" defaultValue={editingItem?.name} required />
           <Select label="Категория" name="category" defaultValue={editingItem?.category}>
-            <option value="WINTER">Зимний</option>
-            <option value="SUMMER">Летний</option>
-            <option value="EQUIPMENT">Снаряжение</option>
+            <option value="ski">Лыжи</option>
+            <option value="tube">Тюбинг</option>
+            <option value="snowmobile">Снегоходы</option>
+            <option value="skates">Коньки</option>
           </Select>
+          <Field label="Цена в час" name="pricePerHour" type="number" defaultValue={editingItem?.pricePerHour} required />
           <Field label="URL изображения" name="imageUrl" defaultValue={editingItem?.imageUrl} />
           <TextArea label="Описание" name="description" defaultValue={editingItem?.description} />
           <label className="flex items-center gap-2 text-sm font-bold">
