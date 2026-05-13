@@ -414,3 +414,20 @@ export function StatCard({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+export function Checkbox({
+  label,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return (
+    <label className={clsx("flex cursor-pointer items-center gap-3 text-sm font-medium text-[#3b2a1d]", className)}>
+      <input
+        type="checkbox"
+        className="h-5 w-5 rounded-lg border-[color:var(--border)] text-[color:var(--accent)] transition focus:ring-4 focus:ring-[rgba(201,111,43,0.12)]"
+        {...props}
+      />
+      <span>{label}</span>
+    </label>
+  );
+}

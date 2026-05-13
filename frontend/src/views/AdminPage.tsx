@@ -13,6 +13,7 @@ import {
   TextArea,
   Modal,
   Toast,
+  Checkbox,
 } from "@shared/ui/kit";
 import { adminApi } from "@features/admin/api";
 import { formatCurrency, formatDate, formatDateTime, prettifyEnum } from "@shared/lib/format";
@@ -304,11 +305,18 @@ function AdminUsers({ setToast }: { setToast: (t: any) => void }) {
 function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [editingObject, setEditingObject] = useState<any>(null);
+  const [selectedType, setSelectedType] = useState<string>("cottage");
 
   const { data: objects, isLoading } = useQuery({
     queryKey: ["admin", "objects"],
     queryFn: adminApi.listObjects,
+  });
+
+  const { data: menuItems } = useQuery({
+    queryKey: ["admin", "menu"],
+    queryFn: adminApi.listMenuItems,
   });
 
   const upsertMutation = useMutation({
@@ -321,6 +329,24 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
       setIsModalOpen(false);
       setEditingObject(null);
       setToast({ message: "Объект сохранен", type: "success" });
+    },
+  });
+
+  const assignmentMutation = useMutation({
+    mutationFn: (data: { bookableObjectId: number; menuItemId: number; isAvailable: boolean }) =>
+      adminApi.upsertMenuAssignment(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "objects"] });
+      setToast({ message: "Меню обновлено", type: "success" });
+    },
+  });
+
+  const removeAssignmentMutation = useMutation({
+    mutationFn: (data: { bookableObjectId: number; menuItemId: number }) =>
+      adminApi.deleteMenuAssignment(data.bookableObjectId, data.menuItemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "objects"] });
+      setToast({ message: "Блюдо удалено из объекта", type: "success" });
     },
   });
 
@@ -338,7 +364,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Title heading="Объекты" description="Управление домиками и площадками" />
-        <Button onClick={() => { setEditingObject(null); setIsModalOpen(true); }}>
+        <Button onClick={() => { setEditingObject(null); setSelectedType("cottage"); setIsModalOpen(true); }}>
           Добавить объект
         </Button>
       </div>
@@ -356,10 +382,23 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
               </Badge>
             </div>
             <p className="text-sm line-clamp-2 text-[color:var(--ink-soft)]">{obj.description}</p>
+            
+            {/* Display details based on type */}
+            <div className="grid grid-cols-2 gap-2 text-xs border-t pt-3">
+              <div className="text-[color:var(--ink-soft)]">Вместимость: <span className="font-bold text-[#24170f]">{obj.capacity}</span></div>
+              {(obj.details as any)?.squareMeters && <div className="text-[color:var(--ink-soft)]">Площадь: <span className="font-bold text-[#24170f]">{(obj.details as any).squareMeters} м²</span></div>}
+              {(obj.details as any)?.amenities && <div className="text-[color:var(--ink-soft)] col-span-2">Удобства: <span className="font-bold text-[#24170f]">{(obj.details as any).amenities}</span></div>}
+              {(obj.details as any)?.maxTables && <div className="text-[color:var(--ink-soft)]">Макс. столов: <span className="font-bold text-[#24170f]">{(obj.details as any).maxTables}</span></div>}
+              {(obj.details as any)?.tablesAmount && <div className="text-[color:var(--ink-soft)]">Кол-во столов: <span className="font-bold text-[#24170f]">{(obj.details as any).tablesAmount}</span></div>}
+            </div>
+
             <div className="flex items-center justify-between border-t pt-4">
               <span className="font-bold text-orange-600">{formatCurrency(obj.basePrice)}</span>
               <div className="flex gap-2">
-                <Button variant="secondary" className="px-3 py-2 text-xs" onClick={() => { setEditingObject(obj); setIsModalOpen(true); }}>
+                <Button variant="secondary" className="px-3 py-2 text-xs" title="Меню" onClick={() => { setEditingObject(obj); setIsMenuModalOpen(true); }}>
+                  🍽️
+                </Button>
+                <Button variant="secondary" className="px-3 py-2 text-xs" onClick={() => { setEditingObject(obj); setSelectedType(obj.type); setIsModalOpen(true); }}>
                   ✏️
                 </Button>
                 <Button
@@ -377,6 +416,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
         ))}
       </div>
 
+      {/* Main Object Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -385,6 +425,17 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
         <form className="space-y-4" onSubmit={(e) => {
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
+          
+          const details: any = {};
+          if (selectedType === "cottage" || selectedType === "gazebo") {
+            details.amenities = fd.get("amenities");
+            if (selectedType === "cottage") details.squareMeters = Number(fd.get("squareMeters"));
+          } else if (selectedType === "banquet_hall") {
+            details.maxTables = Number(fd.get("maxTables"));
+          } else if (selectedType === "karaoke_bar") {
+            details.tablesAmount = Number(fd.get("tablesAmount"));
+          }
+
           const data = {
             name: fd.get("name"),
             type: fd.get("type"),
@@ -392,11 +443,17 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             capacity: Number(fd.get("capacity")),
             description: fd.get("description"),
             isActive: fd.get("isActive") === "on",
+            details
           };
           upsertMutation.mutate(data);
         }}>
           <Field label="Название" name="name" defaultValue={editingObject?.name} required />
-          <Select label="Тип" name="type" defaultValue={editingObject?.type}>
+          <Select 
+            label="Тип" 
+            name="type" 
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+          >
             <option value="cottage">Домик</option>
             <option value="gazebo">Беседка</option>
             <option value="banquet_hall">Банкетный зал</option>
@@ -407,15 +464,84 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             <Field label="Цена" name="basePrice" type="number" defaultValue={editingObject?.basePrice} required />
             <Field label="Вместимость" name="capacity" type="number" defaultValue={editingObject?.capacity} required />
           </div>
+
+          {/* Type-specific fields */}
+          {(selectedType === "cottage" || selectedType === "gazebo") && (
+            <Field label="Удобства" name="amenities" defaultValue={(editingObject?.details as any)?.amenities} />
+          )}
+          {selectedType === "cottage" && (
+            <Field label="Площадь (м²)" name="squareMeters" type="number" defaultValue={(editingObject?.details as any)?.squareMeters} />
+          )}
+          {selectedType === "banquet_hall" && (
+            <Field label="Макс. столов" name="maxTables" type="number" defaultValue={(editingObject?.details as any)?.maxTables} />
+          )}
+          {selectedType === "karaoke_bar" && (
+            <Field label="Кол-во столов" name="tablesAmount" type="number" defaultValue={(editingObject?.details as any)?.tablesAmount} />
+          )}
+
           <TextArea label="Описание" name="description" defaultValue={editingObject?.description} />
-          <label className="flex items-center gap-2 text-sm font-bold">
-            <input type="checkbox" name="isActive" defaultChecked={editingObject?.isActive ?? true} />
-            Активен
-          </label>
+          <Checkbox label="Активен" name="isActive" defaultChecked={editingObject?.isActive ?? true} />
           <Button className="w-full" type="submit" disabled={upsertMutation.isPending}>
             Сохранить
           </Button>
         </form>
+      </Modal>
+
+      {/* Menu Assignment Modal */}
+      <Modal
+        isOpen={isMenuModalOpen}
+        onClose={() => setIsMenuModalOpen(false)}
+        title={`Меню для: ${editingObject?.name}`}
+      >
+        <div className="space-y-6">
+          <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+            {menuItems?.map((item) => {
+              const isAssigned = editingObject?.menuItems?.find((mi: any) => mi.menuItemId === item.menuItemId);
+              return (
+                <div key={item.menuItemId} className="flex items-center justify-between gap-4 p-3 rounded-xl border border-[color:var(--border)] bg-white/50">
+                  <div className="flex-1">
+                    <p className="font-bold text-sm">{item.name}</p>
+                    <p className="text-xs text-[color:var(--ink-soft)]">{formatCurrency(item.price)}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {isAssigned && (
+                      <Checkbox 
+                        label="Доступно" 
+                        checked={isAssigned.isAvailable}
+                        onChange={(e) => assignmentMutation.mutate({
+                          bookableObjectId: editingObject.bookableObjectId,
+                          menuItemId: item.menuItemId,
+                          isAvailable: e.target.checked
+                        })}
+                      />
+                    )}
+                    <Button 
+                      variant={isAssigned ? "danger" : "secondary"}
+                      className="px-3 py-1.5 text-xs"
+                      onClick={() => {
+                        if (isAssigned) {
+                          removeAssignmentMutation.mutate({
+                            bookableObjectId: editingObject.bookableObjectId,
+                            menuItemId: item.menuItemId
+                          });
+                        } else {
+                          assignmentMutation.mutate({
+                            bookableObjectId: editingObject.bookableObjectId,
+                            menuItemId: item.menuItemId,
+                            isAvailable: true
+                          });
+                        }
+                      }}
+                    >
+                      {isAssigned ? "Убрать" : "Добавить"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <Button variant="secondary" className="w-full" onClick={() => setIsMenuModalOpen(false)}>Готово</Button>
+        </div>
       </Modal>
     </div>
   );
@@ -638,9 +764,22 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
 // --- Reservations ---
 
 function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
+  const queryClient = useQueryClient();
+  const [editingRes, setEditingRes] = useState<any>(null);
+
   const { data: reservations, isLoading } = useQuery({
     queryKey: ["admin", "reservations"],
     queryFn: adminApi.listReservations,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: number; payload: any }) => 
+      adminApi.updateReservation(data.id, data.payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "reservations"] });
+      setEditingRes(null);
+      setToast({ message: "Бронирование обновлено", type: "success" });
+    },
   });
 
   if (isLoading) return <Loader label="Загрузка бронирований..." />;
@@ -659,6 +798,7 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                 <th className="pb-3 font-bold">Дата</th>
                 <th className="pb-3 font-bold">Статус</th>
                 <th className="pb-3 font-bold">Сумма</th>
+                <th className="pb-3 font-bold text-right">Действия</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -672,17 +812,91 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
                   <td className="py-3">{res.bookableObject.name}</td>
                   <td className="py-3">{formatDate(res.reservationDate)}</td>
                   <td className="py-3">
-                    <Badge tone={res.status === "paid" ? "success" : res.status === "pending" ? "warning" : "danger"}>
-                      {prettifyEnum(res.status)}
-                    </Badge>
+                    {editingRes?.reservationId === res.reservationId ? (
+                      <select
+                        defaultValue={res.status}
+                        onChange={(e) => updateMutation.mutate({ 
+                          id: res.reservationId, 
+                          payload: { status: e.target.value } 
+                        })}
+                        className="rounded border p-1 text-xs"
+                      >
+                        <option value="pending">Ожидает оплаты</option>
+                        <option value="paid">Оплачено</option>
+                        <option value="canceled">Отменено</option>
+                        <option value="refunded">Возврат</option>
+                        <option value="expired">Истекло</option>
+                      </select>
+                    ) : (
+                      <Badge tone={res.status === "paid" ? "success" : res.status === "pending" ? "warning" : "danger"}>
+                        {prettifyEnum(res.status)}
+                      </Badge>
+                    )}
                   </td>
                   <td className="py-3 font-bold">{formatCurrency(res.totalSum)}</td>
+                  <td className="py-3 text-right">
+                    <Button 
+                      variant="ghost" 
+                      className="text-blue-500"
+                      onClick={() => setEditingRes(editingRes?.reservationId === res.reservationId ? null : res)}
+                    >
+                      {editingRes?.reservationId === res.reservationId ? "💾" : "✏️"}
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Panel>
+
+      {/* Reservation Edit Modal for more details */}
+      <Modal
+        isOpen={!!editingRes}
+        onClose={() => setEditingRes(null)}
+        title={`Бронирование #${editingRes?.reservationId}`}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-[color:var(--ink-soft)] uppercase font-bold">Клиент</p>
+              <p className="font-bold">{editingRes?.user.fullName}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[color:var(--ink-soft)] uppercase font-bold">Телефон</p>
+              <p className="font-bold">{editingRes?.user.phoneNumber || "—"}</p>
+            </div>
+          </div>
+          <Field 
+            label="Заметки администратора" 
+            defaultValue={editingRes?.notes || ""} 
+            onBlur={(e) => updateMutation.mutate({ 
+              id: editingRes.reservationId, 
+              payload: { notes: e.target.value } 
+            })}
+          />
+          <div className="space-y-2">
+            <p className="text-xs text-[color:var(--ink-soft)] uppercase font-bold">Состав заказа</p>
+            <div className="bg-orange-50/50 p-3 rounded-xl text-sm space-y-1">
+              <div className="flex justify-between">
+                <span>{editingRes?.bookableObject.name}</span>
+                <span className="font-bold">{formatCurrency(editingRes?.bookableObject.basePrice)}</span>
+              </div>
+              {editingRes?.menuItems?.map((mi: any, idx: number) => (
+                <div key={idx} className="flex justify-between text-[color:var(--ink-soft)]">
+                  <span>{mi.menuItem.name} x {mi.quantity}</span>
+                  <span>{formatCurrency(mi.itemCost)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between border-t mt-2 pt-2 font-black text-orange-600">
+                <span>Итого</span>
+                <span>{formatCurrency(editingRes?.totalSum)}</span>
+              </div>
+            </div>
+          </div>
+          <Button variant="secondary" className="w-full" onClick={() => setEditingRes(null)}>Закрыть</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

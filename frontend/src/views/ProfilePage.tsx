@@ -362,7 +362,7 @@ export function ProfilePage() {
 
         <div className="grid gap-8 lg:grid-cols-3">
           {/* User Info */}
-          <Panel className="lg:col-span-1 lg:sticky top-24 h-fit space-y-6">
+          <Panel className="lg:col-span-1 xl:sticky top-24 h-fit space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-[#24170f]">Ваши данные</h3>
               <Button

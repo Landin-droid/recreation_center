@@ -53,6 +53,17 @@ export const adminApi = {
     return http.delete(`/menu/items/${id}`);
   },
 
+  // Menu Assignments
+  listMenuAssignments(bookableObjectId?: number) {
+    return unwrap<any[]>(http.get("/menu/assignments", { params: { bookableObjectId } }));
+  },
+  upsertMenuAssignment(data: { bookableObjectId: number; menuItemId: number; isAvailable?: boolean }) {
+    return unwrap<any>(http.post("/menu/assignments", data));
+  },
+  deleteMenuAssignment(bookableObjectId: number, menuItemId: number) {
+    return http.delete(`/menu/assignments/${bookableObjectId}/${menuItemId}`);
+  },
+
   // Rental Items
   listRentalItems() {
     return unwrap<RentalItem[]>(http.get("/rentals/items"));
