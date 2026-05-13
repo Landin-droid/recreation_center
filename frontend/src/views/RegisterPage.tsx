@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { useMutation } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { authApi } from "@features/auth/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { extractErrorMessage } from "@shared/api/http";
 import { AppShell, Button, Field, Panel, Title } from "@shared/ui/kit";
+import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -20,7 +22,7 @@ export function RegisterPage() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    
+
     // ФИО validation
     if (!formState.fullName.trim()) {
       newErrors.fullName = "ФИО обязательно";
@@ -49,7 +51,8 @@ export function RegisterPage() {
     if (!formState.password) {
       newErrors.password = "Пароль обязателен";
     } else if (!passwordRegex.test(formState.password)) {
-      newErrors.password = "Минимум 8 символов, одна заглавная, одна строчная и одна цифра";
+      newErrors.password =
+        "Минимум 8 символов, одна заглавная, одна строчная и одна цифра";
     }
 
     setErrors(newErrors);
@@ -77,6 +80,10 @@ export function RegisterPage() {
 
   return (
     <AppShell>
+      <Helmet>
+        <title>Регистрация - База отдыха "Победа"</title>
+        <meta name="description" content={SEO_DESCRIPTIONS.register} />
+      </Helmet>
       <div className="mx-auto max-w-2xl">
         <Panel className="space-y-6">
           <Title
@@ -92,8 +99,7 @@ export function RegisterPage() {
               if (validate()) {
                 registerMutation.mutate(formState);
               }
-            }}
-          >
+            }}>
             <div className="space-y-1">
               <Field
                 label="ФИО"
@@ -107,9 +113,13 @@ export function RegisterPage() {
                 }
                 required
               />
-              {errors.fullName && <p className="text-xs text-[color:var(--danger)]">{errors.fullName}</p>}
+              {errors.fullName && (
+                <p className="text-xs text-[color:var(--danger)]">
+                  {errors.fullName}
+                </p>
+              )}
             </div>
-            
+
             <div className="space-y-1">
               <Field
                 label="Телефон"
@@ -117,7 +127,8 @@ export function RegisterPage() {
                 value={formState.phoneNumber}
                 onChange={(event) => {
                   let value = event.target.value;
-                  if (!value.startsWith("+7")) value = "+7" + value.replace(/\D/g, "");
+                  if (!value.startsWith("+7"))
+                    value = "+7" + value.replace(/\D/g, "");
                   setFormState((current) => ({
                     ...current,
                     phoneNumber: value,
@@ -125,7 +136,11 @@ export function RegisterPage() {
                 }}
                 required
               />
-              {errors.phoneNumber && <p className="text-xs text-[color:var(--danger)]">{errors.phoneNumber}</p>}
+              {errors.phoneNumber && (
+                <p className="text-xs text-[color:var(--danger)]">
+                  {errors.phoneNumber}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -142,7 +157,11 @@ export function RegisterPage() {
                 }
                 required
               />
-              {errors.email && <p className="text-xs text-[color:var(--danger)]">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-xs text-[color:var(--danger)]">
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -159,7 +178,11 @@ export function RegisterPage() {
                 }
                 required
               />
-              {errors.password && <p className="text-xs text-[color:var(--danger)]">{errors.password}</p>}
+              {errors.password && (
+                <p className="text-xs text-[color:var(--danger)]">
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             {errorMessage ? (
@@ -169,9 +192,13 @@ export function RegisterPage() {
             ) : null}
             <div className="md:col-span-2 flex flex-wrap items-center gap-3">
               <Button disabled={registerMutation.isPending}>
-                {registerMutation.isPending ? "Создаём аккаунт..." : "Зарегистрироваться"}
+                {registerMutation.isPending
+                  ? "Создаём аккаунт..."
+                  : "Зарегистрироваться"}
               </Button>
-              <Link className="text-sm font-semibold text-[color:var(--accent)]" to="/login">
+              <Link
+                className="text-sm font-semibold text-[color:var(--accent)]"
+                to="/login">
                 Уже есть аккаунт
               </Link>
             </div>

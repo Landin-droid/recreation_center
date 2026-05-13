@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Navigate } from "react-router-dom";
+import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 import {
   AppShell,
   Title,
@@ -296,9 +298,7 @@ export function ProfilePage() {
             <p className="text-xs font-black uppercase text-[#72543d]">
               {receipt.typeLabel}
             </p>
-            <p className="font-bold text-[#24170f]">
-              {receipt.statusLabel}
-            </p>
+            <p className="font-bold text-[#24170f]">{receipt.statusLabel}</p>
             <p className="text-[color:var(--ink-soft)]">
               Сумма: {formatReceiptAmount(receipt)}
             </p>
@@ -353,6 +353,10 @@ export function ProfilePage() {
 
   return (
     <AppShell>
+      <Helmet>
+        <title>Профиль - База отдыха "Победа"</title>
+        <meta name="description" content={SEO_DESCRIPTIONS.profile} />
+      </Helmet>
       <div className="space-y-12">
         <Title
           eyebrow="Личный кабинет"
@@ -547,7 +551,8 @@ export function ProfilePage() {
                                   })
                                   .catch((err) => {
                                     setToast({
-                                      message: err.message || "Ошибка при оплате",
+                                      message:
+                                        err.message || "Ошибка при оплате",
                                       type: "error",
                                     });
                                   });
@@ -706,7 +711,9 @@ export function ProfilePage() {
                             </p>
                             <div className="space-y-3">
                               {renderReceipt(res.payment?.receipt ?? null)}
-                              {renderReceipt(res.payment?.refund?.receipt ?? null)}
+                              {renderReceipt(
+                                res.payment?.refund?.receipt ?? null,
+                              )}
                             </div>
                           </div>
                         )}

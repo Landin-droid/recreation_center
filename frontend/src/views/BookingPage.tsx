@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
 import {
   AppShell,
@@ -13,6 +14,7 @@ import {
 } from "@shared/ui/kit";
 import { ImageCarousel } from "@shared/ui/ImageCarousel";
 import { dashboardApi } from "@features/dashboard/api";
+import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 import type { BookableObject, Reservation } from "@shared/api/types";
 import { formatCurrency } from "@shared/lib/format";
 import { useLockBodyScroll } from "@shared/lib/useLockBodyScroll";
@@ -24,7 +26,11 @@ import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 
 export function BookingPage() {
-  const { data: objects = [], isLoading, error } = useQuery({
+  const {
+    data: objects = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["bookable-objects"],
     queryFn: () => dashboardApi.listObjects(),
   });
@@ -245,6 +251,10 @@ export function BookingPage() {
 
   return (
     <AppShell>
+      <Helmet>
+        <title>Бронирование - База отдыха "Победа"</title>
+        <meta name="description" content={SEO_DESCRIPTIONS.booking} />
+      </Helmet>
       <div className="space-y-6 sm:space-y-10">
         <Title
           eyebrow="Бронирование"

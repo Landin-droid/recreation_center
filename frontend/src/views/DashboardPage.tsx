@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { authApi } from "@features/auth/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { dashboardApi } from "@features/dashboard/api";
 import { extractErrorMessage } from "@shared/api/http";
+import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 import {
   formatCurrency,
   formatDate,
@@ -230,6 +232,10 @@ export function DashboardPage() {
           </Button>
         </>
       }>
+      <Helmet>
+        <title>Личный кабинет - База отдыха "Победа"</title>
+        <meta name="description" content={SEO_DESCRIPTIONS.dashboard} />
+      </Helmet>
       <div className="space-y-8">
         <Panel>
           <div className="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
@@ -525,7 +531,8 @@ export function DashboardPage() {
                         </Button>
                       ) : null}
 
-                      {reservation.payment && reservation.status === "pending" ? (
+                      {reservation.payment &&
+                      reservation.status === "pending" ? (
                         <Button
                           variant="secondary"
                           onClick={() =>
