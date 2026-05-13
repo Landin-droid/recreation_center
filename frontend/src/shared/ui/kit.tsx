@@ -124,7 +124,7 @@ function NavItem({
           "rounded-full px-3 py-2 transition sm:px-4",
           isActive
             ? "bg-[color:var(--accent)] text-white"
-            : "hover:bg-white/70",
+            : "hover:bg-orange-200/50",
         )
       }>
       {children}
