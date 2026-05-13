@@ -452,7 +452,19 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             capacity: Number(fd.get("capacity")),
             description: fd.get("description")?.toString().trim() || null,
             isActive: fd.get("isActive") === "on",
-            imageUrls: fd.get("imageUrls") ? (fd.get("imageUrls") as string).split(",").map(s => s.trim()).filter(Boolean) : [],
+            imageUrls: fd.get("imageUrls") 
+              ? (fd.get("imageUrls") as string)
+                  .split(",")
+                  .map(s => s.trim())
+                  .filter(Boolean)
+                  .map(s => {
+                    if (s.startsWith("images/") || s.startsWith("public/images/")) {
+                      const path = s.startsWith("public/") ? s.slice(7) : s;
+                      return path.startsWith("/") ? path : `/${path}`;
+                    }
+                    return s;
+                  }) 
+              : [],
             details
           };
           upsertMutation.mutate(data);
@@ -643,7 +655,16 @@ function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
             price: Number(fd.get("price")),
             isAvailable: fd.get("isAvailable") === "on",
             description: fd.get("description")?.toString().trim() || null,
-            imageUrl: fd.get("imageUrl")?.toString().trim() || null,
+            imageUrl: fd.get("imageUrl")?.toString().trim() 
+              ? (() => {
+                  const s = fd.get("imageUrl")!.toString().trim();
+                  if (s.startsWith("images/") || s.startsWith("public/images/")) {
+                    const path = s.startsWith("public/") ? s.slice(7) : s;
+                    return path.startsWith("/") ? path : `/${path}`;
+                  }
+                  return s;
+                })()
+              : null,
           });
         }}>
           <Field label="Название" name="name" defaultValue={editingItem?.name} required />
@@ -783,22 +804,52 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
             name: fd.get("name"),
             category: fd.get("category"),
             pricePerHour: fd.get("pricePerHour") ? Number(fd.get("pricePerHour")) : null,
+            maxCapacity: fd.get("maxCapacity") ? Number(fd.get("maxCapacity")) : null,
+            isSeasonal: fd.get("isSeasonal") === "on",
+            seasonType: fd.get("seasonType") || null,
             isActive: fd.get("isActive") === "on",
             description: fd.get("description")?.toString().trim() || null,
-            imageUrl: fd.get("imageUrl")?.toString().trim() || null,
+            imageUrl: fd.get("imageUrl")?.toString().trim() 
+              ? (() => {
+                  const s = fd.get("imageUrl")!.toString().trim();
+                  if (s.startsWith("images/") || s.startsWith("public/images/")) {
+                    const path = s.startsWith("public/") ? s.slice(7) : s;
+                    return path.startsWith("/") ? path : `/${path}`;
+                  }
+                  return s;
+                })()
+              : null,
           });
         }}>
           <Field label="Название" name="name" defaultValue={editingItem?.name} required />
-          <Select label="Категория" name="category" defaultValue={editingItem?.category}>
-            <option value="ski">Лыжи</option>
-            <option value="tube">Тюбинг</option>
-            <option value="snowmobile">Снегоходы</option>
-            <option value="skates">Коньки</option>
-          </Select>
-          <Field label="Цена в час (если фиксированная)" name="pricePerHour" type="number" defaultValue={editingItem?.pricePerHour} />
+          <div className="grid grid-cols-2 gap-4">
+            <Select label="Категория" name="category" defaultValue={editingItem?.category}>
+              <option value="ski">Лыжи</option>
+              <option value="tube">Тюбинг</option>
+              <option value="snowmobile">Снегоходы</option>
+              <option value="skates">Коньки</option>
+            </Select>
+            <Field label="Макс. вместимость" name="maxCapacity" type="number" defaultValue={editingItem?.maxCapacity} />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Цена в час (если фиксированная)" name="pricePerHour" type="number" defaultValue={editingItem?.pricePerHour} />
+            <Select label="Тип сезона" name="seasonType" defaultValue={editingItem?.seasonType || ""}>
+              <option value="">Не указано</option>
+              <option value="winter">Зимний</option>
+              <option value="summer">Летний</option>
+              <option value="year">Круглый год</option>
+            </Select>
+          </div>
+
           <Field label="URL изображения" name="imageUrl" defaultValue={editingItem?.imageUrl} />
           <TextArea label="Описание" name="description" defaultValue={editingItem?.description} />
-          <Checkbox label="Активен" name="isActive" defaultChecked={editingItem?.isActive ?? true} />
+          
+          <div className="flex gap-6">
+            <Checkbox label="Сезонный" name="isSeasonal" defaultChecked={editingItem?.isSeasonal ?? false} />
+            <Checkbox label="Активен" name="isActive" defaultChecked={editingItem?.isActive ?? true} />
+          </div>
+          
           <Button className="w-full" type="submit" disabled={upsertMutation.isPending}>Сохранить</Button>
         </form>
       </Modal>
