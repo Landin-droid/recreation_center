@@ -276,14 +276,14 @@ function AdminUsers({ setToast }: { setToast: (t: any) => void }) {
                   <td className="py-3 text-right space-x-2">
                     <Button
                       variant="ghost"
-                      className="text-blue-500 hover:bg-blue-50"
+                      className="text-blue-500 hover:bg-orange-200/50"
                       onClick={() => setEditingUser(editingUser?.userId === u.userId ? null : u)}
                     >
                       {editingUser?.userId === u.userId ? "💾" : "✏️"}
                     </Button>
                     <Button
                       variant="ghost"
-                      className="text-red-500 hover:bg-red-50"
+                      className="text-red-500 hover:bg-orange-200/50"
                       onClick={() => {
                         if (confirm("Удалить пользователя?")) deleteMutation.mutate(u.userId);
                       }}
@@ -406,7 +406,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
                 </Button>
                 <Button
                   variant="ghost"
-                  className="px-3 py-2 text-xs text-red-500 hover:bg-red-50"
+                  className="px-3 py-2 text-xs text-red-500 hover:bg-orange-200/50"
                   onClick={() => {
                     if (confirm(`Удалить объект "${obj.name}"?`)) deleteMutation.mutate(obj.bookableObjectId);
                   }}

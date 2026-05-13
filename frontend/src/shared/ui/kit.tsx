@@ -124,7 +124,7 @@ function NavItem({
           "rounded-full px-3 py-2 transition sm:px-4",
           isActive
             ? "bg-[color:var(--accent)] text-white"
-            : "hover:bg-orange-200/50",
+            : "hover:bg-orange-200",
         )
       }>
       {children}
@@ -192,8 +192,8 @@ export function Button({
         variant === "primary" &&
           "bg-[color:var(--accent)] text-white hover:bg-[color:var(--accent-dark)]",
         variant === "secondary" &&
-          "border border-[color:var(--border)] bg-orange-200 text-[#2b1d13] hover:bg-orange-200/40",
-        variant === "ghost" && "text-[color:var(--ink-soft)] hover:bg-orange-200/30",
+          "border border-[color:var(--border)] bg-orange-200/50 text-[#2b1d13] hover:bg-orange-200",
+        variant === "ghost" && "text-[color:var(--ink-soft)] hover:bg-orange-200",
         variant === "danger" &&
           "bg-[color:var(--danger)] text-white hover:opacity-90",
         className,

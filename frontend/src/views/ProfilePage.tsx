@@ -493,7 +493,7 @@ export function ProfilePage() {
                 {reservations.map((res) => (
                   <Panel
                     key={res.reservationId}
-                    className="flex flex-col gap-4 overflow-hidden border-2 border-transparent hover:border-[#efe4d6] transition-colors">
+                    className="flex flex-col gap-4 overflow-hidden border-2 border-[#efe4d6] hover:border-[color:var(--accent)] transition-colors">
                     <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-3">
