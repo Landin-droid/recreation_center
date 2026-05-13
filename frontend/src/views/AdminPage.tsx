@@ -430,12 +430,19 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
           
           const details: any = {};
           if (selectedType === "cottage" || selectedType === "gazebo") {
-            details.amenities = fd.get("amenities");
-            if (selectedType === "cottage") details.squareMeters = Number(fd.get("squareMeters"));
+            const amenities = fd.get("amenities")?.toString().trim();
+            if (amenities) details.amenities = amenities;
+            
+            if (selectedType === "cottage") {
+              const sq = fd.get("squareMeters");
+              if (sq && Number(sq) > 0) details.squareMeters = Number(sq);
+            }
           } else if (selectedType === "banquet_hall") {
-            details.maxTables = Number(fd.get("maxTables"));
+            const mt = fd.get("maxTables");
+            if (mt && Number(mt) > 0) details.maxTables = Number(mt);
           } else if (selectedType === "karaoke_bar") {
-            details.tablesAmount = Number(fd.get("tablesAmount"));
+            const ta = fd.get("tablesAmount");
+            if (ta && Number(ta) > 0) details.tablesAmount = Number(ta);
           }
 
           const data = {
@@ -443,7 +450,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             type: fd.get("type"),
             basePrice: Number(fd.get("basePrice")),
             capacity: Number(fd.get("capacity")),
-            description: fd.get("description"),
+            description: fd.get("description")?.toString().trim() || null,
             isActive: fd.get("isActive") === "on",
             imageUrls: fd.get("imageUrls") ? (fd.get("imageUrls") as string).split(",").map(s => s.trim()).filter(Boolean) : [],
             details
@@ -635,8 +642,8 @@ function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
             category: fd.get("category"),
             price: Number(fd.get("price")),
             isAvailable: fd.get("isAvailable") === "on",
-            description: fd.get("description"),
-            imageUrl: fd.get("imageUrl") || null,
+            description: fd.get("description")?.toString().trim() || null,
+            imageUrl: fd.get("imageUrl")?.toString().trim() || null,
           });
         }}>
           <Field label="Название" name="name" defaultValue={editingItem?.name} required />
@@ -649,10 +656,7 @@ function AdminMenu({ setToast }: { setToast: (t: any) => void }) {
           <Field label="Цена" name="price" type="number" defaultValue={editingItem?.price} required />
           <Field label="URL изображения" name="imageUrl" defaultValue={editingItem?.imageUrl} />
           <TextArea label="Описание" name="description" defaultValue={editingItem?.description} />
-          <label className="flex items-center gap-2 text-sm font-bold">
-            <input type="checkbox" name="isAvailable" defaultChecked={editingItem?.isAvailable ?? true} />
-            В наличии
-          </label>
+          <Checkbox label="В наличии" name="isAvailable" defaultChecked={editingItem?.isAvailable ?? true} />
           <Button className="w-full" type="submit" disabled={upsertMutation.isPending}>Сохранить</Button>
         </form>
       </Modal>
@@ -780,8 +784,8 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
             category: fd.get("category"),
             pricePerHour: fd.get("pricePerHour") ? Number(fd.get("pricePerHour")) : null,
             isActive: fd.get("isActive") === "on",
-            description: fd.get("description"),
-            imageUrl: fd.get("imageUrl") || null,
+            description: fd.get("description")?.toString().trim() || null,
+            imageUrl: fd.get("imageUrl")?.toString().trim() || null,
           });
         }}>
           <Field label="Название" name="name" defaultValue={editingItem?.name} required />
