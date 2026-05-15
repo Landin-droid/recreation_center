@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
@@ -1342,11 +1342,47 @@ function AdminRentals({ setToast }: { setToast: (t: any) => void }) {
 function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
   const queryClient = useQueryClient();
   const [editingRes, setEditingRes] = useState<any>(null);
+  const [reservationTypeFilter, setReservationTypeFilter] =
+    useState<string>("ALL");
+  const [reservationStatusFilter, setReservationStatusFilter] =
+    useState<string>("ALL");
+  const [reservationSortOrder, setReservationSortOrder] = useState<
+    "asc" | "desc"
+  >("asc");
 
   const { data: reservations, isLoading } = useQuery({
     queryKey: ["admin", "reservations"],
     queryFn: adminApi.listReservations,
   });
+
+  const filteredReservations = useMemo(() => {
+    if (!reservations) return [];
+
+    return [...reservations]
+      .filter((res) =>
+        reservationTypeFilter === "ALL"
+          ? true
+          : res.bookableObject.type.toLowerCase() ===
+            reservationTypeFilter.toLowerCase(),
+      )
+      .filter((res) =>
+        reservationStatusFilter === "ALL"
+          ? true
+          : res.status === reservationStatusFilter,
+      )
+      .sort((a, b) => {
+        const priceA = Number(a.bookableObject.basePrice);
+        const priceB = Number(b.bookableObject.basePrice);
+        return reservationSortOrder === "asc"
+          ? priceA - priceB
+          : priceB - priceA;
+      });
+  }, [
+    reservations,
+    reservationTypeFilter,
+    reservationStatusFilter,
+    reservationSortOrder,
+  ]);
 
   const updateMutation = useMutation({
     mutationFn: (data: { id: number; payload: any }) =>
@@ -1418,6 +1454,42 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
         description="Список всех заказов в системе"
       />
       <Panel>
+        <div className="grid gap-4 sm:grid-cols-3 mb-5">
+          <Select
+            label="Тип объекта"
+            value={reservationTypeFilter}
+            onChange={(e) => setReservationTypeFilter(e.target.value)}>
+            <option value="ALL">Все типы</option>
+            <option value="COTTAGE">Домики</option>
+            <option value="BANQUET_HALL">Банкетные залы</option>
+            <option value="GAZEBO">Беседки</option>
+            <option value="KARAOKE_BAR">Караоке-бар</option>
+            <option value="OUTDOOR_VENUE">Открытые площадки</option>
+          </Select>
+
+          <Select
+            label="Статус"
+            value={reservationStatusFilter}
+            onChange={(e) => setReservationStatusFilter(e.target.value)}>
+            <option value="ALL">Все статусы</option>
+            <option value="pending">Ожидает оплаты</option>
+            <option value="paid">Оплачено</option>
+            <option value="canceled">Отменено</option>
+            <option value="refunded">Возврат</option>
+            <option value="expired">Истекло</option>
+          </Select>
+
+          <Select
+            label="Сортировка по цене"
+            value={reservationSortOrder}
+            onChange={(e) =>
+              setReservationSortOrder(e.target.value as "asc" | "desc")
+            }>
+            <option value="asc">Сначала дешевле</option>
+            <option value="desc">Сначала дороже</option>
+          </Select>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -1433,7 +1505,7 @@ function AdminReservations({ setToast }: { setToast: (t: any) => void }) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {reservations?.map((res) => (
+              {filteredReservations?.map((res) => (
                 <tr key={res.reservationId}>
                   <td className="py-3">#{res.reservationId}</td>
                   <td className="py-3">
