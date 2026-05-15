@@ -112,6 +112,14 @@ export const reservationRepository = {
       where,
     }),
 
+  aggregateReservations: (where: Prisma.ReservationWhereInput) =>
+    prisma.reservation.aggregate({
+      _sum: {
+        totalSum: true,
+      },
+      where,
+    }),
+
   findRecent: (take: number) =>
     prisma.reservation.findMany({
       take,

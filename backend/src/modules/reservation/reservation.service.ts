@@ -376,19 +376,19 @@ export const reservationService = {
   },
 
   async getStats() {
-    const [totalReservations, totalUsers, totalPayments, recentReservations] =
+    const [totalReservations, totalUsers, totalRevenue, recentReservations] =
       await Promise.all([
         reservationRepository.count(),
         reservationRepository.countUsers(),
-        reservationRepository.aggregatePayments({ status: "succeeded" }),
+        reservationRepository.aggregateReservations({ status: "paid" }),
         reservationRepository.findRecent(5),
       ]);
 
     return {
       totalReservations,
       totalUsers,
-      totalRevenue: totalPayments._sum.amount
-        ? Number(totalPayments._sum.amount)
+      totalRevenue: totalRevenue._sum.totalSum
+        ? Number(totalRevenue._sum.totalSum)
         : 0,
       recentReservations: recentReservations.map(formatReservation),
     };

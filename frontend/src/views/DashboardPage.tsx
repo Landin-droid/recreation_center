@@ -78,6 +78,13 @@ export function DashboardPage() {
   const [paymentStatuses, setPaymentStatuses] = useState<
     Record<number, PaymentStatus>
   >({});
+  const [reservationsTypeFilter, setReservationsTypeFilter] =
+    useState<string>("ALL");
+  const [reservationsStatusFilter, setReservationsStatusFilter] =
+    useState<string>("ALL");
+  const [reservationsSortOrder, setReservationsSortOrder] = useState<
+    "asc" | "desc"
+  >("asc");
   const [formState, setFormState] = useState({
     bookableObjectId: "",
     reservationDate: "",
@@ -219,6 +226,39 @@ export function DashboardPage() {
   const objects = objectsQuery.data ?? [];
   const menuItems = menuQuery.data ?? [];
   const rentals = rentalsQuery.data ?? [];
+
+  const filteredAndSortedReservations = useMemo(() => {
+    let result = [...reservations];
+
+    // Filter by object type
+    if (reservationsTypeFilter !== "ALL") {
+      result = result.filter(
+        (res) =>
+          res.bookableObject.type.toLowerCase() ===
+          reservationsTypeFilter.toLowerCase(),
+      );
+    }
+
+    // Filter by status
+    if (reservationsStatusFilter !== "ALL") {
+      result = result.filter((res) => res.status === reservationsStatusFilter);
+    }
+
+    // Sort by price
+    result.sort((a, b) => {
+      const priceA = Number(a.bookableObject.basePrice);
+      const priceB = Number(b.bookableObject.basePrice);
+      if (reservationsSortOrder === "asc") return priceA - priceB;
+      return priceB - priceA;
+    });
+
+    return result;
+  }, [
+    reservations,
+    reservationsTypeFilter,
+    reservationsStatusFilter,
+    reservationsSortOrder,
+  ]);
 
   return (
     <AppShell
@@ -476,140 +516,193 @@ export function DashboardPage() {
             <h2 className="text-2xl font-extrabold">Мои бронирования</h2>
             <Badge tone="warning">GET /reservations</Badge>
           </div>
+
           {reservations.length > 0 ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {reservations.map((reservation) => {
-                const paymentStatus = reservation.payment
-                  ? paymentStatuses[reservation.payment.paymentId]
-                  : undefined;
+            <>
+              {/* Filters and Sorting */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Select
+                  label="Тип объекта"
+                  value={reservationsTypeFilter}
+                  onChange={(e) => setReservationsTypeFilter(e.target.value)}>
+                  <option value="ALL">Все типы</option>
+                  <option value="COTTAGE">Домики</option>
+                  <option value="BANQUET_HALL">Банкетные залы</option>
+                  <option value="GAZEBO">Беседки</option>
+                  <option value="KARAOKE_BAR">Караоке-бар</option>
+                  <option value="OUTDOOR_VENUE">Открытые площадки</option>
+                </Select>
 
-                return (
-                  <div
-                    key={reservation.reservationId}
-                    className="rounded-[24px] border border-[color:var(--border)] bg-white/80 p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-bold">
-                          {reservation.bookableObject.name}
-                        </h3>
-                        <p className="text-sm text-[color:var(--ink-soft)]">
-                          {formatDate(reservation.reservationDate)} ·{" "}
-                          {reservation.guestsCount} гостей
-                        </p>
-                      </div>
-                      <Badge tone={paymentTone(reservation.status)}>
-                        {translateReservationStatus(reservation.status)}
-                      </Badge>
-                    </div>
+                <Select
+                  label="Статус"
+                  value={reservationsStatusFilter}
+                  onChange={(e) => setReservationsStatusFilter(e.target.value)}>
+                  <option value="ALL">Все статусы</option>
+                  <option value="pending">Ожидает оплаты</option>
+                  <option value="paid">Оплачено</option>
+                  <option value="canceled">Отменено</option>
+                  <option value="refunded">Возвращено</option>
+                  <option value="expired">Истекло</option>
+                </Select>
 
-                    {reservation.menuItems.length > 0 ? (
-                      <div className="mt-4 rounded-2xl bg-[#fff8ee] p-4">
-                        <p className="text-sm font-bold">Меню в заказе</p>
-                        <div className="mt-2 space-y-1 text-sm text-[color:var(--ink-soft)]">
-                          {reservation.menuItems.map((item) => (
-                            <p key={item.menuItemId}>
-                              {item.menuItem.name} × {item.quantity} ={" "}
-                              {formatCurrency(item.itemCost)}
+                <Select
+                  label="Сортировка по цене"
+                  value={reservationsSortOrder}
+                  onChange={(e) =>
+                    setReservationsSortOrder(e.target.value as "asc" | "desc")
+                  }>
+                  <option value="asc">Сначала дешевле</option>
+                  <option value="desc">Сначала дороже</option>
+                </Select>
+              </div>
+
+              {filteredAndSortedReservations.length > 0 ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {filteredAndSortedReservations.map((reservation) => {
+                    const paymentStatus = reservation.payment
+                      ? paymentStatuses[reservation.payment.paymentId]
+                      : undefined;
+
+                    return (
+                      <div
+                        key={reservation.reservationId}
+                        className="rounded-[24px] border border-[color:var(--border)] bg-white/80 p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-lg font-bold">
+                              {reservation.bookableObject.name}
+                            </h3>
+                            <p className="text-sm text-[color:var(--ink-soft)]">
+                              {formatDate(reservation.reservationDate)} ·{" "}
+                              {reservation.guestsCount} гостей
                             </p>
-                          ))}
+                          </div>
+                          <Badge tone={paymentTone(reservation.status)}>
+                            {translateReservationStatus(reservation.status)}
+                          </Badge>
                         </div>
-                      </div>
-                    ) : null}
 
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      {reservation.status === "pending" ? (
-                        <Button
-                          onClick={() =>
-                            initiatePaymentMutation.mutate(
-                              reservation.reservationId,
-                            )
-                          }
-                          disabled={initiatePaymentMutation.isPending}>
-                          {reservation.payment
-                            ? "Продолжить оплату"
-                            : "Инициировать оплату"}
-                        </Button>
-                      ) : null}
+                        {reservation.menuItems.length > 0 ? (
+                          <div className="mt-4 rounded-2xl bg-[#fff8ee] p-4">
+                            <p className="text-sm font-bold">Меню в заказе</p>
+                            <div className="mt-2 space-y-1 text-sm text-[color:var(--ink-soft)]">
+                              {reservation.menuItems.map((item) => (
+                                <p key={item.menuItemId}>
+                                  {item.menuItem.name} × {item.quantity} ={" "}
+                                  {formatCurrency(item.itemCost)}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
 
-                      {reservation.payment &&
-                      reservation.status === "pending" ? (
-                        <Button
-                          variant="secondary"
-                          onClick={() =>
-                            checkPaymentMutation.mutate(
-                              reservation.payment!.paymentId,
-                            )
-                          }
-                          disabled={checkPaymentMutation.isPending}>
-                          Обновить статус
-                        </Button>
-                      ) : null}
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          {reservation.status === "pending" ? (
+                            <Button
+                              onClick={() =>
+                                initiatePaymentMutation.mutate(
+                                  reservation.reservationId,
+                                )
+                              }
+                              disabled={initiatePaymentMutation.isPending}>
+                              {reservation.payment
+                                ? "Продолжить оплату"
+                                : "Инициировать оплату"}
+                            </Button>
+                          ) : null}
 
-                      {reservation.status === "paid" && reservation.payment ? (
-                        <Button
-                          variant="danger"
-                          onClick={() => {
-                            const reason = window.prompt(
-                              "Укажите причину возврата",
-                              "Отмена пользователем",
-                            );
-                            if (reservation.payment?.paymentId) {
-                              createRefundMutation.mutate({
-                                paymentId: reservation.payment.paymentId,
-                                reason: reason || undefined,
-                              });
-                            }
-                          }}
-                          disabled={createRefundMutation.isPending}>
-                          Возврат средств
-                        </Button>
-                      ) : null}
+                          {reservation.payment &&
+                          reservation.status === "pending" ? (
+                            <Button
+                              variant="secondary"
+                              onClick={() =>
+                                checkPaymentMutation.mutate(
+                                  reservation.payment!.paymentId,
+                                )
+                              }
+                              disabled={checkPaymentMutation.isPending}>
+                              Обновить статус
+                            </Button>
+                          ) : null}
 
-                      {!["canceled", "paid", "refunded", "expired"].includes(
-                        reservation.status,
-                      ) ? (
-                        <Button
-                          variant="danger"
-                          onClick={() => {
-                            const reason = window.prompt(
-                              "Укажите причину отмены бронирования",
-                              "Отмена пользователем",
-                            );
-                            cancelReservationMutation.mutate({
-                              reservationId: reservation.reservationId,
-                              reason: reason || undefined,
-                            });
-                          }}
-                          disabled={cancelReservationMutation.isPending}>
-                          Отменить
-                        </Button>
-                      ) : null}
-                    </div>
+                          {reservation.status === "paid" &&
+                          reservation.payment ? (
+                            <Button
+                              variant="danger"
+                              onClick={() => {
+                                const reason = window.prompt(
+                                  "Укажите причину возврата",
+                                  "Отмена пользователем",
+                                );
+                                if (reservation.payment?.paymentId) {
+                                  createRefundMutation.mutate({
+                                    paymentId: reservation.payment.paymentId,
+                                    reason: reason || undefined,
+                                  });
+                                }
+                              }}
+                              disabled={createRefundMutation.isPending}>
+                              Возврат средств
+                            </Button>
+                          ) : null}
 
-                    {paymentStatus ? (
-                      <div className="mt-4 rounded-2xl bg-[#f5efe3] p-4 text-sm">
-                        <p className="font-bold">Последняя проверка платежа</p>
-                        <div className="mt-2 grid gap-1 text-[color:var(--ink-soft)]">
-                          <span>
-                            Статус:{" "}
-                            {translatePaymentStatus(paymentStatus.status)}
-                          </span>
-                          <span>
-                            Сумма: {formatCurrency(paymentStatus.amount)}
-                          </span>
-                          <span>
-                            Статус бронирования:{" "}
-                            {translateReservationStatus(
-                              paymentStatus.reservation.status,
-                            )}
-                          </span>
+                          {![
+                            "canceled",
+                            "paid",
+                            "refunded",
+                            "expired",
+                          ].includes(reservation.status) ? (
+                            <Button
+                              variant="danger"
+                              onClick={() => {
+                                const reason = window.prompt(
+                                  "Укажите причину отмены бронирования",
+                                  "Отмена пользователем",
+                                );
+                                cancelReservationMutation.mutate({
+                                  reservationId: reservation.reservationId,
+                                  reason: reason || undefined,
+                                });
+                              }}
+                              disabled={cancelReservationMutation.isPending}>
+                              Отменить
+                            </Button>
+                          ) : null}
                         </div>
+
+                        {paymentStatus ? (
+                          <div className="mt-4 rounded-2xl bg-[#f5efe3] p-4 text-sm">
+                            <p className="font-bold">
+                              Последняя проверка платежа
+                            </p>
+                            <div className="mt-2 grid gap-1 text-[color:var(--ink-soft)]">
+                              <span>
+                                Статус:{" "}
+                                {translatePaymentStatus(paymentStatus.status)}
+                              </span>
+                              <span>
+                                Сумма: {formatCurrency(paymentStatus.amount)}
+                              </span>
+                              <span>
+                                Статус бронирования:{" "}
+                                {translateReservationStatus(
+                                  paymentStatus.reservation.status,
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Бронирований не найдено"
+                  description="Попробуйте изменить параметры фильтрации."
+                />
+              )}
+            </>
           ) : (
             <EmptyState
               title="Бронирований пока нет"
