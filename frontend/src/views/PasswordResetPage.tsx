@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { AppShell, Title, Panel, Button, Field, Toast } from "@shared/ui/kit";
 import { authApi } from "@features/auth/api";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 
 export function PasswordResetPage() {
   const [searchParams] = useSearchParams();
@@ -45,8 +47,14 @@ export function PasswordResetPage() {
       <AppShell>
         <div className="max-w-md mx-auto py-12 text-center">
           <Panel className="space-y-6">
-            <Title heading="Ошибка" description="Ссылка для восстановления пароля недействительна или устарела." />
-            <Button variant="secondary" className="w-full font-bold" onClick={() => navigate("/forgot-password")}>
+            <Title
+              heading="Ошибка"
+              description="Ссылка для восстановления пароля недействительна или устарела."
+            />
+            <Button
+              variant="secondary"
+              className="w-full font-bold"
+              onClick={() => navigate("/forgot-password")}>
               Запросить новую ссылку
             </Button>
           </Panel>
@@ -57,9 +65,16 @@ export function PasswordResetPage() {
 
   return (
     <AppShell>
+      <Helmet>
+        <title>Сброс пароля - База отдыха "Победа"</title>
+        <meta name="description" content={SEO_DESCRIPTIONS.resetPassword} />
+      </Helmet>
       <div className="max-w-md mx-auto py-12">
         <Panel className="space-y-6">
-          <Title heading="Новый пароль" description="Придумайте надежный пароль для вашего аккаунта." />
+          <Title
+            heading="Новый пароль"
+            description="Придумайте надежный пароль для вашего аккаунта."
+          />
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
@@ -86,7 +101,10 @@ export function PasswordResetPage() {
 
             {error && <p className="text-sm font-bold text-red-600">{error}</p>}
 
-            <Button type="submit" className="w-full font-bold" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full font-bold"
+              disabled={loading}>
               {loading ? "Смена пароля..." : "Сохранить новый пароль"}
             </Button>
           </form>
@@ -94,11 +112,7 @@ export function PasswordResetPage() {
       </div>
 
       {toast && (
-        <Toast 
-          message={toast} 
-          type="success" 
-          onClose={() => setToast(null)} 
-        />
+        <Toast message={toast} type="success" onClose={() => setToast(null)} />
       )}
     </AppShell>
   );

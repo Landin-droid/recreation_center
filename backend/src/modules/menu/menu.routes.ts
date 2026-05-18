@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authenticate, isAdmin } from "../../middleware/auth";
 import { menuController } from "./menu.controller";
 
 const router = Router();
@@ -7,7 +8,7 @@ const router = Router();
  * @swagger
  * /api/menu/items:
  *   get:
- *     summary: Получить список всех пунктов меню
+ *     summary: Получить список всех блюд
  *     tags:
  *       - Menu
  *     responses:
@@ -41,9 +42,11 @@ router.get("/items/:id", menuController.getItemById);
  * @swagger
  * /api/menu/items:
  *   post:
- *     summary: Создать новый пункт меню
+ *     summary: Добавить новое блюдо
  *     tags:
  *       - Menu
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -84,15 +87,17 @@ router.get("/items/:id", menuController.getItemById);
  *                 data:
  *                   $ref: '#/components/schemas/MenuItem'
  */
-router.post("/items", menuController.createItem);
+router.post("/items", authenticate, isAdmin, menuController.createItem);
 
 /**
  * @swagger
  * /api/menu/items/{id}:
  *   put:
- *     summary: Обновить пункт меню
+ *     summary: Обновить данные блюда
  *     tags:
  *       - Menu
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -133,15 +138,17 @@ router.post("/items", menuController.createItem);
  *                 data:
  *                   $ref: '#/components/schemas/MenuItem'
  */
-router.put("/items/:id", menuController.updateItem);
+router.put("/items/:id", authenticate, isAdmin, menuController.updateItem);
 
 /**
  * @swagger
  * /api/menu/items/{id}:
  *   delete:
- *     summary: Удалить пункт меню
+ *     summary: Удалить блюдо
  *     tags:
  *       - Menu
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -152,7 +159,7 @@ router.put("/items/:id", menuController.updateItem);
  *       200:
  *         description: Пункт меню успешно удален
  */
-router.delete("/items/:id", menuController.deleteItem);
+router.delete("/items/:id", authenticate, isAdmin, menuController.deleteItem);
 
 /**
  * @swagger

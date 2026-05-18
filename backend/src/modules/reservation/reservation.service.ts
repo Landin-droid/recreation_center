@@ -99,6 +99,10 @@ const buildReservationDerivedData = async (
     throw new AppError("Bookable object not found", 404);
   }
 
+  if (!bookableObject.isActive) {
+    throw new AppError("Bookable object is not active", 400);
+  }
+
   if (input.guestsCount > bookableObject.capacity) {
     throw new AppError("Guests count exceeds bookable object capacity", 400);
   }
@@ -373,5 +377,24 @@ export const reservationService = {
       }),
     );
     return formatReservation(updated);
+  },
+
+  async getStats() {
+    const [totalReservations, totalUsers, totalRevenue, recentReservations] =
+      await Promise.all([
+        reservationRepository.count(),
+        reservationRepository.countUsers(),
+        reservationRepository.aggregateReservations({ status: "paid" }),
+        reservationRepository.findRecent(5),
+      ]);
+
+    return {
+      totalReservations,
+      totalUsers,
+      totalRevenue: totalRevenue._sum.totalSum
+        ? Number(totalRevenue._sum.totalSum)
+        : 0,
+      recentReservations: recentReservations.map(formatReservation),
+    };
   },
 };

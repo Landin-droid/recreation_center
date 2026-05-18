@@ -1,9 +1,15 @@
+import { Helmet } from "react-helmet-async";
 import { AppShell, Title, Panel } from "@shared/ui/kit";
 import { Link } from "react-router-dom";
+import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 
 export function PaymentSuccessPage() {
   return (
     <AppShell>
+      <Helmet>
+        <title>Оплата успешна - База отдыха "Победа"</title>
+        <meta name="description" content={SEO_DESCRIPTIONS.paymentSuccess} />
+      </Helmet>
       <div className="max-w-xl mx-auto py-12 text-center space-y-8">
         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
           <svg

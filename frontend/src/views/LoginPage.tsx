@@ -1,14 +1,16 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useMutation } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { authApi } from "@features/auth/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { extractErrorMessage } from "@shared/api/http";
 import { AppShell, Button, Field, Panel, Title } from "@shared/ui/kit";
+import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { accessToken, setSession } = useAuthStore();
+  const { user, setSession } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -18,7 +20,9 @@ export function LoginPage() {
     const newErrors: Record<string, string> = {};
     if (!email) {
       newErrors.email = "Email обязателен";
-    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+    } else if (
+      !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
+    ) {
       newErrors.email = "Неверный формат почты";
     }
     if (!password) {
@@ -30,11 +34,11 @@ export function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (user) => {
+    onSuccess: (data: any) => {
       setSession({
-        user,
-        accessToken: "cookie-based",
-        refreshToken: "cookie-based",
+        user: data,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
       });
       navigate("/profile");
     },
@@ -43,12 +47,16 @@ export function LoginPage() {
     },
   });
 
-  if (accessToken) {
+  if (user) {
     return <Navigate to="/profile" replace />;
   }
 
   return (
     <AppShell>
+      <Helmet>
+        <title>Вход - База отдыха "Победа"</title>
+        <meta name="description" content={SEO_DESCRIPTIONS.login} />
+      </Helmet>
       <div className="mx-auto max-w-xl">
         <Panel className="space-y-6">
           <Title
@@ -64,8 +72,7 @@ export function LoginPage() {
               if (validate()) {
                 loginMutation.mutate({ email, password });
               }
-            }}
-          >
+            }}>
             <div className="space-y-1">
               <Field
                 label="Email"
@@ -75,7 +82,11 @@ export function LoginPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 required
               />
-              {errors.email && <p className="text-xs text-[color:var(--danger)]">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-xs text-[color:var(--danger)]">
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -87,14 +98,17 @@ export function LoginPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 required
               />
-              {errors.password && <p className="text-xs text-[color:var(--danger)]">{errors.password}</p>}
+              {errors.password && (
+                <p className="text-xs text-[color:var(--danger)]">
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
-              <Link 
-                to="/forgot-password" 
-                className="text-sm font-semibold text-[color:var(--accent)] hover:underline"
-              >
+              <Link
+                to="/forgot-password"
+                className="text-sm font-semibold text-[color:var(--accent)] hover:underline">
                 Забыли пароль?
               </Link>
             </div>
@@ -109,7 +123,12 @@ export function LoginPage() {
             </Button>
           </form>
           <p className="text-sm text-[color:var(--ink-soft)]">
-            Нет аккаунта? <Link className="font-bold text-[color:var(--accent)]" to="/register">Создать</Link>
+            Нет аккаунта?{" "}
+            <Link
+              className="font-bold text-[color:var(--accent)]"
+              to="/register">
+              Создать
+            </Link>
           </p>
         </Panel>
       </div>

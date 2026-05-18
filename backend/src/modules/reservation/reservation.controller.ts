@@ -55,4 +55,9 @@ export const reservationController = {
     const result = await paymentService.cancelOrRefundReservation(id, reason);
     res.json({ success: true, data: result });
   }),
+
+  getStats: asyncHandler(async (_req: Request, res: Response) => {
+    const stats = await reservationService.getStats();
+    res.json({ success: true, data: stats });
+  }),
 };

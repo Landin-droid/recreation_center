@@ -100,6 +100,35 @@ export const reservationRepository = {
     callback: (tx: Prisma.TransactionClient) => Promise<T>,
   ) => prisma.$transaction(callback),
 
+  count: () => prisma.reservation.count(),
+
+  countUsers: () => prisma.user.count(),
+
+  aggregatePayments: (where: Prisma.PaymentWhereInput) =>
+    prisma.payment.aggregate({
+      _sum: {
+        amount: true,
+      },
+      where,
+    }),
+
+  aggregateReservations: (where: Prisma.ReservationWhereInput) =>
+    prisma.reservation.aggregate({
+      _sum: {
+        totalSum: true,
+      },
+      where,
+    }),
+
+  findRecent: (take: number) =>
+    prisma.reservation.findMany({
+      take,
+      orderBy: {
+        creationDate: "desc",
+      },
+      include: reservationInclude,
+    }),
+
   delete: (reservationId: number) =>
     prisma.reservation.delete({
       where: { reservationId },

@@ -27,6 +27,7 @@ export const updateUserSchema = z.object({
     .string()
     .regex(/^\+?[0-9\s\-()]{10,20}$/, "Invalid phone number")
     .optional(),
+  role: z.enum(["user", "staff", "admin"]).optional(),
 });
 
 export const loginSchema = z.object({

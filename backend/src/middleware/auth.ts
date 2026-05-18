@@ -6,6 +6,7 @@ import { AppError } from "./errorHandler";
 export interface AuthPayload {
   userId: number;
   email: string;
+  role: string;
 }
 
 function isAuthPayload(payload: unknown): payload is AuthPayload {
@@ -14,8 +15,10 @@ function isAuthPayload(payload: unknown): payload is AuthPayload {
     payload !== null &&
     "userId" in payload &&
     "email" in payload &&
+    "role" in payload &&
     typeof (payload as AuthPayload).userId === "number" &&
-    typeof (payload as AuthPayload).email === "string"
+    typeof (payload as AuthPayload).email === "string" &&
+    typeof (payload as AuthPayload).role === "string"
   );
 }
 
@@ -47,24 +50,43 @@ export const authenticate = (
     }
 
     if (!token) {
-      throw new AppError("Authentication required", 401);
+      console.warn(`[Auth] Missing token for ${req.method} ${req.originalUrl}. Cookies: ${JSON.stringify(Object.keys(req.cookies || {}))}, AuthHeader: ${authHeader ? 'present' : 'missing'}`);
+      throw new AppError("Authentication required (token missing)", 401);
     }
 
-    const payload = jwt.verify(token, jwtSecret);
+    try {
+      const payload = jwt.verify(token, jwtSecret);
 
-    if (!isAuthPayload(payload)) {
-      throw new AppError("Invalid token payload", 401);
+      if (!isAuthPayload(payload)) {
+        console.error(`[Auth] Invalid token payload: ${JSON.stringify(payload)}`);
+        throw new AppError("Invalid token payload", 401);
+      }
+
+      req.user = payload;
+      next();
+    } catch (jwtError) {
+      if (jwtError instanceof jwt.TokenExpiredError) {
+        throw new AppError("Token has expired", 401);
+      }
+      throw new AppError("Invalid token", 401);
     }
-
-    req.user = payload;
-    next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      next(new AppError("Invalid token", 401));
-    } else if (error instanceof jwt.TokenExpiredError) {
-      next(new AppError("Token has expired", 401));
-    } else {
-      next(error);
-    }
+    next(error);
   }
 };
+
+export const authorize = (roles: string[]) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("Authentication required", 401));
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError("Access denied", 403));
+    }
+
+    next();
+  };
+};
+
+export const isAdmin = authorize(["admin", "staff"]);

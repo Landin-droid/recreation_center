@@ -213,7 +213,7 @@ export const generateReceiptPdf = (
       summary.items.forEach((item, index) => {
         doc.text(
           toPdfSafeText(
-            `${index + 1}. ${item.description} | количество: ${item.quantity} | сумма: ${item.amount} ${item.currency}`,
+            `${index + 1}. ${item.description} | количество: ${item.quantity} | сумма: ${item.amount} ${getCurrencySymbol(item.currency)}`,
             !!fontPath,
           ),
         );

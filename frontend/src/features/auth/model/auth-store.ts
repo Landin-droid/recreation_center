@@ -9,11 +9,10 @@ interface AuthStore {
   isBootstrapping: boolean;
   setSession: (payload: {
     user: User;
-    accessToken: string;
-    refreshToken: string;
+    accessToken?: string;
+    refreshToken?: string;
   }) => void;
   updateUser: (user: User) => void;
-  setTokens: (accessToken: string, refreshToken: string) => void;
   clearSession: () => void;
   setBootstrapping: (value: boolean) => void;
 }
@@ -26,15 +25,13 @@ export const useAuthStore = create<AuthStore>()(
       refreshToken: null,
       isBootstrapping: true,
       setSession: ({ user, accessToken, refreshToken }) =>
-        set({
+        set((state) => ({
           user,
-          accessToken,
-          refreshToken,
+          accessToken: accessToken !== undefined ? accessToken : state.accessToken,
+          refreshToken: refreshToken !== undefined ? refreshToken : state.refreshToken,
           isBootstrapping: false,
-        }),
+        })),
       updateUser: (user) => set({ user }),
-      setTokens: (accessToken, refreshToken) =>
-        set({ accessToken, refreshToken }),
       clearSession: () =>
         set({
           user: null,
@@ -51,6 +48,9 @@ export const useAuthStore = create<AuthStore>()(
         accessToken,
         refreshToken,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setBootstrapping(false);
+      },
     },
   ),
 );

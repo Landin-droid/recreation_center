@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authenticate, isAdmin } from "../../middleware/auth";
 import { rentalController } from "./rental.controller";
 
 const router = Router();
@@ -7,7 +8,7 @@ const router = Router();
  * @swagger
  * /api/rentals/items:
  *   get:
- *     summary: Получить список всех предметов для аренды
+ *     summary: Получить список предметов проката
  *     tags:
  *       - Rentals
  *     responses:
@@ -41,9 +42,11 @@ router.get("/items/:id", rentalController.getItemById);
  * @swagger
  * /api/rentals/items:
  *   post:
- *     summary: Создать новый предмет для аренды
+ *     summary: Добавить предмет проката
  *     tags:
  *       - Rentals
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -97,15 +100,17 @@ router.get("/items/:id", rentalController.getItemById);
  *                 data:
  *                   $ref: '#/components/schemas/RentalItem'
  */
-router.post("/items", rentalController.createItem);
+router.post("/items", authenticate, isAdmin, rentalController.createItem);
 
 /**
  * @swagger
  * /api/rentals/items/{id}:
  *   put:
- *     summary: Обновить предмет для аренды
+ *     summary: Обновить предмет проката
  *     tags:
  *       - Rentals
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -159,15 +164,17 @@ router.post("/items", rentalController.createItem);
  *                 data:
  *                   $ref: '#/components/schemas/RentalItem'
  */
-router.put("/items/:id", rentalController.updateItem);
+router.put("/items/:id", authenticate, isAdmin, rentalController.updateItem);
 
 /**
  * @swagger
  * /api/rentals/items/{id}:
  *   delete:
- *     summary: Удалить предмет для аренды
+ *     summary: Удалить предмет проката
  *     tags:
  *       - Rentals
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -178,7 +185,7 @@ router.put("/items/:id", rentalController.updateItem);
  *       200:
  *         description: Предмет для аренды успешно удален
  */
-router.delete("/items/:id", rentalController.deleteItem);
+router.delete("/items/:id", authenticate, isAdmin, rentalController.deleteItem);
 
 /**
  * @swagger

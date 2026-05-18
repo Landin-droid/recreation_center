@@ -12,6 +12,7 @@ import {
   bookableObjectRepository,
   BookableObjectWithRelations,
   bookableObjectInclude,
+  BookableObjectRepository,
 } from "./bookable-object.repository";
 import {
   CreateBookableObjectInput,
@@ -200,61 +201,104 @@ const formatBookableObject = (object: BookableObjectWithRelations) => ({
   })),
 });
 
-export const bookableObjectService = {
+const toUtcDateOnly = (value: Date) =>
+  new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+
+const getTodayUtcDateOnly = () => toUtcDateOnly(new Date());
+
+const parseSeasonDate = (value: string | null | undefined) =>
+  value ? toUtcDateOnly(new Date(value)) : null;
+
+const isSeasonExpired = (seasonEnd: Date | null, today = getTodayUtcDateOnly()) =>
+  Boolean(seasonEnd && toUtcDateOnly(seasonEnd).getTime() < today.getTime());
+
+export class BookableObjectService {
+  constructor(private readonly bookableObjectRepository: BookableObjectRepository) {}
+
+  deactivateExpiredSeasonalObjects() {
+    return this.bookableObjectRepository.deactivateExpiredSeasonalObjects(getTodayUtcDateOnly());
+  }
+
   async listBookableObjects(query: ListBookableObjectsQuery) {
-    const objects = await bookableObjectRepository.findMany({
+    await this.deactivateExpiredSeasonalObjects();
+
+    const objects = await this.bookableObjectRepository.findMany({
       ...(query.type ? { type: query.type } : {}),
       ...(typeof query.isActive === "boolean" ? { isActive: query.isActive } : {}),
     });
 
     return objects.map(formatBookableObject);
-  },
+  }
 
   async getBookableObjectById(bookableObjectId: number) {
-    const object = await bookableObjectRepository.findById(bookableObjectId);
+    await this.deactivateExpiredSeasonalObjects();
+
+    const object = await this.bookableObjectRepository.findById(bookableObjectId);
     if (!object) {
       throw new AppError("Bookable object not found", 404);
     }
 
     return formatBookableObject(object);
-  },
+  }
 
   async createBookableObject(data: CreateBookableObjectInput) {
-    const created = await bookableObjectRepository.create({
+    const seasonStart = data.isSeasonal ? parseSeasonDate(data.seasonStart) : null;
+    const seasonEnd = data.isSeasonal ? parseSeasonDate(data.seasonEnd) : null;
+
+    const created = await this.bookableObjectRepository.create({
       name: data.name,
       capacity: data.capacity,
       basePrice: data.basePrice,
       isSeasonal: data.isSeasonal,
-      seasonStart: data.seasonStart ? new Date(data.seasonStart) : null,
-      seasonEnd: data.seasonEnd ? new Date(data.seasonEnd) : null,
+      seasonStart,
+      seasonEnd,
       description: data.description,
-      isActive: data.isActive ?? true,
+      isActive: isSeasonExpired(seasonEnd) ? false : (data.isActive ?? true),
       imageUrls: data.imageUrls,
       type: data.type,
       ...buildSubtypeCreateData(data.type, data.details),
     });
 
     return formatBookableObject(created);
-  },
+  }
 
   async updateBookableObject(bookableObjectId: number, data: UpdateBookableObjectInput) {
-    const existing = await bookableObjectRepository.findBaseById(bookableObjectId);
+    const existing = await this.bookableObjectRepository.findBaseById(bookableObjectId);
     if (!existing) {
       throw new AppError("Bookable object not found", 404);
     }
 
     const nextType = data.type ?? existing.type;
     const nextIsSeasonal = data.isSeasonal ?? existing.isSeasonal;
-    const nextSeasonStart =
-      data.seasonStart !== undefined ? data.seasonStart : existing.seasonStart?.toISOString();
-    const nextSeasonEnd =
-      data.seasonEnd !== undefined ? data.seasonEnd : existing.seasonEnd?.toISOString();
+    const nextSeasonStart = nextIsSeasonal
+      ? data.seasonStart !== undefined
+        ? parseSeasonDate(data.seasonStart)
+        : existing.seasonStart
+      : null;
+    const nextSeasonEnd = nextIsSeasonal
+      ? data.seasonEnd !== undefined
+        ? parseSeasonDate(data.seasonEnd)
+        : existing.seasonEnd
+      : null;
 
     if (nextIsSeasonal && (!nextSeasonStart || !nextSeasonEnd)) {
       throw new AppError("Season start date is required when the object is seasonal", 400);
     }
 
-    const updated = await bookableObjectRepository.runInTransaction(async (tx) => {
+    if (
+      nextIsSeasonal &&
+      nextSeasonStart &&
+      nextSeasonEnd &&
+      nextSeasonStart.getTime() > nextSeasonEnd.getTime()
+    ) {
+      throw new AppError("Season end date must be after season start date", 400);
+    }
+
+    const nextIsActive = isSeasonExpired(nextSeasonEnd)
+      ? false
+      : (data.isActive ?? existing.isActive);
+
+    const updated = await this.bookableObjectRepository.runInTransaction(async (tx) => {
       if (nextType !== existing.type) {
         await clearOtherSubtypeRelations(tx, nextType, bookableObjectId);
       }
@@ -266,14 +310,10 @@ export const bookableObjectService = {
           ...(data.capacity !== undefined ? { capacity: data.capacity } : {}),
           ...(data.basePrice !== undefined ? { basePrice: data.basePrice } : {}),
           ...(data.isSeasonal !== undefined ? { isSeasonal: data.isSeasonal } : {}),
-          ...(data.seasonStart !== undefined
-            ? { seasonStart: data.seasonStart ? new Date(data.seasonStart) : null }
-            : {}),
-          ...(data.seasonEnd !== undefined
-            ? { seasonEnd: data.seasonEnd ? new Date(data.seasonEnd) : null }
-            : {}),
+          seasonStart: nextSeasonStart,
+          seasonEnd: nextSeasonEnd,
           ...(data.description !== undefined ? { description: data.description } : {}),
-          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+          isActive: nextIsActive,
           ...(data.imageUrls !== undefined ? { imageUrls: data.imageUrls } : {}),
           ...(data.type !== undefined ? { type: data.type } : {}),
           ...buildSubtypeUpdateOperations(nextType, data.details),
@@ -287,14 +327,16 @@ export const bookableObjectService = {
     });
 
     return formatBookableObject(updated);
-  },
+  }
 
   async deleteBookableObject(bookableObjectId: number) {
-    const existing = await bookableObjectRepository.findBaseById(bookableObjectId);
+    const existing = await this.bookableObjectRepository.findBaseById(bookableObjectId);
     if (!existing) {
       throw new AppError("Bookable object not found", 404);
     }
 
-    return bookableObjectRepository.delete(bookableObjectId);
-  },
-};
+    return this.bookableObjectRepository.delete(bookableObjectId);
+  }
+}
+
+export const bookableObjectService = new BookableObjectService(bookableObjectRepository);

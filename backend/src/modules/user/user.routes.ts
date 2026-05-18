@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate } from "../../middleware/auth";
+import { authenticate, isAdmin } from "../../middleware/auth";
 import { userController } from "./user.controller";
 
 const router = Router();
@@ -11,8 +11,10 @@ const router = Router();
  *     summary: Получить список всех пользователей
  *     tags:
  *       - Users
+ *     security:
+ *       - bearerAuth: []
  */
-router.get("/", userController.list);
+router.get("/", authenticate, isAdmin, userController.list);
 
 /**
  * @swagger
@@ -33,8 +35,10 @@ router.get("/profile", authenticate, userController.getProfile);
  *     summary: Получить пользователя по ID
  *     tags:
  *       - Users
+ *     security:
+ *       - bearerAuth: []
  */
-router.get("/:id", userController.getById);
+router.get("/:id", authenticate, isAdmin, userController.getById);
 
 /**
  * @swagger
@@ -43,8 +47,10 @@ router.get("/:id", userController.getById);
  *     summary: Обновить данные пользователя
  *     tags:
  *       - Users
+ *     security:
+ *       - bearerAuth: []
  */
-router.put("/:id", userController.update);
+router.put("/:id", authenticate, userController.update);
 
 /**
  * @swagger
@@ -53,7 +59,9 @@ router.put("/:id", userController.update);
  *     summary: Удалить пользователя
  *     tags:
  *       - Users
+ *     security:
+ *       - bearerAuth: []
  */
-router.delete("/:id", userController.delete);
+router.delete("/:id", authenticate, isAdmin, userController.delete);
 
 export default router;

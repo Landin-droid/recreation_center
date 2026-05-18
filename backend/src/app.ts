@@ -10,6 +10,7 @@ import prisma from "./lib/prisma";
 import { errorHandler } from "./middleware/errorHandler";
 import mainRouter from "./routes";
 import { paymentService } from "./modules/payment/payment.service";
+import { bookableObjectService } from "./modules/bookable-object";
 import { specs } from "./config/swagger";
 
 const app = express();
@@ -17,7 +18,22 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: "https://recreation-center.onrender.com",
+    origin: (origin, callback) => {
+      // Разрешаем запросы без origin (например, мобильные приложения или curl)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        "https://recreation-center.onrender.com",
+        "http://localhost:3000",
+        "http://localhost:5173",
+      ];
+      
+      if (allowedOrigins.includes(origin) || origin.startsWith("http://192.168.")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
@@ -57,6 +73,15 @@ cron.schedule("* * * * *", async () => {
     await paymentService.cancelExpiredReservations();
   } catch (error) {
     console.error("Cron job error (cancelExpiredReservations):", error);
+  }
+});
+
+// Cron job для скрытия сезонных объектов после окончания сезона (каждый час)
+cron.schedule("0 * * * *", async () => {
+  try {
+    await bookableObjectService.deactivateExpiredSeasonalObjects();
+  } catch (error) {
+    console.error("Cron job error (deactivateExpiredSeasonalObjects):", error);
   }
 });
 

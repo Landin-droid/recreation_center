@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Navigate } from "react-router-dom";
+import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 import {
   AppShell,
   Title,
@@ -296,9 +298,7 @@ export function ProfilePage() {
             <p className="text-xs font-black uppercase text-[#72543d]">
               {receipt.typeLabel}
             </p>
-            <p className="font-bold text-[#24170f]">
-              {receipt.statusLabel}
-            </p>
+            <p className="font-bold text-[#24170f]">{receipt.statusLabel}</p>
             <p className="text-[color:var(--ink-soft)]">
               Сумма: {formatReceiptAmount(receipt)}
             </p>
@@ -353,6 +353,10 @@ export function ProfilePage() {
 
   return (
     <AppShell>
+      <Helmet>
+        <title>Профиль - База отдыха "Победа"</title>
+        <meta name="description" content={SEO_DESCRIPTIONS.profile} />
+      </Helmet>
       <div className="space-y-12">
         <Title
           eyebrow="Личный кабинет"
@@ -362,7 +366,7 @@ export function ProfilePage() {
 
         <div className="grid gap-8 lg:grid-cols-3">
           {/* User Info */}
-          <Panel className="lg:col-span-1 h-fit space-y-6">
+          <Panel className="lg:col-span-1 xl:sticky top-24 h-fit space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-[#24170f]">Ваши данные</h3>
               <Button
@@ -493,7 +497,7 @@ export function ProfilePage() {
                 {reservations.map((res) => (
                   <Panel
                     key={res.reservationId}
-                    className="flex flex-col gap-4 overflow-hidden border-2 border-transparent hover:border-[#efe4d6] transition-colors">
+                    className="flex flex-col gap-4 overflow-hidden border-2 border-[#efe4d6] hover:border-[color:var(--accent)] transition-colors">
                     <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-3">
@@ -536,7 +540,7 @@ export function ProfilePage() {
                               : "Детали"}
                           </Button>
 
-                          {res.status === "pending" && !res.payment && (
+                          {res.status === "pending" && (
                             <Button
                               className="text-xs font-bold py-1.5"
                               onClick={() => {
@@ -544,27 +548,41 @@ export function ProfilePage() {
                                   .initiatePayment(res.reservationId)
                                   .then((data) => {
                                     window.location.href = data.confirmationUrl;
+                                  })
+                                  .catch((err) => {
+                                    setToast({
+                                      message:
+                                        err.message || "Ошибка при оплате",
+                                      type: "error",
+                                    });
                                   });
                               }}>
-                              Оплатить
+                              {res.payment ? "Продолжить оплату" : "Оплатить"}
                             </Button>
                           )}
 
                           {res.status === "pending" &&
                             res.payment?.status === "pending" && (
                               <Button
+                                variant="secondary"
                                 className="text-xs font-bold py-1.5"
                                 onClick={() => {
                                   dashboardApi
                                     .getPaymentStatus(res.payment!.paymentId)
                                     .then((data) => {
                                       setToast({
-                                        message: `Статус платежа: ${data.status}`,
+                                        message: `Статус платежа: ${translatePaymentStatus(data.status)}`,
                                         type: "info",
                                       });
+                                      // Обновляем список бронирований, чтобы увидеть актуальный статус
+                                      if (user) {
+                                        dashboardApi
+                                          .listReservations(user.userId)
+                                          .then(setReservations);
+                                      }
                                     });
                                 }}>
-                                Проверить платёж
+                                Обновить статус
                               </Button>
                             )}
 
@@ -693,7 +711,9 @@ export function ProfilePage() {
                             </p>
                             <div className="space-y-3">
                               {renderReceipt(res.payment?.receipt ?? null)}
-                              {renderReceipt(res.payment?.refund?.receipt ?? null)}
+                              {renderReceipt(
+                                res.payment?.refund?.receipt ?? null,
+                              )}
                             </div>
                           </div>
                         )}

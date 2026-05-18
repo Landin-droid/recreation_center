@@ -200,16 +200,20 @@ export interface PaymentStatus {
   };
 }
 
+export interface AdminStats {
+  totalReservations: number;
+  totalUsers: number;
+  totalRevenue: number;
+  recentReservations: Reservation[];
+}
+
 export interface ReservationFormData {
   userId: number;
   bookableObjectId: number;
   reservationDate: string;
   guestsCount: number;
   notes?: string;
-  menuItems?: Array<{
-    menuItemId: number;
-    quantity: number;
-  }>;
+  menuItems?: Array<{ menuItemId: number; quantity: number }>;
 }
 
 export interface LoginPayload {

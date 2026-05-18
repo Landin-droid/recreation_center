@@ -4,12 +4,13 @@ import React, { useEffect, useState } from "react";
 import type { PropsWithChildren, ReactNode } from "react";
 import { authApi } from "@features/auth/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
+import { useLockBodyScroll } from "@shared/lib/useLockBodyScroll";
 
 export function AppShell({
   children,
   actions,
 }: PropsWithChildren<{ actions?: ReactNode }>) {
-  const { accessToken, clearSession } = useAuthStore();
+  const { user, clearSession } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -22,7 +23,7 @@ export function AppShell({
   };
 
   return (
-    <div className="min-h-screen bg-[#fffaf2]">
+    <div className="flex min-h-screen flex-col bg-[#fffaf2]">
       <header className="sticky top-0 z-[70] border-b border-[color:var(--border)] bg-[#fffaf2]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Link
@@ -35,8 +36,11 @@ export function AppShell({
             <NavItem to="/">Главная</NavItem>
             <NavItem to="/rentals">Прокат</NavItem>
             <NavItem to="/booking">Бронирование</NavItem>
-            {accessToken ? (
+            {user ? (
               <>
+                {["admin", "staff"].includes(user.role) && (
+                  <NavItem to="/admin">Админ</NavItem>
+                )}
                 <NavItem to="/profile">Кабинет</NavItem>
                 <Button
                   variant="ghost"
@@ -71,8 +75,11 @@ export function AppShell({
               <NavItem to="/" onClick={() => setIsMenuOpen(false)}>Главная</NavItem>
               <NavItem to="/rentals" onClick={() => setIsMenuOpen(false)}>Прокат</NavItem>
               <NavItem to="/booking" onClick={() => setIsMenuOpen(false)}>Бронирование</NavItem>
-              {accessToken ? (
+              {user ? (
                 <>
+                  {["admin", "staff"].includes(user.role) && (
+                    <NavItem to="/admin" onClick={() => setIsMenuOpen(false)}>Админ</NavItem>
+                  )}
                   <NavItem to="/profile" onClick={() => setIsMenuOpen(false)}>Кабинет</NavItem>
                   <Button
                     variant="ghost"
@@ -89,13 +96,71 @@ export function AppShell({
           </nav>
         ) : null}
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
-      <footer className="border-t border-[color:var(--border)] py-12 text-center text-sm text-[color:var(--ink-soft)]">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        {children}
+      </main>
+      <footer className="border-t border-[color:var(--border)] py-8 text-sm text-[color:var(--ink-soft)]">
         <div className="mx-auto max-w-7xl px-6">
-          <p>
-            © {new Date().getFullYear()} База отдыха «Победа». Все права
-            защищены.
-          </p>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 text-left">
+            {/* Адрес и условия */}
+            <div className="space-y-2">
+              <h4 className="font-bold text-[#24170f] text-lg">Наш адрес</h4>
+              <a href="https://yandex.ru/maps/-/CPgJu095" target="_blank" rel="noopener noreferrer"
+                className="hover:underline text-[color:var(--accent)]">
+                <p className="leading-snug text-md">
+                  Кемеровская область, г. Анжеро-Судженск,<br />
+                  ул. Хвойная, 1А
+                </p>
+              </a>
+              <div className="space-y-1">
+                <a href="#" className="block text-[color:var(--accent)] hover:underline text-md">
+                  Условия бронирования
+                </a>
+                <a href="#" className="block text-[color:var(--accent)] hover:underline text-md">
+                  Политика конфиденциальности
+                </a>
+                <a href="#" className="block text-[color:var(--accent)] hover:underline text-md">
+                  Правила использования cookie
+                </a>
+              </div>
+            </div>
+
+            {/* Контакты */}
+            <div className="space-y-1">
+              <h4 className="font-bold text-[#24170f] text-lg">Контакты</h4>
+              <div className="space-y-1">
+                <p>
+                  Тел: <a href="tel:+71234567890" className="text-[color:var(--accent)] hover:underline transition-colors">+7 123 456 78 90</a>
+                </p>
+                <p>
+                  Почта: <a href="mailto:support@pobeda.ru" className="text-[color:var(--accent)] hover:underline transition-colors">support@pobeda.ru</a>
+                </p>
+              </div>
+            </div>
+
+            {/* Соцсети */}
+            <div className="space-y-2">
+              <h4 className="font-bold text-[#24170f] text-lg">Мы в соцсетях</h4>
+              <div className="flex gap-3">
+                <a href="https://vk.com/b.pobeda" target="_blank" rel="noopener noreferrer" className="hover:text-[#4c75a3] transition-colors" title="ВКонтакте">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M21.579 6.855c.14-.465 0-.806-.662-.806h-2.193c-.558 0-.813.295-.953.619c0 0-1.115 2.719-2.695 4.482c-.51.513-.743.675-1.021.675c-.139 0-.341-.162-.341-.627V6.855c0-.558-.161-.806-.626-.806H9.642c-.348 0-.558.258-.558.504c0 .528.79.65.871 2.138v3.228c0 .707-.127.836-.407.836c-.743 0-2.551-2.729-3.624-5.853c-.209-.607-.42-.852-.98-.852H2.752c-.627 0-.752.295-.752.619c0 .582.743 3.462 3.461 7.271c1.812 2.601 4.363 4.011 6.687 4.011c1.393 0 1.565-.313 1.565-.853v-1.966c0-.626.133-.752.574-.752c.324 0 .882.164 2.183 1.417c1.486 1.486 1.732 2.153 2.567 2.153h2.192c.626 0 .939-.313.759-.931c-.197-.615-.907-1.51-1.849-2.569c-.512-.604-1.277-1.254-1.51-1.579c-.325-.419-.231-.604 0-.976c.001.001 2.672-3.761 2.95-5.04"/>
+                  </svg>
+                </a>
+                <a href="https://ok.ru/profile/572263020828" target="_blank" rel="noopener noreferrer" className="hover:text-[#ee8208] transition-colors" title="Одноклассники">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M11.986 12.341c-2.825 0-5.173-2.346-5.173-5.122C6.813 4.347 9.161 2 11.987 2c2.922 0 5.173 2.346 5.173 5.219a5.142 5.142 0 0 1-5.157 5.123zm0-7.324c-1.196 0-2.106 1.005-2.106 2.203c0 1.196.91 2.106 2.107 2.106c1.245 0 2.107-.91 2.107-2.106c.001-1.199-.862-2.203-2.108-2.203m2.06 11.586l2.923 2.825c.575.621.575 1.531 0 2.106c-.622.621-1.581.621-2.06 0l-2.922-2.873l-2.826 2.873c-.287.287-.671.43-1.103.43c-.335 0-.718-.144-1.054-.43c-.575-.575-.575-1.485 0-2.107l2.97-2.825a13.49 13.49 0 0 1-3.063-1.339c-.719-.383-.862-1.34-.479-2.059c.479-.718 1.341-.909 2.108-.43a6.62 6.62 0 0 0 6.897 0c.767-.479 1.676-.288 2.107.43c.432.719.239 1.675-.432 2.059c-.909.575-1.963 1.006-3.065 1.341z"/>
+                </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-[color:var(--border)] text-center text-sm">
+            <p>
+              © {new Date().getFullYear()} База отдыха «Победа». Все права защищены.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
@@ -116,7 +181,7 @@ function NavItem({
           "rounded-full px-3 py-2 transition sm:px-4",
           isActive
             ? "bg-[color:var(--accent)] text-white"
-            : "hover:bg-white/70",
+            : "hover:bg-orange-200",
         )
       }>
       {children}
@@ -184,8 +249,8 @@ export function Button({
         variant === "primary" &&
           "bg-[color:var(--accent)] text-white hover:bg-[color:var(--accent-dark)]",
         variant === "secondary" &&
-          "border border-[color:var(--border)] bg-white/70 text-[#2b1d13] hover:bg-white",
-        variant === "ghost" && "text-[color:var(--ink-soft)] hover:bg-white/70",
+          "border border-[color:var(--border)] bg-orange-200/50 text-[#2b1d13] hover:bg-orange-200",
+        variant === "ghost" && "text-[color:var(--ink-soft)] hover:bg-orange-200",
         variant === "danger" &&
           "bg-[color:var(--danger)] text-white hover:opacity-90",
         className,
@@ -306,17 +371,28 @@ export function Modal({
   title,
   children,
   footer,
+  size = "md",
 }: PropsWithChildren<{
   isOpen: boolean;
   onClose: () => void;
   title: string;
   footer?: ReactNode;
+  size?: "md" | "lg" | "xl";
 }>) {
+  useLockBodyScroll(isOpen);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 sm:p-4">
-      <Panel className="my-auto w-full max-w-md space-y-6 animate-in zoom-in duration-300">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 sm:p-4"
+    style={{ marginTop: '0px' }}>
+      <Panel
+        className={clsx(
+          "my-auto w-full space-y-6 animate-in zoom-in duration-300",
+          size === "md" && "max-w-md",
+          size === "lg" && "max-w-2xl",
+          size === "xl" && "max-w-5xl",
+        )}>
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
           <button
@@ -400,9 +476,26 @@ export function Loader({ label = "Загрузка..." }: { label?: string }) {
 
 export function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-[color:var(--border)] bg-white/70 p-5">
+    <div className="rounded-[24px] border border-[color:var(--border)] bg-orange-200/50 p-5">
       <p className="text-sm text-[color:var(--ink-soft)]">{label}</p>
       <p className="mt-2 text-2xl font-extrabold tracking-tight">{value}</p>
     </div>
+  );
+}
+
+export function Checkbox({
+  label,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return (
+    <label className={clsx("flex cursor-pointer items-center gap-3 text-sm font-medium text-[#3b2a1d]", className)}>
+      <input
+        type="checkbox"
+        className="h-5 w-5 rounded-lg border-[color:var(--border)] text-[color:var(--accent)] transition focus:ring-4 focus:ring-[rgba(201,111,43,0.12)]"
+        {...props}
+      />
+      <span>{label}</span>
+    </label>
   );
 }
