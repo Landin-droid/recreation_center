@@ -572,7 +572,8 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingObject ? "Редактировать объект" : "Новый объект"}>
+        title={editingObject ? "Редактировать объект" : "Новый объект"}
+        size="xl">
         <form
           className="space-y-4"
           onSubmit={(e) => {
@@ -632,24 +633,24 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             };
             upsertMutation.mutate(data);
           }}>
-          <Field
-            label="Название"
-            name="name"
-            defaultValue={editingObject?.name}
-            required
-          />
-          <Select
-            label="Тип"
-            name="type"
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}>
-            <option value="cottage">Домик</option>
-            <option value="gazebo">Беседка</option>
-            <option value="banquet_hall">Банкетный зал</option>
-            <option value="karaoke_bar">Караоке-бар</option>
-            <option value="outdoor_venue">Открытая площадка</option>
-          </Select>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field
+              label="Название"
+              name="name"
+              defaultValue={editingObject?.name}
+              required
+            />
+            <Select
+              label="Тип"
+              name="type"
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}>
+              <option value="cottage">Домик</option>
+              <option value="gazebo">Беседка</option>
+              <option value="banquet_hall">Банкетный зал</option>
+              <option value="karaoke_bar">Караоке-бар</option>
+              <option value="outdoor_venue">Открытая площадка</option>
+            </Select>
             <Field
               label="Цена"
               name="basePrice"
@@ -664,40 +665,40 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
               defaultValue={editingObject?.capacity}
               required
             />
-          </div>
 
-          {/* Type-specific fields */}
-          {(selectedType === "cottage" || selectedType === "gazebo") && (
-            <Field
-              label="Удобства"
-              name="amenities"
-              defaultValue={(editingObject?.details as any)?.amenities}
-            />
-          )}
-          {selectedType === "cottage" && (
-            <Field
-              label="Площадь (м²)"
-              name="squareMeters"
-              type="number"
-              defaultValue={(editingObject?.details as any)?.squareMeters}
-            />
-          )}
-          {selectedType === "banquet_hall" && (
-            <Field
-              label="Макс. столов"
-              name="maxTables"
-              type="number"
-              defaultValue={(editingObject?.details as any)?.maxTables}
-            />
-          )}
-          {selectedType === "karaoke_bar" && (
-            <Field
-              label="Кол-во столов"
-              name="tablesAmount"
-              type="number"
-              defaultValue={(editingObject?.details as any)?.tablesAmount}
-            />
-          )}
+            {/* Type-specific fields */}
+            {(selectedType === "cottage" || selectedType === "gazebo") && (
+              <Field
+                label="Удобства"
+                name="amenities"
+                defaultValue={(editingObject?.details as any)?.amenities}
+              />
+            )}
+            {selectedType === "cottage" && (
+              <Field
+                label="Площадь (м²)"
+                name="squareMeters"
+                type="number"
+                defaultValue={(editingObject?.details as any)?.squareMeters}
+              />
+            )}
+            {selectedType === "banquet_hall" && (
+              <Field
+                label="Макс. столов"
+                name="maxTables"
+                type="number"
+                defaultValue={(editingObject?.details as any)?.maxTables}
+              />
+            )}
+            {selectedType === "karaoke_bar" && (
+              <Field
+                label="Кол-во столов"
+                name="tablesAmount"
+                type="number"
+                defaultValue={(editingObject?.details as any)?.tablesAmount}
+              />
+            )}
+          </div>
 
           <Field
             label="URL изображений (через запятую)"

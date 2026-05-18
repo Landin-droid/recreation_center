@@ -111,9 +111,17 @@ export function AppShell({
                   ул. Хвойная, 1А
                 </p>
               </a>
-              <a href="#" className="inline-block text-[color:var(--accent)] hover:underline text-md">
-                Условия бронирования
-              </a>
+              <div className="space-y-1">
+                <a href="#" className="block text-[color:var(--accent)] hover:underline text-md">
+                  Условия бронирования
+                </a>
+                <a href="#" className="block text-[color:var(--accent)] hover:underline text-md">
+                  Политика конфиденциальности
+                </a>
+                <a href="#" className="block text-[color:var(--accent)] hover:underline text-md">
+                  Правила использования cookie
+                </a>
+              </div>
             </div>
 
             {/* Контакты */}
@@ -362,18 +370,26 @@ export function Modal({
   title,
   children,
   footer,
+  size = "md",
 }: PropsWithChildren<{
   isOpen: boolean;
   onClose: () => void;
   title: string;
   footer?: ReactNode;
+  size?: "md" | "lg" | "xl";
 }>) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-black/40 p-3 backdrop-blur-sm animate-in fade-in duration-200 sm:p-4"
     style={{ marginTop: '0px' }}>
-      <Panel className="my-auto w-full max-w-md space-y-6 animate-in zoom-in duration-300">
+      <Panel
+        className={clsx(
+          "my-auto w-full space-y-6 animate-in zoom-in duration-300",
+          size === "md" && "max-w-md",
+          size === "lg" && "max-w-2xl",
+          size === "xl" && "max-w-4xl",
+        )}>
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
           <button
