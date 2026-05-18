@@ -71,6 +71,16 @@ function translateReservationStatus(status: string | undefined) {
   }
 }
 
+const toDateInputValue = (value: string | null | undefined) =>
+  value ? value.slice(0, 10) : "";
+
+const getTodayDateInputValue = () => {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${today.getFullYear()}-${month}-${day}`;
+};
+
 export function DashboardPage() {
   const queryClient = useQueryClient();
   const { user, clearSession } = useAuthStore();
@@ -122,6 +132,11 @@ export function DashboardPage() {
   );
 
   const availableMenuItems = selectedObject?.menuItems ?? [];
+  const minReservationDate = useMemo(() => {
+    const today = getTodayDateInputValue();
+    const seasonStart = toDateInputValue(selectedObject?.seasonStart);
+    return selectedObject?.isSeasonal && seasonStart > today ? seasonStart : today;
+  }, [selectedObject]);
 
   const createReservationMutation = useMutation({
     mutationFn: dashboardApi.createReservation,
@@ -351,13 +366,29 @@ export function DashboardPage() {
                     key={item.bookableObjectId}
                     value={item.bookableObjectId}>
                     {item.name} · {formatCurrency(item.basePrice)}
+                    {item.isSeasonal
+                      ? ` · сезон ${formatDate(item.seasonStart)} - ${formatDate(item.seasonEnd)}`
+                      : ""}
                   </option>
                 ))}
               </Select>
+              {selectedObject?.isSeasonal ? (
+                <div className="rounded-2xl bg-orange-50 px-4 py-3 text-sm font-medium text-orange-900">
+                  Объект доступен для бронирования:{" "}
+                  {formatDate(selectedObject.seasonStart)} -{" "}
+                  {formatDate(selectedObject.seasonEnd)}
+                </div>
+              ) : null}
               <div className="grid gap-4 md:grid-cols-2">
                 <Field
                   label="Дата бронирования"
                   type="date"
+                  min={minReservationDate}
+                  max={
+                    selectedObject?.isSeasonal
+                      ? toDateInputValue(selectedObject.seasonEnd)
+                      : undefined
+                  }
                   value={formState.reservationDate}
                   onChange={(event) =>
                     setFormState((current) => ({

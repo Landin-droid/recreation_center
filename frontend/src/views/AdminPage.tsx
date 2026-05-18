@@ -148,6 +148,9 @@ function SidebarItem({
   );
 }
 
+const toDateInputValue = (value: string | null | undefined) =>
+  value ? value.slice(0, 10) : "";
+
 // --- Dashboard ---
 
 function AdminDashboard() {
@@ -380,6 +383,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [editingObject, setEditingObject] = useState<any>(null);
   const [selectedType, setSelectedType] = useState<string>("cottage");
+  const [isObjectSeasonal, setIsObjectSeasonal] = useState(false);
 
   const { data: objects, isLoading } = useQuery({
     queryKey: ["admin", "objects"],
@@ -446,6 +450,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
           onClick={() => {
             setEditingObject(null);
             setSelectedType("cottage");
+            setIsObjectSeasonal(false);
             setIsModalOpen(true);
           }}>
           Добавить объект
@@ -466,6 +471,14 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
                 {obj.isActive ? "Активен" : "Скрыт"}
               </Badge>
             </div>
+            {obj.isSeasonal && (
+              <div className="rounded-xl border border-orange-100 bg-orange-50/70 px-3 py-2 text-xs text-orange-900">
+                Доступен для бронирования:{" "}
+                <span className="font-bold">
+                  {formatDate(obj.seasonStart)} - {formatDate(obj.seasonEnd)}
+                </span>
+              </div>
+            )}
             <p className="text-sm line-clamp-2 text-[color:var(--ink-soft)]">
               {obj.description}
             </p>
@@ -535,6 +548,7 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
                   onClick={() => {
                     setEditingObject(obj);
                     setSelectedType(obj.type);
+                    setIsObjectSeasonal(obj.isSeasonal);
                     setIsModalOpen(true);
                   }}>
                   ✏️
@@ -587,6 +601,15 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
               type: fd.get("type"),
               basePrice: Number(fd.get("basePrice")),
               capacity: Number(fd.get("capacity")),
+              isSeasonal: fd.get("isSeasonal") === "on",
+              seasonStart:
+                fd.get("isSeasonal") === "on"
+                  ? fd.get("seasonStart") || null
+                  : null,
+              seasonEnd:
+                fd.get("isSeasonal") === "on"
+                  ? fd.get("seasonEnd") || null
+                  : null,
               description: fd.get("description")?.toString().trim() || null,
               isActive: fd.get("isActive") === "on",
               imageUrls: fd.get("imageUrls")
@@ -686,6 +709,30 @@ function AdminObjects({ setToast }: { setToast: (t: any) => void }) {
             name="description"
             defaultValue={editingObject?.description}
           />
+          <Checkbox
+            label="Сезонный объект"
+            name="isSeasonal"
+            checked={isObjectSeasonal}
+            onChange={(e) => setIsObjectSeasonal(e.target.checked)}
+          />
+          {isObjectSeasonal && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field
+                label="Начало сезона"
+                name="seasonStart"
+                type="date"
+                defaultValue={toDateInputValue(editingObject?.seasonStart)}
+                required
+              />
+              <Field
+                label="Конец сезона"
+                name="seasonEnd"
+                type="date"
+                defaultValue={toDateInputValue(editingObject?.seasonEnd)}
+                required
+              />
+            </div>
+          )}
           <Checkbox
             label="Активен"
             name="isActive"

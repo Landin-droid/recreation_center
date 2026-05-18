@@ -16,7 +16,7 @@ import { ImageCarousel } from "@shared/ui/ImageCarousel";
 import { dashboardApi } from "@features/dashboard/api";
 import { SEO_DESCRIPTIONS } from "@shared/utils/seo";
 import type { BookableObject, Reservation } from "@shared/api/types";
-import { formatCurrency } from "@shared/lib/format";
+import { formatCurrency, formatDate } from "@shared/lib/format";
 import { useLockBodyScroll } from "@shared/lib/useLockBodyScroll";
 import { getObjectTypeName, getPersonString } from "@shared/lib/utils";
 import { format, isSameDay, parseISO, isBefore, startOfDay } from "date-fns";
@@ -24,6 +24,9 @@ import { ru } from "date-fns/locale";
 import { useAuthStore } from "@features/auth/model/auth-store";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
+
+const toDateInputValue = (value: string | null | undefined) =>
+  value ? value.slice(0, 10) : "";
 
 export function BookingPage() {
   const {
@@ -131,10 +134,23 @@ export function BookingPage() {
   const isDateBusy = (dateStr: string) => {
     if (!dateStr) return false;
     const date = parseISO(dateStr);
+    const seasonStart = toDateInputValue(selectedObject?.seasonStart);
+    const seasonEnd = toDateInputValue(selectedObject?.seasonEnd);
+    const isOutsideSeason =
+      selectedObject?.isSeasonal &&
+      ((seasonStart && dateStr < seasonStart) || (seasonEnd && dateStr > seasonEnd));
+
     return (
       busyDates.some((busyDate) => isSameDay(busyDate, date)) ||
-      isBefore(date, startOfDay(new Date()))
+      isBefore(date, startOfDay(new Date())) ||
+      Boolean(isOutsideSeason)
     );
+  };
+
+  const getMinBookingDate = (obj: BookableObject) => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const seasonStart = toDateInputValue(obj.seasonStart);
+    return obj.isSeasonal && seasonStart > today ? seasonStart : today;
   };
 
   const [selectedMenuItems, setSelectedMenuItems] = useState<
@@ -314,7 +330,10 @@ export function BookingPage() {
 
                 <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-7">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <Badge tone="neutral">{getObjectTypeName(obj.type)}</Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone="neutral">{getObjectTypeName(obj.type)}</Badge>
+                      {obj.isSeasonal && <Badge tone="warning">Сезонный</Badge>}
+                    </div>
                     <span className="text-lg font-bold text-[#c96f2b] sm:text-xl">
                       {formatCurrency(obj.basePrice)}
                     </span>
@@ -346,6 +365,12 @@ export function BookingPage() {
                       </span>
                     </div>
                     {renderAmenities(obj)}
+                    {obj.isSeasonal && (
+                      <div className="rounded-xl bg-orange-50 px-3 py-2 text-sm font-medium text-orange-900">
+                        Доступен: {formatDate(obj.seasonStart)} -{" "}
+                        {formatDate(obj.seasonEnd)}
+                      </div>
+                    )}
                   </div>
 
                   <Button
@@ -422,11 +447,16 @@ export function BookingPage() {
                     label="Выберите дату"
                     type="date"
                     value={selectedDate}
-                    min={format(new Date(), "yyyy-MM-dd")}
+                    min={getMinBookingDate(selectedObject)}
+                    max={
+                      selectedObject.isSeasonal
+                        ? toDateInputValue(selectedObject.seasonEnd)
+                        : undefined
+                    }
                     onChange={(e) => setSelectedDate(e.target.value)}
                     hint={
                       selectedDate && isDateBusy(selectedDate)
-                        ? "Эта дата уже занята"
+                        ? "Эта дата занята или недоступна для сезона"
                         : ""
                     }
                     className={

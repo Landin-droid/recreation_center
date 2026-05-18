@@ -36,6 +36,14 @@ const validateSeasonWindow = (
   data: { isSeasonal?: boolean; seasonStart?: string | null; seasonEnd?: string | null },
   ctx: z.RefinementCtx,
 ) => {
+  if (data.isSeasonal === false && (data.seasonStart || data.seasonEnd)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["seasonStart"],
+      message: "Season dates must be empty when the object is not seasonal",
+    });
+  }
+
   if (data.isSeasonal && (!data.seasonStart || !data.seasonEnd)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

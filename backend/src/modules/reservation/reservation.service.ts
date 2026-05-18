@@ -99,6 +99,10 @@ const buildReservationDerivedData = async (
     throw new AppError("Bookable object not found", 404);
   }
 
+  if (!bookableObject.isActive) {
+    throw new AppError("Bookable object is not active", 400);
+  }
+
   if (input.guestsCount > bookableObject.capacity) {
     throw new AppError("Guests count exceeds bookable object capacity", 400);
   }

@@ -19,6 +19,21 @@ export type BookableObjectWithRelations = Prisma.BookableObjectGetPayload<{
 }>;
 
 export class BookableObjectRepository {
+  deactivateExpiredSeasonalObjects(today: Date) {
+    return prisma.bookableObject.updateMany({
+      where: {
+        isSeasonal: true,
+        isActive: true,
+        seasonEnd: {
+          lt: today,
+        },
+      },
+      data: {
+        isActive: false,
+      },
+    });
+  }
+
   findMany(where: Prisma.BookableObjectWhereInput) {
     return prisma.bookableObject.findMany({
       where,

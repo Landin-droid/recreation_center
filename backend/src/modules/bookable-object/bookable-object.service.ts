@@ -201,10 +201,27 @@ const formatBookableObject = (object: BookableObjectWithRelations) => ({
   })),
 });
 
+const toUtcDateOnly = (value: Date) =>
+  new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+
+const getTodayUtcDateOnly = () => toUtcDateOnly(new Date());
+
+const parseSeasonDate = (value: string | null | undefined) =>
+  value ? toUtcDateOnly(new Date(value)) : null;
+
+const isSeasonExpired = (seasonEnd: Date | null, today = getTodayUtcDateOnly()) =>
+  Boolean(seasonEnd && toUtcDateOnly(seasonEnd).getTime() < today.getTime());
+
 export class BookableObjectService {
   constructor(private readonly bookableObjectRepository: BookableObjectRepository) {}
 
+  deactivateExpiredSeasonalObjects() {
+    return this.bookableObjectRepository.deactivateExpiredSeasonalObjects(getTodayUtcDateOnly());
+  }
+
   async listBookableObjects(query: ListBookableObjectsQuery) {
+    await this.deactivateExpiredSeasonalObjects();
+
     const objects = await this.bookableObjectRepository.findMany({
       ...(query.type ? { type: query.type } : {}),
       ...(typeof query.isActive === "boolean" ? { isActive: query.isActive } : {}),
@@ -214,6 +231,8 @@ export class BookableObjectService {
   }
 
   async getBookableObjectById(bookableObjectId: number) {
+    await this.deactivateExpiredSeasonalObjects();
+
     const object = await this.bookableObjectRepository.findById(bookableObjectId);
     if (!object) {
       throw new AppError("Bookable object not found", 404);
@@ -223,15 +242,18 @@ export class BookableObjectService {
   }
 
   async createBookableObject(data: CreateBookableObjectInput) {
+    const seasonStart = data.isSeasonal ? parseSeasonDate(data.seasonStart) : null;
+    const seasonEnd = data.isSeasonal ? parseSeasonDate(data.seasonEnd) : null;
+
     const created = await this.bookableObjectRepository.create({
       name: data.name,
       capacity: data.capacity,
       basePrice: data.basePrice,
       isSeasonal: data.isSeasonal,
-      seasonStart: data.seasonStart ? new Date(data.seasonStart) : null,
-      seasonEnd: data.seasonEnd ? new Date(data.seasonEnd) : null,
+      seasonStart,
+      seasonEnd,
       description: data.description,
-      isActive: data.isActive ?? true,
+      isActive: isSeasonExpired(seasonEnd) ? false : (data.isActive ?? true),
       imageUrls: data.imageUrls,
       type: data.type,
       ...buildSubtypeCreateData(data.type, data.details),
@@ -248,14 +270,33 @@ export class BookableObjectService {
 
     const nextType = data.type ?? existing.type;
     const nextIsSeasonal = data.isSeasonal ?? existing.isSeasonal;
-    const nextSeasonStart =
-      data.seasonStart !== undefined ? data.seasonStart : existing.seasonStart?.toISOString();
-    const nextSeasonEnd =
-      data.seasonEnd !== undefined ? data.seasonEnd : existing.seasonEnd?.toISOString();
+    const nextSeasonStart = nextIsSeasonal
+      ? data.seasonStart !== undefined
+        ? parseSeasonDate(data.seasonStart)
+        : existing.seasonStart
+      : null;
+    const nextSeasonEnd = nextIsSeasonal
+      ? data.seasonEnd !== undefined
+        ? parseSeasonDate(data.seasonEnd)
+        : existing.seasonEnd
+      : null;
 
     if (nextIsSeasonal && (!nextSeasonStart || !nextSeasonEnd)) {
       throw new AppError("Season start date is required when the object is seasonal", 400);
     }
+
+    if (
+      nextIsSeasonal &&
+      nextSeasonStart &&
+      nextSeasonEnd &&
+      nextSeasonStart.getTime() > nextSeasonEnd.getTime()
+    ) {
+      throw new AppError("Season end date must be after season start date", 400);
+    }
+
+    const nextIsActive = isSeasonExpired(nextSeasonEnd)
+      ? false
+      : (data.isActive ?? existing.isActive);
 
     const updated = await this.bookableObjectRepository.runInTransaction(async (tx) => {
       if (nextType !== existing.type) {
@@ -269,14 +310,10 @@ export class BookableObjectService {
           ...(data.capacity !== undefined ? { capacity: data.capacity } : {}),
           ...(data.basePrice !== undefined ? { basePrice: data.basePrice } : {}),
           ...(data.isSeasonal !== undefined ? { isSeasonal: data.isSeasonal } : {}),
-          ...(data.seasonStart !== undefined
-            ? { seasonStart: data.seasonStart ? new Date(data.seasonStart) : null }
-            : {}),
-          ...(data.seasonEnd !== undefined
-            ? { seasonEnd: data.seasonEnd ? new Date(data.seasonEnd) : null }
-            : {}),
+          seasonStart: nextSeasonStart,
+          seasonEnd: nextSeasonEnd,
           ...(data.description !== undefined ? { description: data.description } : {}),
-          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+          isActive: nextIsActive,
           ...(data.imageUrls !== undefined ? { imageUrls: data.imageUrls } : {}),
           ...(data.type !== undefined ? { type: data.type } : {}),
           ...buildSubtypeUpdateOperations(nextType, data.details),

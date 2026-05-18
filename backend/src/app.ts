@@ -10,6 +10,7 @@ import prisma from "./lib/prisma";
 import { errorHandler } from "./middleware/errorHandler";
 import mainRouter from "./routes";
 import { paymentService } from "./modules/payment/payment.service";
+import { bookableObjectService } from "./modules/bookable-object";
 import { specs } from "./config/swagger";
 
 const app = express();
@@ -72,6 +73,15 @@ cron.schedule("* * * * *", async () => {
     await paymentService.cancelExpiredReservations();
   } catch (error) {
     console.error("Cron job error (cancelExpiredReservations):", error);
+  }
+});
+
+// Cron job для скрытия сезонных объектов после окончания сезона (каждый час)
+cron.schedule("0 * * * *", async () => {
+  try {
+    await bookableObjectService.deactivateExpiredSeasonalObjects();
+  } catch (error) {
+    console.error("Cron job error (deactivateExpiredSeasonalObjects):", error);
   }
 });
 
