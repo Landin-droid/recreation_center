@@ -319,67 +319,75 @@ export function BookingPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:gap-6">
-            {filteredAndSortedObjects.map((obj) => (
-              obj.isActive && (
-              <Panel
-                key={obj.bookableObjectId}
-                className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
-                <div className="relative aspect-video w-full bg-transparent lg:w-[60%] lg:min-w-[340px]">
-                  <ImageCarousel images={obj.imageUrls} name={obj.name} />
-                </div>
-
-                <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-7">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone="neutral">{getObjectTypeName(obj.type)}</Badge>
-                      {obj.isSeasonal && <Badge tone="warning">Сезонный</Badge>}
+            {filteredAndSortedObjects.map(
+              (obj) =>
+                obj.isActive && (
+                  <Panel
+                    key={obj.bookableObjectId}
+                    className="flex h-full flex-col overflow-hidden p-0 lg:flex-row">
+                    <div className="relative aspect-video w-full bg-transparent lg:w-[60%] lg:min-w-[340px]">
+                      <ImageCarousel images={obj.imageUrls} name={obj.name} />
                     </div>
-                    <span className="text-lg font-bold text-[#c96f2b] sm:text-xl">
-                      {formatCurrency(obj.basePrice)}
-                    </span>
-                  </div>
-                  <h3 className="mb-2 text-2xl font-black text-[#24170f] sm:mb-3 sm:text-3xl">
-                    {obj.name}
-                  </h3>
-                  <p className="mb-4 text-sm leading-6 text-[color:var(--ink-soft)] sm:text-base sm:leading-relaxed">
-                    {obj.description || "Прекрасное место для вашего отдыха."}
-                  </p>
 
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-medium sm:gap-3 sm:text-base">
-                      <svg
-                        className="h-5 w-5 shrink-0 text-[#c96f2b] sm:h-6 sm:w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
-                      <span>
-                        Вместимость: до {obj.capacity}{" "}
-                        {getPersonString(obj.capacity)}
-                      </span>
-                    </div>
-                    {renderAmenities(obj)}
-                    {obj.isSeasonal && (
-                      <div className="rounded-xl bg-orange-400/90 py-2 text-sm font-bold text-orange-900">
-                        Доступен с {formatDate(obj.seasonStart)} до {formatDate(obj.seasonEnd)}
+                    <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-7">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge tone="neutral">
+                            {getObjectTypeName(obj.type)}
+                          </Badge>
+                          {obj.isSeasonal && (
+                            <Badge tone="warning">Сезонный</Badge>
+                          )}
+                        </div>
+                        <span className="text-lg font-bold text-[#c96f2b] sm:text-xl">
+                          {formatCurrency(obj.basePrice)}
+                        </span>
                       </div>
-                    )}
-                  </div>
+                      <h3 className="mb-2 text-2xl font-black text-[#24170f] sm:mb-3 sm:text-3xl">
+                        {obj.name}
+                      </h3>
+                      <p className="mb-4 text-sm leading-6 text-[color:var(--ink-soft)] sm:text-base sm:leading-relaxed">
+                        {obj.description ||
+                          "Прекрасное место для вашего отдыха."}
+                      </p>
 
-                  <Button
-                    className="mt-5 w-full py-3 text-base sm:mt-7 sm:py-4"
-                    onClick={() => handleOpenBooking(obj)}>
-                    Забронировать
-                  </Button>
-                </div>
-              </Panel>
-            )))}
+                      <div className="space-y-2 sm:space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium sm:gap-3 sm:text-base">
+                          <svg
+                            className="h-5 w-5 shrink-0 text-[#c96f2b] sm:h-6 sm:w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                          <span>
+                            Вместимость: до {obj.capacity}{" "}
+                            {getPersonString(obj.capacity)}
+                          </span>
+                        </div>
+                        {renderAmenities(obj)}
+                        {obj.isSeasonal && (
+                          <div className="rounded-xl py-2 px-2 text-center text-base font-bold text-[color:var(--accent)] bg-[#ffe3cd]">
+                            Доступен с {formatDate(obj.seasonStart)} до{" "}
+                            {formatDate(obj.seasonEnd)}
+                          </div>
+                        )}
+                      </div>
+
+                      <Button
+                        className="mt-5 w-full py-3 text-base sm:mt-7 sm:py-4"
+                        onClick={() => handleOpenBooking(obj)}>
+                        Забронировать
+                      </Button>
+                    </div>
+                  </Panel>
+                ),
+            )}
           </div>
         )}
 
