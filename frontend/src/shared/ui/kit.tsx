@@ -390,7 +390,7 @@ export function Modal({
         className={clsx(
           "my-auto w-full space-y-6 animate-in zoom-in duration-300",
           size === "md" && "max-w-md",
-          size === "lg" && "max-w-2xl",
+          size === "lg" && "max-w-3xl",
           size === "xl" && "max-w-5xl",
         )}>
         <div className="flex items-center justify-between">
