@@ -366,9 +366,8 @@ export function BookingPage() {
                     </div>
                     {renderAmenities(obj)}
                     {obj.isSeasonal && (
-                      <div className="rounded-xl bg-orange-50 px-3 py-2 text-sm font-medium text-orange-900">
-                        Доступен: {formatDate(obj.seasonStart)} -{" "}
-                        {formatDate(obj.seasonEnd)}
+                      <div className="rounded-xl bg-orange-400/90 py-2 text-sm font-bold text-orange-900">
+                        Доступен с {formatDate(obj.seasonStart)} до {formatDate(obj.seasonEnd)}
                       </div>
                     )}
                   </div>
