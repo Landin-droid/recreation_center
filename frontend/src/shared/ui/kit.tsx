@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import type { PropsWithChildren, ReactNode } from "react";
 import { authApi } from "@features/auth/api";
 import { useAuthStore } from "@features/auth/model/auth-store";
+import { useLockBodyScroll } from "@shared/lib/useLockBodyScroll";
 
 export function AppShell({
   children,
@@ -378,6 +379,8 @@ export function Modal({
   footer?: ReactNode;
   size?: "md" | "lg" | "xl";
 }>) {
+  useLockBodyScroll(isOpen);
+
   if (!isOpen) return null;
 
   return (
@@ -388,7 +391,7 @@ export function Modal({
           "my-auto w-full space-y-6 animate-in zoom-in duration-300",
           size === "md" && "max-w-md",
           size === "lg" && "max-w-2xl",
-          size === "xl" && "max-w-4xl",
+          size === "xl" && "max-w-5xl",
         )}>
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#24170f]">{title}</h3>
