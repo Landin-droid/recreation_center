@@ -13,7 +13,7 @@
   color: #23170f;
   --surface: rgba(255, 250, 242, 0.84);
   --surface-strong: rgba(255, 246, 232, 0.96);
-  --border: rgba(116, 82, 47, 0.18);
+  --border: rgba(116, 82, 47, 0.50);
   --shadow: 0 20px 50px rgba(83, 54, 29, 0.12);
   --accent: #c96f2b;
   --accent-dark: #8f4a18;

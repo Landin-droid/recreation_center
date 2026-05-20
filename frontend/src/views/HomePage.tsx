@@ -59,9 +59,9 @@ export function HomePage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold">Уютные коттеджи</h3>
+              <h3 className="text-xl font-bold">Уютные домики</h3>
               <p className="text-sm text-[color:var(--ink-soft)]">
-                Комфортабельные дома со всеми удобствами для компаний любого
+                Комфортабельные домики со всеми удобствами для компаний любого
                 размера.
               </p>
             </Panel>
@@ -76,9 +76,9 @@ export function HomePage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold">Банкетные залы</h3>
+              <h3 className="text-xl font-bold">Банкетный зал</h3>
               <p className="text-sm text-[color:var(--ink-soft)]">
-                Просторные залы для свадеб, юбилеев и корпоративных мероприятий.
+                Просторный зал для свадеб, юбилеев и корпоративных мероприятий.
               </p>
             </Panel>
             <Panel className="space-y-4">
@@ -100,7 +100,7 @@ export function HomePage() {
               </div>
               <h3 className="text-xl font-bold">Активный отдых</h3>
               <p className="text-sm text-[color:var(--ink-soft)]">
-                Прокат спортивного инвентаря, караоке-бар и открытые площадки.
+                Прокат спортивного инвентаря, караоке-бар и открытая площадка.
               </p>
             </Panel>
           </div>
@@ -149,8 +149,7 @@ export function HomePage() {
                 </span>
                 <h4 className="font-bold">Открытие летнего сезона</h4>
                 <p className="text-sm text-[color:var(--ink-soft)]">
-                  Мы подготовили пляжную зону и новые водные аттракционы для
-                  наших гостей.
+                  Мы подготовили пляжную зону и новые батуты.
                 </p>
               </div>
               <div className="space-y-1">
@@ -159,8 +158,7 @@ export function HomePage() {
                 </span>
                 <h4 className="font-bold">Обновление меню в караоке-баре</h4>
                 <p className="text-sm text-[color:var(--ink-soft)]">
-                  Попробуйте наши новые авторские коктейли и закуски от
-                  шеф-повара.
+                  Попробуйте наши новые авторские коктейли и закуски майского сезона.
                 </p>
               </div>
             </div>
